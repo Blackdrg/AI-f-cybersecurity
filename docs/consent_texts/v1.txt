@@ -1,0 +1,5 @@
+Consent Text Version 1
+
+I consent to the collection and processing of my facial images for the purpose of face recognition enrollment. I understand that my face embeddings will be stored securely and used only for recognition purposes. Raw images will not be stored unless I explicitly agree.
+
+I can withdraw this consent at any time by requesting deletion of my data.

@@ -1,0 +1,249 @@
+{
+    "info": {
+        "name": "Face Recognition API",
+        "description": "Postman collection for testing the face recognition system APIs",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Health Check",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{base_url}}/health",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "health"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Enroll Person",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{api_key}}",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                        {
+                            "key": "images",
+                            "type": "file",
+                            "src": []
+                        },
+                        {
+                            "key": "name",
+                            "value": "John Doe",
+                            "type": "text"
+                        },
+                        {
+                            "key": "metadata",
+                            "value": "{\"role\": \"employee\", \"department\": \"engineering\"}",
+                            "type": "text"
+                        },
+                        {
+                            "key": "consent",
+                            "value": "true",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/enroll",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "enroll"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Recognize Face",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{api_key}}",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                        {
+                            "key": "image",
+                            "type": "file",
+                            "src": []
+                        },
+                        {
+                            "key": "top_k",
+                            "value": "1",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/recognize",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "recognize"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Person Details",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{admin_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/persons/{{person_id}}",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "persons",
+                        "{{person_id}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Revoke Person Access",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{admin_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/persons/{{person_id}}/revoke",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "persons",
+                        "{{person_id}}",
+                        "revoke"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Delete Person",
+            "request": {
+                "method": "DELETE",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{admin_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/persons/{{person_id}}",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "persons",
+                        "{{person_id}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Metrics",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{admin_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/metrics",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "metrics"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Rebuild Index",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{admin_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/index/rebuild",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "index",
+                        "rebuild"
+                    ]
+                }
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000"
+        },
+        {
+            "key": "api_key",
+            "value": "your-api-key-here"
+        },
+        {
+            "key": "admin_token",
+            "value": "your-admin-jwt-here"
+        },
+        {
+            "key": "person_id",
+            "value": "uuid-here"
+        }
+    ]
+}

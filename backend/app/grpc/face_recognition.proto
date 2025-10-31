@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package face_recognition;
+
+service FaceRecognitionService {
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+  rpc Recognize(RecognizeRequest) returns (RecognizeResponse);
+  rpc GetPerson(GetPersonRequest) returns (PersonResponse);
+  rpc DeletePerson(DeletePersonRequest) returns (DeleteResponse);
+  rpc GetAuditLogs(AuditLogsRequest) returns (AuditLogsResponse);
+}
+
+message EnrollRequest {
+  string name = 1;
+  repeated bytes images = 2;
+  bool consent = 3;
+  string camera_id = 4;
+  repeated bytes voice_files = 5;
+  bytes gait_video = 6;
+  string physiological_data = 7;
+  string metadata = 8;
+}
+
+message EnrollResponse {
+  string person_id = 1;
+  int32 num_embeddings = 2;
+  string message = 3;
+}
+
+message RecognizeRequest {
+  bytes image = 1;
+  int32 top_k = 2;
+  float threshold = 3;
+  string camera_id = 4;
+  bool enable_spoof_check = 5;
+  bool enable_emotion = 6;
+  bool enable_age_gender = 7;
+  bool enable_behavior = 8;
+  bytes voice_file = 9;
+  bytes gait_video = 10;
+  string physiological_data = 11;
+}
+
+message RecognizeResponse {
+  repeated DetectedFace faces = 1;
+}
+
+message DetectedFace {
+  repeated int32 face_box = 1;
+  repeated FaceMatch matches = 2;
+  float inference_ms = 3;
+  bool is_unknown = 4;
+  optional float spoof_score = 5;
+  optional float reconstruction_confidence = 6;
+  optional Emotion emotion = 7;
+  optional int32 age = 8;
+  optional string gender = 9;
+  optional Behavior behavior = 10;
+}
+
+message FaceMatch {
+  string person_id = 1;
+  optional string name = 2;
+  float score = 3;
+  float distance = 4;
+}
+
+message Emotion {
+  string emotion = 1;
+  float confidence = 2;
+}
+
+message Behavior {
+  string behavior = 1;
+  float confidence = 2;
+}
+
+message GetPersonRequest {
+  string person_id = 1;
+}
+
+message PersonResponse {
+  string person_id = 1;
+  optional string name = 2;
+  repeated string embeddings = 3;
+  ConsentRecord consent_record = 4;
+}
+
+message ConsentRecord {
+  string consent_record_id = 1;
+  string timestamp = 2;
+  string client_id = 3;
+  string consent_text_version = 4;
+  string captured_ip = 5;
+  optional string signed_token = 6;
+}
+
+message DeletePersonRequest {
+  string person_id = 1;
+}
+
+message DeleteResponse {
+  bool deleted = 1;
+  string message = 2;
+}
+
+message AuditLogsRequest {
+  int32 limit = 1;
+  string start_date = 2;
+  string end_date = 3;
+  string action = 4;
+}
+
+message AuditLogsResponse {
+  repeated AuditLogEntry logs = 1;
+}
+
+message AuditLogEntry {
+  int32 id = 1;
+  string action = 2;
+  string person_id = 3;
+  string timestamp = 4;
+  string details = 5;
+}

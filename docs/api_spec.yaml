@@ -1,0 +1,594 @@
+openapi: 3.0.0
+info:
+  title: Face Recognition API
+  version: 1.0.0
+paths:
+  /api/enroll:
+    post:
+      summary: Enroll a person
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                name:
+                  type: string
+                metadata:
+                  type: string
+                consent:
+                  type: boolean
+      responses:
+        '200':
+          description: Enrollment successful
+  /api/recognize:
+    post:
+      summary: Recognize faces
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                top_k:
+                  type: integer
+      responses:
+        '200':
+          description: Recognition results
+  /api/federated/update:
+    post:
+      summary: Receive federated learning updates from edge devices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FederatedUpdate'
+      responses:
+        '200':
+          description: Update received
+  /api/models/upload:
+    post:
+      summary: Upload a new model version for OTA
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelVersion'
+      responses:
+        '200':
+          description: Model uploaded
+  /api/models/download:
+    get:
+      summary: Download model for OTA update
+      parameters:
+        - name: device_id
+          in: query
+          schema:
+            type: string
+        - name: model_version
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Model data
+  /api/analytics:
+    get:
+      summary: Get cloud analytics data
+      responses:
+        '200':
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsResponse'
+  /ws/recognize_stream:
+    get:
+      summary: WebSocket for real-time face recognition
+      parameters:
+        - name: camera_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '101':
+          description: WebSocket connection established
+  # SaaS API Endpoints
+  /api/users:
+    post:
+      summary: Create a new user account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '200':
+          description: User created successfully
+  /api/users/me:
+    get:
+      summary: Get current user information
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    put:
+      summary: Update current user information
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '200':
+          description: User updated successfully
+    delete:
+      summary: Delete current user account
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User deleted successfully
+  /api/plans:
+    get:
+      summary: Get all available subscription plans
+      responses:
+        '200':
+          description: List of plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlanResponse'
+    post:
+      summary: Create a new subscription plan (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanResponse'
+      responses:
+        '200':
+          description: Plan created successfully
+  /api/plans/{plan_id}:
+    get:
+      summary: Get a specific plan by ID
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Plan details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanResponse'
+  /api/subscriptions:
+    post:
+      summary: Create a new subscription
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionCreate'
+      responses:
+        '200':
+          description: Subscription created successfully
+  /api/subscriptions/me:
+    get:
+      summary: Get current user's active subscription
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current subscription
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+    put:
+      summary: Cancel current user's subscription
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Subscription cancelled successfully
+  /api/subscriptions/history:
+    get:
+      summary: Get subscription history for current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Subscription history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionResponse'
+  /api/payments/create-session:
+    post:
+      summary: Create a Stripe checkout session for payment
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreate'
+      responses:
+        '200':
+          description: Checkout session created
+  /api/payments/webhook:
+    post:
+      summary: Handle Stripe webhooks for payment confirmation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed successfully
+  /api/payments/history:
+    get:
+      summary: Get payment history for current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Payment history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentResponse'
+  /api/usage/current:
+    get:
+      summary: Get current month's usage for authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current usage statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageResponse'
+  /api/usage/limits:
+    get:
+      summary: Get usage limits for current user's plan
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Usage limits
+  /api/ai/assistant:
+    post:
+      summary: Query the AI assistant for help with face recognition tasks
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIAssistantRequest'
+      responses:
+        '200':
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAssistantResponse'
+  /api/ai/analyze-image:
+    post:
+      summary: Analyze an uploaded image using AI vision capabilities
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                image_data:
+                  type: string
+      responses:
+        '200':
+          description: Image analysis results
+  /api/support/tickets:
+    get:
+      summary: Get all support tickets for current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of support tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupportTicketResponse'
+    post:
+      summary: Create a new support ticket
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportTicketCreate'
+      responses:
+        '200':
+          description: Support ticket created successfully
+  /api/support/tickets/{ticket_id}:
+    get:
+      summary: Get a specific support ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Support ticket details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketResponse'
+    put:
+      summary: Update a support ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportTicketUpdate'
+      responses:
+        '200':
+          description: Support ticket updated successfully
+    delete:
+      summary: Delete a support ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Support ticket deleted successfully
+components:
+  schemas:
+    FederatedUpdate:
+      type: object
+      properties:
+        device_id:
+          type: string
+        model_gradients:
+          type: object
+        num_samples:
+          type: integer
+        timestamp:
+          type: string
+    ModelVersion:
+      type: object
+      properties:
+        version_id:
+          type: string
+        model_data:
+          type: string
+          format: binary
+        created_at:
+          type: string
+        description:
+          type: string
+    AnalyticsResponse:
+      type: object
+      properties:
+        time_series:
+          type: array
+          items:
+            type: object
+        bias_trends:
+          type: array
+          items:
+            type: object
+        device_stats:
+          type: array
+          items:
+            type: object
+    # SaaS Schemas
+    UserCreate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        subscription_tier:
+          type: string
+          default: free
+    UserResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        subscription_tier:
+          type: string
+        created_at:
+          type: string
+    PlanResponse:
+      type: object
+      properties:
+        plan_id:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+        features:
+          type: array
+          items:
+            type: string
+        limits:
+          type: object
+    SubscriptionCreate:
+      type: object
+      properties:
+        plan_id:
+          type: string
+    SubscriptionResponse:
+      type: object
+      properties:
+        subscription_id:
+          type: string
+        user_id:
+          type: string
+        plan_id:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+        expires_at:
+          type: string
+    PaymentCreate:
+      type: object
+      properties:
+        plan_id:
+          type: string
+        amount:
+          type: number
+    PaymentResponse:
+      type: object
+      properties:
+        payment_id:
+          type: string
+        user_id:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+        stripe_payment_id:
+          type: string
+        created_at:
+          type: string
+    UsageResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+        period_start:
+          type: string
+        period_end:
+          type: string
+        recognitions_used:
+          type: integer
+        enrollments_used:
+          type: integer
+        recognitions_limit:
+          type: integer
+        enrollments_limit:
+          type: integer
+    AIAssistantRequest:
+      type: object
+      properties:
+        query:
+          type: string
+    AIAssistantResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        response:
+          type: string
+        model_used:
+          type: string
+    SupportTicketCreate:
+      type: object
+      properties:
+        subject:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          default: medium
+    SupportTicketUpdate:
+      type: object
+      properties:
+        description:
+          type: string
+        priority:
+          type: string
+    SupportTicketResponse:
+      type: object
+      properties:
+        ticket_id:
+          type: string
+        user_id:
+          type: string
+        subject:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

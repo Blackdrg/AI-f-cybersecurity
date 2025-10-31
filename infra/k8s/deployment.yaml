@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: face-recognition-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: face-recognition-backend
+  template:
+    metadata:
+      labels:
+        app: face-recognition-backend
+    spec:
+      containers:
+      - name: backend
+        image: face-recognition-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_PORT
+          value: "5432"
+        - name: JWT_SECRET
+          value: "secret"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: face-recognition-backend
+spec:
+  selector:
+    app: face-recognition-backend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+# Add similar for UI, Postgres, etc.
