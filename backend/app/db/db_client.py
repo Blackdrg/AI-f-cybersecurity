@@ -57,7 +57,8 @@ class DBClient:
                 'edge_devices': {},
                 'consents': {},
                 'enrichment_results': {},
-                'audit_logs': []
+                'audit_logs': [],
+                'users': {}  # Added users table for in-memory
             }
 
     async def _create_tables(self):
@@ -198,6 +199,17 @@ class DBClient:
                 );
             """)
 
+            # Users table for SaaS
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id UUID PRIMARY KEY,
+                    email TEXT UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
+                    subscription_tier TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+            """)
+
     def _init_kms(self):
         # Initialize AWS KMS client
         if BOTO3_AVAILABLE:
@@ -246,6 +258,62 @@ class DBClient:
         else:
             # Fallback: no decryption
             return np.frombuffer(encrypted_data, dtype=np.float32)
+
+    async def execute(self, query: str, params: tuple = None):
+        if self.pool is None:
+            # In-memory implementation - basic support for users table
+            if 'INSERT INTO users' in query:
+                user_id = params[0]
+                email = params[1]
+                name = params[2]
+                subscription_tier = params[3]
+                created_at = params[4]
+                if 'users' not in self._in_memory_db:
+                    self._in_memory_db['users'] = {}
+                self._in_memory_db['users'][user_id] = {
+                    'user_id': user_id,
+                    'email': email,
+                    'name': name,
+                    'subscription_tier': subscription_tier,
+                    'created_at': created_at
+                }
+            elif 'UPDATE users' in query:
+                email = params[0]
+                name = params[1]
+                subscription_tier = params[2]
+                user_id = params[3]
+                if user_id in self._in_memory_db.get('users', {}):
+                    self._in_memory_db['users'][user_id].update({
+                        'email': email,
+                        'name': name,
+                        'subscription_tier': subscription_tier
+                    })
+            elif 'DELETE FROM users' in query:
+                user_id = params[0]
+                if 'users' in self._in_memory_db and user_id in self._in_memory_db['users']:
+                    del self._in_memory_db['users'][user_id]
+            # For other queries, do nothing
+            return None
+        else:
+            async with self.pool.acquire() as conn:
+                if params:
+                    await conn.execute(query, *params)
+                else:
+                    await conn.execute(query)
+
+    async def fetch_one(self, query: str, params: tuple = None):
+        if self.pool is None:
+            # In-memory implementation
+            if 'SELECT * FROM users WHERE user_id = ?' in query:
+                user_id = params[0]
+                return self._in_memory_db.get('users', {}).get(user_id)
+            return None
+        else:
+            async with self.pool.acquire() as conn:
+                if params:
+                    return await conn.fetchrow(query, *params)
+                else:
+                    return await conn.fetchrow(query)
 
     async def enroll_person(self, person_id: str, name: str, embeddings: List[np.ndarray], consent_record: Dict[str, Any], camera_id: str = None, voice_embeddings: List[np.ndarray] = None, gait_embedding: np.ndarray = None, age: int = None, gender: str = None) -> str:
         if self.pool is None:
