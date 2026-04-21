@@ -13,6 +13,11 @@ backend/tests/__pycache__/
 backend/alembic/__pycache__/
 ui/react-app/node_modules/
 
+# Cache
+.cache/
+ui/react-app/node_modules/.cache/
+__pycache__/
+
 # Environment
 .env
 backend/.env
