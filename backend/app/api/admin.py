@@ -48,36 +48,45 @@ async def rebuild_index(user: dict = Depends(require_admin)):
 async def get_metrics(user: dict = Depends(require_admin)):
     # Aggregate metrics; in production, query Prometheus
     return MetricsResponse(
-        recognition_count=recognition_count._value,
-        enroll_count=enroll_count._value,
-        avg_latency_ms=recognition_latency._sum /
-        recognition_latency._count if recognition_latency._count > 0 else 0,
-        false_accepts=false_accepts._value,
-        false_rejects=false_rejects._value,
-        index_size=index_size._value
+        recognition_count=int(recognition_count._value.get()),
+        enroll_count=int(enroll_count._value.get()),
+        avg_latency_ms=recognition_latency._sum.get() / recognition_latency._count.get() if recognition_latency._count.get() > 0 else 0,
+        false_accepts=int(false_accepts._value.get()),
+        false_rejects=int(false_rejects._value.get()),
+        index_size=int(index_size._value.get())
     )
 
 
 @router.post("/consent_vault")
-async def manage_consent_vault(request: ConsentVaultRequest, user=Depends(require_auth), db=Depends(get_db)):
+async def manage_consent_vault(request: ConsentVaultRequest, user=Depends(require_auth)):
+    db = await get_db()
     user_id = user['user_id']
     if request.action == 'grant':
-        await db.execute("INSERT INTO consent_vault (user_id, biometric_type, granted) VALUES ($1, $2, TRUE) ON CONFLICT (user_id, biometric_type) DO UPDATE SET granted = TRUE", user_id, request.biometric_type)
+        async with db.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO consent_vault (user_id, biometric_type, granted) 
+                VALUES ($1, $2, TRUE)
+                ON CONFLICT (user_id, biometric_type) DO UPDATE SET granted = TRUE
+            """, user_id, request.biometric_type)
         return {"message": "Consent granted"}
     elif request.action == 'revoke':
-        await db.execute("UPDATE consent_vault SET granted = FALSE WHERE user_id = $1 AND biometric_type = $2", user_id, request.biometric_type)
+        async with db.pool.acquire() as conn:
+            await conn.execute("UPDATE consent_vault SET granted = FALSE WHERE user_id = $1 AND biometric_type = $2", user_id, request.biometric_type)
         return {"message": "Consent revoked"}
     elif request.action == 'view':
-        consents = await db.fetch("SELECT biometric_type, granted FROM consent_vault WHERE user_id = $1", user_id)
-        return {"consents": consents}
+        async with db.pool.acquire() as conn:
+            rows = await conn.fetch("SELECT biometric_type, granted FROM consent_vault WHERE user_id = $1", user_id)
+        return {"consents": [dict(row) for row in rows]}
     else:
         raise HTTPException(status_code=400, detail="Invalid action")
 
 
 @router.get("/bias_report", response_model=BiasReport)
-async def get_bias_report(user=Depends(require_operator), db=Depends(get_db)):
-    # Fetch recent recognitions for bias analysis
-    recent_recognitions = await db.fetch("SELECT * FROM audit_log WHERE action = 'recognize' ORDER BY timestamp DESC LIMIT 1000")
+async def get_bias_report(user=Depends(require_operator)):
+    db = await get_db()
+    async with db.pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM audit_log WHERE action = 'recognize' ORDER BY timestamp DESC LIMIT 1000")
+        recent_recognitions = [dict(row) for row in rows]
     bias_detector = BiasDetector()
     bias_metrics = bias_detector.detect_bias(recent_recognitions)
     return BiasReport(**bias_metrics)
@@ -108,20 +117,27 @@ async def get_logs(
     user: dict = Depends(require_admin)
 ):
     db = await get_db()
-    query = "SELECT timestamp, action, person_id, details FROM audit_log WHERE 1=1"
+    base_query = "SELECT timestamp, action, person_id, details FROM audit_log"
+    conditions = []
     params = []
+    
     if start_date:
-        query += " AND DATE(timestamp) >= $1"
+        conditions.append(f"DATE(timestamp) >= ${len(params)+1}")
         params.append(start_date)
     if end_date:
-        query += f" AND DATE(timestamp) <= ${len(params)+1}"
+        conditions.append(f"DATE(timestamp) <= ${len(params)+1}")
         params.append(end_date)
     if action:
-        query += f" AND action = ${len(params)+1}"
+        conditions.append(f"action = ${len(params)+1}")
         params.append(action)
-    query += f" ORDER BY timestamp DESC LIMIT ${len(params)+1}"
+    
+    if conditions:
+        base_query += " WHERE " + " AND ".join(conditions)
+    base_query += f" ORDER BY timestamp DESC LIMIT ${len(params)+1}"
     params.append(limit)
-    rows = await db.fetch(query, *params)
+    
+    async with db.pool.acquire() as conn:
+        rows = await conn.fetch(base_query, *params)
     logs = [LogEntry(timestamp=str(row['timestamp']), action=row['action'],
                      person_id=row['person_id'], details=row['details']) for row in rows]
     return LogsResponse(logs=logs)
@@ -131,21 +147,22 @@ async def get_logs(
 async def upload_model(model: ModelVersion, user: dict = Depends(require_admin)):
     db = await get_db()
     version_id = model.version_id
-    await db.execute("""
-        INSERT INTO model_versions (version_id, model_data, description)
-        VALUES ($1, $2, $3)
-    """, version_id, model.model_data, model.description)
+    async with db.pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO model_versions (version_id, model_data, description)
+            VALUES ($1, $2, $3)
+        """, version_id, model.model_data, model.description)
     return {"message": "Model uploaded", "version_id": version_id}
 
 
 @router.get("/models/download")
 async def download_model(request: OTADownload, user: dict = Depends(require_admin)):
     db = await get_db()
-    model = await db.fetchrow("SELECT model_data FROM model_versions WHERE version_id = $1", request.model_version)
-    if not model:
-        raise HTTPException(status_code=404, detail="Model version not found")
-    # Update device status
-    await db.execute("UPDATE edge_devices SET model_version = $1 WHERE device_id = $2", request.model_version, request.device_id)
+    async with db.pool.acquire() as conn:
+        model = await conn.fetchrow("SELECT model_data FROM model_versions WHERE version_id = $1", request.model_version)
+        if not model:
+            raise HTTPException(status_code=404, detail="Model version not found")
+        await conn.execute("UPDATE edge_devices SET model_version = $1 WHERE device_id = $2", request.model_version, request.device_id)
     return {"model_data": model['model_data'].hex()}
 
 

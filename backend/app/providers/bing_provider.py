@@ -71,3 +71,18 @@ class BingProvider(BaseProvider):
             confidence += 0.2
 
         return min(confidence, 1.0)
+
+    async def get_health_status(self) -> str:
+        if not self.api_key:
+            return "unconfigured"
+        try:
+            # Simple check by making a minimal request
+            headers = {"Ocp-Apim-Subscription-Key": self.api_key}
+            params = {"q": "test", "count": 1}
+            async with aiohttp.ClientSession() as session:
+                async with session.get(self.base_url, headers=headers, params=params) as response:
+                    if response.status == 200:
+                        return "healthy"
+                    return "degraded"
+        except Exception:
+            return "unhealthy"

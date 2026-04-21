@@ -1,8 +1,6 @@
 import grpc
 from concurrent import futures
 import asyncio
-from .face_recognition_pb2_grpc import FaceRecognitionServiceServicer, add_FaceRecognitionServiceServicer_to_server
-from .face_recognition_pb2 import *
 from ..db.db_client import get_db
 from ..models.face_detector import FaceDetector
 from ..models.face_embedder import FaceEmbedder
@@ -13,6 +11,16 @@ import numpy as np
 import time
 import tempfile
 import os
+
+# Try to import protobuf generated code, fallback if not available
+try:
+    from .face_recognition_pb2_grpc import FaceRecognitionServiceServicer, add_FaceRecognitionServiceServicer_to_server
+    from .face_recognition_pb2 import *
+    PROTO_AVAILABLE = True
+except ImportError:
+    # Mock class for when protobuf not generated
+    PROTO_AVAILABLE = False
+    FaceRecognitionServiceServicer = object
 
 
 class FaceRecognitionServicer(FaceRecognitionServiceServicer):
@@ -151,13 +159,21 @@ class FaceRecognitionServicer(FaceRecognitionServiceServicer):
 
 
 async def serve_grpc():
-    server = grpc.aio.server()
-    add_FaceRecognitionServiceServicer_to_server(
-        FaceRecognitionServicer(), server)
-    server.add_insecure_port('[::]:50051')
-    await server.start()
-    print("gRPC server started on port 50051")
-    await server.wait_for_termination()
+    if not PROTO_AVAILABLE:
+        print("gRPC protobuf not available, skipping gRPC server")
+        return
+    
+    try:
+        server = grpc.aio.server()
+        add_FaceRecognitionServiceServicer_to_server(
+            FaceRecognitionServicer(), server)
+        server.add_insecure_port('[::]:50051')
+        await server.start()
+        print("gRPC server started on port 50051")
+        await server.wait_for_termination()
+    except Exception as e:
+        print(f"gRPC server error: {e}")
+        pass
 
 
 if __name__ == '__main__':

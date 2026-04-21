@@ -57,8 +57,7 @@ class DBClient:
                 'edge_devices': {},
                 'consents': {},
                 'enrichment_results': {},
-                'audit_logs': [],
-                'users': {}  # Added users table for in-memory
+                'audit_logs': []
             }
 
     async def _create_tables(self):
@@ -70,6 +69,7 @@ class DBClient:
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS persons (
                     person_id UUID PRIMARY KEY,
+                    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
                     name TEXT,
                     age INTEGER,
                     gender TEXT,
@@ -199,14 +199,160 @@ class DBClient:
                 );
             """)
 
-            # Users table for SaaS
+            # B2B - Organizations, Teams, Members, API Keys
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS organizations (
+                    org_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name TEXT NOT NULL,
+                    subscription_tier TEXT DEFAULT 'free',
+                    billing_email TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS org_members (
+                    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
+                    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE,
+                    role TEXT DEFAULT 'viewer',
+                    joined_at TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (org_id, user_id)
+                );
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS api_keys (
+                    key_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
+                    api_key TEXT UNIQUE NOT NULL,
+                    name TEXT,
+                    scopes JSONB,
+                    last_used TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
+            # Camera & Stream Management
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS cameras (
+                    camera_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
+                    name TEXT NOT NULL,
+                    rtsp_url TEXT,
+                    location TEXT,
+                    status TEXT DEFAULT 'offline',
+                    metadata JSONB,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
+            # Recognition Events (Timeline & Analytics)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS recognition_events (
+                    event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
+                    camera_id UUID REFERENCES cameras(camera_id),
+                    person_id UUID REFERENCES persons(person_id),
+                    confidence_score FLOAT,
+                    image_path TEXT,
+                    metadata JSONB,
+                    timestamp TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
+            # Rule Engine & Alerts
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS alert_rules (
+                    rule_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
+                    name TEXT NOT NULL,
+                    condition JSONB,
+                    actions JSONB,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS alerts (
+                    alert_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    rule_id UUID REFERENCES alert_rules(rule_id) ON DELETE CASCADE,
+                    event_id UUID REFERENCES recognition_events(event_id),
+                    status TEXT DEFAULT 'new',
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
+            # SaaS - Users, Plans, Subscriptions, Payments, Usage, Support
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS users (
-                    user_id UUID PRIMARY KEY,
-                    email TEXT UNIQUE NOT NULL,
-                    name TEXT NOT NULL,
-                    subscription_tier TEXT NOT NULL,
-                    created_at TEXT NOT NULL
+                    user_id TEXT PRIMARY KEY,
+                    email TEXT UNIQUE,
+                    name TEXT,
+                    full_name TEXT,
+                    hashed_password TEXT,
+                    subscription_tier TEXT DEFAULT 'free',
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS plans (
+                    plan_id TEXT PRIMARY KEY,
+                    name TEXT,
+                    price FLOAT,
+                    currency TEXT,
+                    interval TEXT,
+                    features JSONB,
+                    limits JSONB
+                );
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS subscriptions (
+                    subscription_id TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(user_id),
+                    plan_id TEXT REFERENCES plans(plan_id),
+                    status TEXT,
+                    current_period_end TIMESTAMP,
+                    expires_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS payments (
+                    payment_id TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(user_id),
+                    amount FLOAT,
+                    currency TEXT,
+                    status TEXT,
+                    stripe_payment_id TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS usage (
+                    user_id TEXT REFERENCES users(user_id),
+                    period_start TIMESTAMP,
+                    period_end TIMESTAMP,
+                    recognitions_used INTEGER DEFAULT 0,
+                    enrollments_used INTEGER DEFAULT 0,
+                    PRIMARY KEY (user_id, period_start, period_end)
+                );
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS support_tickets (
+                    ticket_id TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(user_id),
+                    subject TEXT,
+                    description TEXT,
+                    priority TEXT,
+                    status TEXT,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
                 );
             """)
 
@@ -258,62 +404,6 @@ class DBClient:
         else:
             # Fallback: no decryption
             return np.frombuffer(encrypted_data, dtype=np.float32)
-
-    async def execute(self, query: str, params: tuple = None):
-        if self.pool is None:
-            # In-memory implementation - basic support for users table
-            if 'INSERT INTO users' in query:
-                user_id = params[0]
-                email = params[1]
-                name = params[2]
-                subscription_tier = params[3]
-                created_at = params[4]
-                if 'users' not in self._in_memory_db:
-                    self._in_memory_db['users'] = {}
-                self._in_memory_db['users'][user_id] = {
-                    'user_id': user_id,
-                    'email': email,
-                    'name': name,
-                    'subscription_tier': subscription_tier,
-                    'created_at': created_at
-                }
-            elif 'UPDATE users' in query:
-                email = params[0]
-                name = params[1]
-                subscription_tier = params[2]
-                user_id = params[3]
-                if user_id in self._in_memory_db.get('users', {}):
-                    self._in_memory_db['users'][user_id].update({
-                        'email': email,
-                        'name': name,
-                        'subscription_tier': subscription_tier
-                    })
-            elif 'DELETE FROM users' in query:
-                user_id = params[0]
-                if 'users' in self._in_memory_db and user_id in self._in_memory_db['users']:
-                    del self._in_memory_db['users'][user_id]
-            # For other queries, do nothing
-            return None
-        else:
-            async with self.pool.acquire() as conn:
-                if params:
-                    await conn.execute(query, *params)
-                else:
-                    await conn.execute(query)
-
-    async def fetch_one(self, query: str, params: tuple = None):
-        if self.pool is None:
-            # In-memory implementation
-            if 'SELECT * FROM users WHERE user_id = ?' in query:
-                user_id = params[0]
-                return self._in_memory_db.get('users', {}).get(user_id)
-            return None
-        else:
-            async with self.pool.acquire() as conn:
-                if params:
-                    return await conn.fetchrow(query, *params)
-                else:
-                    return await conn.fetchrow(query)
 
     async def enroll_person(self, person_id: str, name: str, embeddings: List[np.ndarray], consent_record: Dict[str, Any], camera_id: str = None, voice_embeddings: List[np.ndarray] = None, gait_embedding: np.ndarray = None, age: int = None, gender: str = None) -> str:
         if self.pool is None:
@@ -607,19 +697,298 @@ class DBClient:
             await self.log_audit("delete_result", "admin", enrich_id, [], {})
             return True
 
+    # SaaS Database Methods
+    async def create_user(self, user_id: str, email: str, name: str, subscription_tier: str = "free") -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO users (user_id, email, name, subscription_tier, created_at)
+                VALUES ($1, $2, $3, $4, NOW())
+            """, user_id, email, name, subscription_tier)
+        return True
 
-async def init_db():
-    db = DBClient()
-    await db.init_db()
-    return db
+    async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT * FROM users WHERE user_id = $1", user_id)
+            return dict(row) if row else None
+
+    async def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT * FROM users WHERE email = $1", email)
+            return dict(row) if row else None
+
+    async def update_user(self, user_id: str, email: str, name: str, subscription_tier: str) -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                UPDATE users SET email = $1, name = $2, subscription_tier = $3 WHERE user_id = $4
+            """, email, name, subscription_tier, user_id)
+        return True
+
+    async def delete_user(self, user_id: str) -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute("DELETE FROM users WHERE user_id = $1", user_id)
+        return True
+
+    # Plans
+    async def get_all_plans(self) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("SELECT * FROM plans ORDER BY price")
+            return [dict(row) for row in rows]
+
+    async def get_plan_by_id(self, plan_id: str) -> Optional[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT * FROM plans WHERE plan_id = $1", plan_id)
+            return dict(row) if row else None
+
+    # Subscriptions
+    async def create_subscription(self, subscription_id: str, user_id: str, plan_id: str, status: str = "active", expires_at: Optional[datetime] = None) -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO subscriptions (subscription_id, user_id, plan_id, status, created_at, expires_at)
+                VALUES ($1, $2, $3, $4, NOW(), $5)
+            """, subscription_id, user_id, plan_id, status, expires_at)
+        return True
+
+    async def get_subscription(self, user_id: str) -> Optional[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("""
+                SELECT * FROM subscriptions 
+                WHERE user_id = $1 AND status = 'active' 
+                ORDER BY created_at DESC LIMIT 1
+            """, user_id)
+            return dict(row) if row else None
+
+    async def cancel_subscription(self, subscription_id: str) -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                UPDATE subscriptions SET status = 'cancelled' WHERE subscription_id = $1
+            """, subscription_id)
+        return True
+
+    async def get_subscription_history(self, user_id: str) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT * FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC
+            """, user_id)
+            return [dict(row) for row in rows]
+
+    # Payments
+    async def create_payment(self, payment_id: str, user_id: str, amount: float, currency: str = "USD", status: str = "pending", stripe_payment_id: Optional[str] = None) -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO payments (payment_id, user_id, amount, currency, status, stripe_payment_id, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW())
+            """, payment_id, user_id, amount, currency, status, stripe_payment_id)
+        return True
+
+    async def get_payment_history(self, user_id: str) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT * FROM payments WHERE user_id = $1 ORDER BY created_at DESC
+            """, user_id)
+            return [dict(row) for row in rows]
+
+    # Usage
+    async def get_usage(self, user_id: str) -> Optional[Dict[str, Any]]:
+        now = datetime.utcnow()
+        period_start = now.replace(day=1)
+        if now.month == 12:
+            period_end = now.replace(year=now.year + 1, month=1, day=1)
+        else:
+            period_end = now.replace(month=now.month + 1, day=1)
+        
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("""
+                SELECT * FROM usage 
+                WHERE user_id = $1 AND period_start = $2 AND period_end = $3
+            """, user_id, period_start, period_end)
+            if row:
+                return dict(row)
+            
+            # Get user's plan limits
+            sub = await self.get_subscription(user_id)
+            if sub:
+                plan = await self.get_plan_by_id(sub['plan_id'])
+                if plan and plan.get('limits'):
+                    return {
+                        'user_id': user_id,
+                        'period_start': period_start,
+                        'period_end': period_end,
+                        'recognitions_used': 0,
+                        'enrollments_used': 0,
+                        'recognitions_limit': plan['limits'].get('recognitions', 100),
+                        'enrollments_limit': plan['limits'].get('enrollments', 10)
+                    }
+            
+            return {
+                'user_id': user_id,
+                'period_start': period_start,
+                'period_end': period_end,
+                'recognitions_used': 0,
+                'enrollments_used': 0,
+                'recognitions_limit': 100,
+                'enrollments_limit': 10
+            }
+
+    async def increment_usage(self, user_id: str, recognition: int = 0, enrollment: int = 0) -> bool:
+        usage = await self.get_usage(user_id)
+        if not usage:
+            return False
+            
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                UPDATE usage SET 
+                    recognitions_used = recognitions_used + $1,
+                    enrollments_used = enrollments_used + $2
+                WHERE user_id = $3 AND period_start = $4 AND period_end = $5
+            """, recognition, enrollment, user_id, usage['period_start'], usage['period_end'])
+        return True
+
+    # Support Tickets
+    async def create_ticket(self, ticket_id: str, user_id: str, subject: str, description: str, priority: str = "medium") -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO support_tickets (ticket_id, user_id, subject, description, priority, status, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, 'open', NOW(), NOW())
+            """, ticket_id, user_id, subject, description, priority)
+        return True
+
+    async def get_tickets(self, user_id: str) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT * FROM support_tickets WHERE user_id = $1 ORDER BY created_at DESC
+            """, user_id)
+            return [dict(row) for row in rows]
+
+    async def get_ticket(self, ticket_id: str) -> Optional[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT * FROM support_tickets WHERE ticket_id = $1", ticket_id)
+            return dict(row) if row else None
+
+    # B2B & Org Methods
+    async def create_organization(self, name: str, billing_email: str) -> str:
+        async with self.pool.acquire() as conn:
+            org_id = str(uuid.uuid4())
+            await conn.execute("""
+                INSERT INTO organizations (org_id, name, billing_email)
+                VALUES ($1, $2, $3)
+            """, org_id, name, billing_email)
+            return org_id
+
+    async def add_org_member(self, org_id: str, user_id: str, role: str = 'viewer') -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO org_members (org_id, user_id, role)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (org_id, user_id) DO UPDATE SET role = $3
+            """, org_id, user_id, role)
+            return True
+
+    async def get_user_orgs(self, user_id: str) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT o.*, m.role 
+                FROM organizations o
+                JOIN org_members m ON o.org_id = m.org_id
+                WHERE m.user_id = $1
+            """, user_id)
+            return [dict(row) for row in rows]
+
+    # API Keys
+    async def create_api_key(self, org_id: str, name: str, scopes: List[str]) -> str:
+        import secrets
+        api_key = f"fr_{secrets.token_urlsafe(32)}"
+        async with self.pool.acquire() as conn:
+            key_id = str(uuid.uuid4())
+            await conn.execute("""
+                INSERT INTO api_keys (key_id, org_id, api_key, name, scopes)
+                VALUES ($1, $2, $3, $4, $5)
+            """, key_id, org_id, api_key, name, scopes)
+            return api_key
+
+    async def validate_api_key(self, api_key: str) -> Optional[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("""
+                SELECT k.*, o.name as org_name, o.subscription_tier
+                FROM api_keys k
+                JOIN organizations o ON k.org_id = o.org_id
+                WHERE k.api_key = $1
+            """, api_key)
+            if row:
+                await conn.execute("UPDATE api_keys SET last_used = NOW() WHERE api_key = $1", api_key)
+                return dict(row)
+            return None
+
+    # Camera Management
+    async def add_camera(self, org_id: str, name: str, rtsp_url: str = None, location: str = None) -> str:
+        async with self.pool.acquire() as conn:
+            camera_id = str(uuid.uuid4())
+            await conn.execute("""
+                INSERT INTO cameras (camera_id, org_id, name, rtsp_url, location)
+                VALUES ($1, $2, $3, $4, $5)
+            """, camera_id, org_id, name, rtsp_url, location)
+            return camera_id
+
+    async def get_org_cameras(self, org_id: str) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("SELECT * FROM cameras WHERE org_id = $1", org_id)
+            return [dict(row) for row in rows]
+
+    # Recognition Events & Timeline
+    async def log_recognition_event(self, org_id: str, person_id: Optional[str], camera_id: Optional[str], confidence: float, metadata: Dict[str, Any] = None) -> str:
+        async with self.pool.acquire() as conn:
+            event_id = str(uuid.uuid4())
+            await conn.execute("""
+                INSERT INTO recognition_events (event_id, org_id, person_id, camera_id, confidence_score, metadata)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            """, event_id, org_id, person_id, camera_id, confidence, metadata)
+            return event_id
+
+    async def get_person_timeline(self, person_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT e.*, c.name as camera_name, c.location as camera_location
+                FROM recognition_events e
+                LEFT JOIN cameras c ON e.camera_id = c.camera_id
+                WHERE e.person_id = $1
+                ORDER BY e.timestamp DESC
+                LIMIT $2
+            """, person_id, limit)
+            return [dict(row) for row in rows]
+
+    async def get_org_events(self, org_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT e.*, p.name as person_name, c.name as camera_name
+                FROM recognition_events e
+                LEFT JOIN persons p ON e.person_id = p.person_id
+                LEFT JOIN cameras c ON e.camera_id = c.camera_id
+                WHERE e.org_id = $1
+                ORDER BY e.timestamp DESC
+                LIMIT $2
+            """, org_id, limit)
+            return [dict(row) for row in rows]
+
+    async def update_ticket(self, ticket_id: str, description: Optional[str] = None, priority: Optional[str] = None) -> bool:
+        async with self.pool.acquire() as conn:
+            if description:
+                await conn.execute("UPDATE support_tickets SET description = $1, updated_at = NOW() WHERE ticket_id = $2", description, ticket_id)
+            if priority:
+                await conn.execute("UPDATE support_tickets SET priority = $1, updated_at = NOW() WHERE ticket_id = $2", priority, ticket_id)
+        return True
+
+    async def delete_ticket(self, ticket_id: str) -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute("DELETE FROM support_tickets WHERE ticket_id = $1", ticket_id)
+        return True
+
 
 # Global instance
-db_client = None
+_db_client = None
 
 
 async def get_db():
-    global db_client
-    if db_client is None:
-        db_client = DBClient()
-        await db_client.init_db()
-    return db_client
+    global _db_client
+    if _db_client is None:
+        _db_client = DBClient()
+        await _db_client.init_db()
+    return _db_client

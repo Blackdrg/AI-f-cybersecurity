@@ -21,7 +21,7 @@ const AIAssistant = () => {
         setConversation(prev => [...prev, userMessage]);
 
         try {
-            const response = await axios.post('/api/ai-assistant', { query });
+            const response = await axios.post('/api/ai/assistant', { query });
             const aiMessage = {
                 role: 'assistant',
                 content: response.data.response,

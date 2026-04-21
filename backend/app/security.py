@@ -47,6 +47,34 @@ def require_auth(user: dict = Depends(verify_token)):
     return user
 
 
+async def require_org_member(org_id: str, user: dict = Depends(verify_token)):
+    """Check if user is a member of the specified organization."""
+    from .db.db_client import get_db
+    db = await get_db()
+    orgs = await db.get_user_orgs(user["user_id"])
+    for org in orgs:
+        if str(org["org_id"]) == org_id:
+            user["org_role"] = org["role"]
+            return user
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member of this organization")
+
+
+async def require_org_admin(org_id: str, user: dict = Depends(verify_token)):
+    """Check if user is an admin of the specified organization."""
+    user = await require_org_member(org_id, user)
+    if user["org_role"] != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organization admin access required")
+    return user
+
+
+async def require_org_operator(org_id: str, user: dict = Depends(verify_token)):
+    """Check if user is an operator or admin of the specified organization."""
+    user = await require_org_member(org_id, user)
+    if user["org_role"] not in ["admin", "operator"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organization operator access required")
+    return user
+
+
 def get_current_user(user: dict = Depends(verify_token)):
     """Get current authenticated user - alias for require_auth for SaaS features."""
     return user

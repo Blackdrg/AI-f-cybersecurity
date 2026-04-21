@@ -1,0 +1,432 @@
+import numpy as np
+from typing import List, Dict, Any, Optional, Tuple
+from dataclasses import dataclass, field
+from datetime import datetime
+import threading
+import queue
+import time
+import asyncio
+
+
+try:
+    import faiss
+    import numpy as np
+    FAISS_AVAILABLE = True
+except ImportError:
+    FAISS_AVAILABLE = False
+    np = None
+
+
+@dataclass
+class HybridResult:
+    """Result from hybrid search (pgvector + ANN)."""
+    person_id: str
+    score: float
+    source: str  # 'vector_db', 'ann_index', 'cache'
+    metadata: Dict = field(default_factory=dict)
+
+
+@dataclass
+class IndexMetrics:
+    """Metrics for index performance."""
+    total_vectors: int = 0
+    search_time_ms: float = 0.0
+    recall_at_1: float = 0.0
+    recall_at_10: float = 0.0
+    index_type: str = ""
+
+
+class HNSWIndex:
+    """FAISS HNSW index for ANN search."""
+    
+    def __init__(self, dimension: int = 512, ef_search: int = 128, ef_construction: int = 200):
+        self.dimension = dimension
+        self.ef_search = ef_search
+        self.ef_construction = ef_construction
+        self.index = None
+        self.id_mapping: Dict[int, str] = {}
+        self_reverse_mapping: Dict[str, int] = {}
+        self._build_index()
+    
+    def _build_index(self):
+        """Build HNSW index."""
+        if not FAISS_AVAILABLE:
+            return
+            
+        # HNSW - excellent for real-time search
+        self.index = faiss.IndexHNSWFlat(self.dimension, 32)
+        self.index.hnsw.efSearch = self.ef_search
+        self.index.hnsw.efConstruction = self.ef_construction
+    
+    def add_vectors(self, vectors: np.ndarray, person_ids: List[str]) -> None:
+        """Add vectors to index."""
+        if not FAISS_AVAILABLE or self.index is None:
+            return
+            
+        vectors = np.ascontiguousarray(vectors.astype(np.float32))
+        
+        for i, pid in enumerate(person_ids):
+            idx = len(self.id_mapping)
+            self.id_mapping[idx] = pid
+            self.reverse_mapping[pid] = idx
+        
+        self.index.add(vectors)
+    
+    def search(
+        self, 
+        query: np.ndarray, 
+        k: int = 10
+    ) -> Tuple[List[str], List[float]]:
+        """Search index."""
+        if not FAISS_AVAILABLE or self.index is None:
+            return [], []
+        
+        query = np.ascontiguousarray(query.reshape(1, -1).astype(np.float32))
+        
+        distances, indices = self.index.search(query, k)
+        
+        person_ids = []
+        scores = []
+        
+        for dist, idx in zip(distances[0], indices[0]):
+            if idx >= 0 and idx in self.id_mapping:
+                person_ids.append(self.id_mapping[idx])
+                # Convert distance to similarity score
+                scores.append(1.0 / (1.0 + dist))
+        
+        return person_ids, scores
+    
+    def remove_vectors(self, person_ids: List[str]) -> int:
+        """Mark vectors as deleted (HNSW doesn't support true deletion efficiently)."""
+        count = 0
+        for pid in person_ids:
+            if pid in self.reverse_mapping:
+                del self.id_mapping[self.reverse_mapping[pid]]
+                del self.reverse_mapping[pid]
+                count += 1
+        return count
+
+
+class PGVectorBackup:
+    """Fallback to pgvector for large-scale storage."""
+    
+    def __init__(self, db_pool):
+        self.pool = db_pool
+    
+    async def search(
+        self,
+        query_embedding: np.ndarray,
+        k: int = 10,
+        threshold: float = 0.4
+    ) -> List[Dict]:
+        """Search using pgvector."""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT person_id, 1 / (1 + distance) as score
+                FROM embeddings
+                ORDER BY embedding <=> $1
+                LIMIT $2
+            """, query_embedding.tobytes(), k)
+            
+            return [
+                {"person_id": row["person_id"], "score": float(row["score"])}
+                for row in rows
+                if row["score"] >= threshold
+            ]
+
+
+class LRUEmbeddingCache:
+    """LRU cache for frequently accessed embeddings."""
+    
+    def __init__(self, max_size: int = 10000):
+        self.max_size = max_size
+        self.cache: Dict[str, np.ndarray] = {}
+        self.access_order: List[str] = []
+        self.lock = threading.Lock()
+    
+    def get(self, person_id: str) -> Optional[np.ndarray]:
+        """Get cached embedding."""
+with self.lock:
+            if person_id in self.cache:
+                # Move to end (most recently used)
+                self.access_order.remove(person_id)
+                self.access_order.append(person_id)
+                return self.cache[person_id].copy()
+        return None
+    
+    def put(self, person_id: str, embedding: np.ndarray) -> None:
+        """Cache embedding."""
+        with self.lock:
+            if len(self.cache) >= self.max_size:
+                # Evict least recently used
+                lru = self.access_order.pop(0)
+                del self.cache[lru]
+            
+            self.cache[person_id] = embedding.copy()
+            self.access_order.append(person_id)
+    
+    def invalidate(self, person_id: str) -> None:
+        """Invalidate cached embedding."""
+        with self.lock:
+            self.cache.pop(person_id, None)
+            if person_id in self.access_order:
+                self.access_order.remove(person_id)
+
+
+class HybridSearchEngine:
+    """Hybrid search: ANN (FAISS) + pgvector + cache."""
+    
+    def __init__(self, db_pool=None, num_shards: int = 4):
+        self.dimension = 512
+        self.db_pool = db_pool
+        self.lru_cache = LRUEmbeddingCache()
+        
+        # Initialize ANN indexes
+        self.hnsw_indexes: List[HNSWIndex] = []
+        self.num_shards = num_shards
+        self._init_indexes()
+        
+        # Load balancing
+        self.current_shard = 0
+        self.shard_lock = threading.Lock()
+        
+        # Metrics
+        self.search_times: List[float] = []
+        self.cache_hits = 0
+        self.cache_misses = 0
+        
+        # Batch processing
+        self.batch_queue = queue.Queue()
+        self.batch_size = 32
+    
+    def _init_indexes(self):
+        """Initialize sharded HNSW indexes."""
+        if not FAISS_AVAILABLE:
+            return
+            
+        for _ in range(self.num_shards):
+            self.hnsw_indexes.append(HNSWIndex(self.dimension))
+    
+    def _get_shard(self, person_id: str) -> int:
+        """Get shard for person_id using consistent hashing."""
+        return hash(person_id) % self.num_shards
+    
+    async def index_person(
+        self,
+        person_id: str,
+        embedding: np.ndarray,
+        metadata: Optional[Dict] = None
+    ) -> bool:
+        """Index a person's embedding."""
+        # Check cache first
+        cached = self.lru_cache.get(person_id)
+        if cached is None:
+            self.lru_cache.put(person_id, embedding)
+        
+        # Add to appropriate shard
+        if FAISS_AVAILABLE:
+            shard_idx = self._get_shard(person_id)
+            self.hnsw_indexes[shard_idx].add_vectors(
+                embedding.reshape(1, -1), [person_id]
+            )
+        
+        # Also persist to pgvector for durability
+        if self.db_pool and metadata:
+            async with self.db_pool.acquire() as conn:
+                await conn.execute("""
+                    INSERT INTO embeddings (person_id, embedding, camera_id)
+                    VALUES ($1, $2, $3)
+                """, person_id, embedding.tobytes(), metadata.get("camera_id"))
+        
+        return True
+    
+    def search(
+        self,
+        query_embedding: np.ndarray,
+        k: int = 10,
+        threshold: float = 0.4,
+        use_cache: bool = True,
+        use_ann: bool = True,
+        use_db: bool = True
+    ) -> List[HybridResult]:
+        """Hybrid search across all sources."""
+        start_time = time.time()
+        results = {}
+        
+        # 1. Try cache (instant)
+        if use_cache:
+            # For cached search, we'd need person_id - skip for query
+            pass
+        
+        # 2. ANN search (fast)
+        if use_ann and FAISS_AVAILABLE:
+            for shard in self.hnsw_indexes:
+                pids, scores = shard.search(query_embedding, k)
+                for pid, score in zip(pids, scores):
+                    if pid not in results or score > results[pid].score:
+                        results[pid] = HybridResult(
+                            person_id=pid,
+                            score=score,
+                            source="ann_index"
+                        )
+        
+        # 3. pgvector fallback (slower but complete)
+        if use_db and self.db_pool:
+            db_results = await self._search_db(
+                query_embedding, k, threshold
+            )
+            for r in db_results:
+                if r["person_id"] not in results or r["score"] > results[r["person_id"]].score:
+                    results[r["person_id"]] = HybridResult(
+                        person_id=r["person_id"],
+                        score=r["score"],
+                        source="vector_db"
+                    )
+        
+        # 4. Cache results
+        for r in results.values():
+            if r.source != "cache":
+                self.lru_cache.put(r.person_id, query_embedding)
+        
+        # Record metrics
+        self.search_times.append((time.time() - start_time) * 1000)
+        
+        # Sort and return top k
+        sorted_results = sorted(
+            results.values(), 
+            key=lambda x: x.score, 
+            reverse=True
+        )[:k]
+        
+        # Filter by threshold
+        return [r for r in sorted_results if r.score >= threshold]
+    
+    async def _search_db(
+        self,
+        query: np.ndarray,
+        k: int,
+        threshold: float
+    ) -> List[Dict]:
+        """pgvector search."""
+        try:
+            async with self.db_pool.acquire() as conn:
+                rows = await conn.fetch("""
+                    SELECT person_id, 1 / (1 + distance) as score
+                    FROM embeddings
+                    ORDER BY embedding <=> $1
+                    LIMIT $2
+                """, query.tobytes(), k)
+                
+                return [
+                    {"person_id": row["person_id"], "score": float(row["score"])}
+                    for row in rows
+                    if row["score"] >= threshold
+                ]
+        except Exception:
+            return []
+    
+    def get_metrics(self) -> IndexMetrics:
+        """Get index metrics."""
+        total = sum(
+            len(idx.id_mapping) 
+            for idx in self.hnsw_indexes
+        )
+        
+        avg_time = np.mean(self.search_times) if self.search_times else 0
+        
+        return IndexMetrics(
+            total_vectors=total,
+            search_time_ms=avg_time,
+            index_type="hnsw" if FAISS_AVAILABLE else "pgvector_only"
+        )
+    
+    async def batch_search(
+        self,
+        queries: List[np.ndarray],
+        k: int = 10,
+        threshold: float = 0.4
+    ) -> List[List[HybridResult]]:
+        """Batch search for efficiency."""
+        results = []
+        
+        for query in queries:
+            result = await self.search(query, k, threshold)
+            results.append(result)
+        
+        return results
+
+
+class VectorStoreManager:
+    """Manages the hybrid vector store."""
+    
+    def __init__(self, db_pool=None):
+        self.db_pool = db_pool
+        self.hybrid_engine = HybridSearchEngine(db_pool)
+        self.initialized = False
+    
+    async def initialize(self, load_existing: bool = True):
+        """Initialize and optionally load existing vectors."""
+        if load_existing and self.db_pool:
+            # Load existing embeddings into HNSW
+            try:
+                async with self.db_pool.acquire() as conn:
+                    rows = await conn.fetch("""
+                        SELECT person_id, embedding FROM embeddings
+                        LIMIT 100000
+                    """)
+                    
+                    batch = []
+                    for row in rows:
+                        emb = np.frombuffer(row["embedding"], dtype=np.float32)
+                        batch.append((row["person_id"], emb))
+                    
+                    # Add in batches
+                    for pid, emb in batch:
+                        idx = self.hybrid_engine._get_shard(pid)
+                        self.hybrid_engine.hnsw_indexes[idx].add_vectors(
+                            emb.reshape(1, -1), [pid]
+                        )
+            except Exception as e:
+                print(f"Warning: Could not load existing vectors: {e}")
+        
+        self.initialized = True
+    
+    async def search(
+        self,
+        query_embedding: np.ndarray,
+        k: int = 10,
+        threshold: float = 0.4
+    ) -> List[HybridResult]:
+        """Search the vector store."""
+        return await self.hybrid_engine.search(
+            query_embedding, k, threshold
+        )
+    
+    def get_metrics(self) -> Dict:
+        """Get store metrics."""
+        index_metrics = self.hybrid_engine.get_metrics()
+        
+        return {
+            "total_vectors": index_metrics.total_vectors,
+            "avg_search_time_ms": index_metrics.search_time_ms,
+            "index_type": index_metrics.index_type,
+            "cache_size": len(self.hybrid_engine.lru_cache.cache),
+            "num_shards": self.hybrid_engine.num_shards
+        }
+
+
+# Global instance
+hybrid_store = None
+
+
+async def init_vector_store(db_pool=None) -> VectorStoreManager:
+    """Initialize the vector store."""
+    global hybrid_store
+    hybrid_store = VectorStoreManager(db_pool)
+    await hybrid_store.initialize()
+    return hybrid_store
+
+
+def get_vector_store() -> Optional[VectorStoreManager]:
+    """Get the global vector store."""
+    return hybrid_store

@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+backend/venv/
+backend/__pycache__/
+backend/app/__pycache__/
+backend/app/api/__pycache__/
+backend/app/db/__pycache__/
+backend/app/grpc/__pycache__/
+backend/app/models/__pycache__/
+backend/app/plugins/__pycache__/
+backend/app/providers/__pycache__/
+backend/tests/__pycache__/
+backend/alembic/__pycache__/
+ui/react-app/node_modules/
+
+# Environment
+.env
+backend/.env
+infra/.env
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log

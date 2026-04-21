@@ -47,3 +47,6 @@ class MockProvider(BaseProvider):
             result["snippet"] = self._redact_sensitive_info(result["snippet"])
 
         return results
+
+    async def get_health_status(self) -> str:
+        return "healthy"

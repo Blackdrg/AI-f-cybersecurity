@@ -3,6 +3,12 @@ from typing import List, Dict, Any, Optional
 from uuid import UUID
 
 
+class StandardResponse(BaseModel):
+    success: bool
+    data: Optional[Any] = None
+    error: Optional[str] = None
+
+
 class EnrollRequest(BaseModel):
     name: Optional[str] = None
     metadata: Dict[str, Any] = {}
@@ -91,13 +97,124 @@ class DeleteResponse(BaseModel):
     message: str
 
 
+# SaaS & B2B Schemas
+class UserCreate(BaseModel):
+    email: str
+    name: str
+    password: Optional[str] = None
+    subscription_tier: Optional[str] = "free"
+
+
+class UserResponse(BaseModel):
+    user_id: str
+    email: str
+    name: str
+    subscription_tier: str
+    created_at: str
+
+
+class PlanResponse(BaseModel):
+    plan_id: str
+    name: str
+    price: float
+    features: List[str]
+    limits: Dict[str, Any]
+
+
+class SubscriptionCreate(BaseModel):
+    plan_id: str
+
+
+class SubscriptionResponse(BaseModel):
+    subscription_id: str
+    user_id: str
+    plan_id: str
+    status: str
+    created_at: str
+    expires_at: Optional[str]
+
+
+class PaymentCreate(BaseModel):
+    plan_id: str
+    amount: float
+
+
+class PaymentResponse(BaseModel):
+    payment_id: str
+    user_id: str
+    amount: float
+    currency: str
+    status: str
+    stripe_payment_id: Optional[str]
+    created_at: str
+
+
+class OrganizationCreate(BaseModel):
+    name: str
+    billing_email: str
+
+
+class OrganizationResponse(BaseModel):
+    org_id: str
+    name: str
+    billing_email: str
+    subscription_tier: str
+    created_at: Optional[Any]
+
+
+class OrgMemberAdd(BaseModel):
+    user_id: str
+    role: str
+
+
+class CameraCreate(BaseModel):
+    name: str
+    rtsp_url: Optional[str] = None
+    location: Optional[str] = None
+
+
+class CameraResponse(BaseModel):
+    camera_id: str
+    org_id: str
+    name: str
+    rtsp_url: Optional[str]
+    location: Optional[str]
+    status: str
+    created_at: Any
+
+
+class RecognitionEventResponse(BaseModel):
+    event_id: str
+    org_id: str
+    camera_id: Optional[str]
+    person_id: Optional[str]
+    person_name: Optional[str]
+    camera_name: Optional[str]
+    confidence_score: float
+    timestamp: Any
+
+
+class AIAssistantRequest(BaseModel):
+    query: str
+
+
+class AIAssistantResponse(BaseModel):
+    query: str
+    response: str
+    model_used: str
+
+
 class MetricsResponse(BaseModel):
+    num_persons: int
+    num_embeddings: int
+    num_audit_logs: int
+    num_feedback: int
+    db_size: Optional[str] = None
     recognition_count: int
     enroll_count: int
     avg_latency_ms: float
     false_accepts: int
     false_rejects: int
-    index_size: int
 
 
 class LogEntry(BaseModel):

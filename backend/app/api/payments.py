@@ -1,82 +1,76 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
+from typing import List, Optional
 from ..schemas import PaymentCreate, PaymentResponse
 from ..db.db_client import get_db
 from ..security import get_current_user
-import stripe
-import os
+from ..providers import get_payment_provider, PaymentProvider
 from datetime import datetime
 import uuid
 
 router = APIRouter()
 
-# Initialize Stripe
-# Use environment variable
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_...")
-
-
 @router.post("/payments/create-session")
-async def create_payment_session(payment: PaymentCreate, current_user=Depends(get_current_user)):
-    """Create a Stripe checkout session for payment."""
+async def create_payment_session(
+    payment: PaymentCreate, 
+    current_user=Depends(get_current_user),
+    provider: PaymentProvider = Depends(get_payment_provider)
+):
+    """Create a checkout session for payment using configured provider."""
     try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'usd',
-                    'product_data': {
-                        'name': f'Subscription - {payment.plan_id}',
-                    },
-                    # Convert to cents
-                    'unit_amount': int(payment.amount * 100),
-                },
-                'quantity': 1,
-            }],
-            mode='payment',
-            success_url=f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/payment/cancel",
-            metadata={
-                'user_id': current_user["user_id"],
-                'plan_id': payment.plan_id
-            }
+        result = await provider.create_checkout_session(
+            user_id=current_user["user_id"],
+            plan_id=payment.plan_id,
+            amount=payment.amount
         )
-        return {"session_id": session.id, "url": session.url}
+        return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/payments/webhook")
-async def stripe_webhook(request: dict):
+async def stripe_webhook(request: Request):
     """Handle Stripe webhooks for payment confirmation."""
-    # Verify webhook signature (implementation depends on your setup)
-    event = request
+    try:
+        body = await request.body()
+        # Verify webhook signature in production
+        event = request.state.stripe_event if hasattr(request.state, 'stripe_event') else {"type": "unknown", "data": {"object": {}}}
+        
+        # Simple parsing for demo
+        import json
+        try:
+            event = json.loads(body)
+        except:
+            event = {"type": "unknown"}
 
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        user_id = session['metadata']['user_id']
-        plan_id = session['metadata']['plan_id']
+        if event.get('type') == 'checkout.session.completed':
+            session = event.get('data', {}).get('object', {})
+            user_id = session.get('metadata', {}).get('user_id')
+            plan_id = session.get('metadata', {}).get('plan_id')
+            
+            if user_id and plan_id:
+                db = await get_db()
+                subscription_id = str(uuid.uuid4())
+                await db.create_subscription(subscription_id, user_id, plan_id, "active")
 
-        # Update user's subscription in database
-        # This would typically be handled by a background task
-        # For now, we'll just log it
-        print(f"Payment completed for user {user_id}, plan {plan_id}")
-
-    return {"status": "success"}
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
 
 
-@router.get("/payments/history", response_model=list[PaymentResponse])
-async def get_payment_history(current_user=Depends(get_current_user), db=Depends(get_db)):
+@router.get("/payments/history", response_model=List[PaymentResponse])
+async def get_payment_history(current_user=Depends(get_current_user)):
     """Get payment history for current user."""
-    query = "SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC"
-    rows = await db.fetch_all(query, (current_user["user_id"],))
+    db = await get_db()
+    payments = await db.get_payment_history(current_user["user_id"])
 
     return [
         PaymentResponse(
-            payment_id=row["payment_id"],
-            user_id=row["user_id"],
-            amount=row["amount"],
-            currency=row["currency"],
-            status=row["status"],
-            stripe_payment_id=row["stripe_payment_id"],
-            created_at=row["created_at"]
-        ) for row in rows
+            payment_id=p["payment_id"],
+            user_id=p["user_id"],
+            amount=float(p["amount"]),
+            currency=p["currency"],
+            status=p["status"],
+            stripe_payment_id=p.get("stripe_payment_id"),
+            created_at=p["created_at"].isoformat() if hasattr(p["created_at"], 'isoformat') else str(p["created_at"])
+        ) for p in payments
     ]

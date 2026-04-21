@@ -27,7 +27,7 @@ const AdminDashboard = () => {
         setLoading(true);
         setMessage('');
         try {
-            const response = await axios.get(`/api/persons/${personId}`);
+            const response = await axios.get(`/api/admin/persons/${personId}`);
             setPerson(response.data);
             setMessage('Person fetched successfully');
             setSeverity('success');
@@ -44,7 +44,7 @@ const AdminDashboard = () => {
         setLoading(true);
         setMessage('');
         try {
-            await axios.delete(`/api/persons/${personId}`);
+            await axios.delete(`/api/admin/persons/${personId}`);
             setPerson(null);
             setMessage('Person deleted successfully');
             setSeverity('success');
@@ -60,7 +60,7 @@ const AdminDashboard = () => {
         setLoading(true);
         setMessage('');
         try {
-            const response = await axios.get('/api/metrics');
+            const response = await axios.get('/api/admin/metrics');
             setMetrics(response.data);
             setMessage('Metrics fetched successfully');
             setSeverity('success');
@@ -80,7 +80,7 @@ const AdminDashboard = () => {
             if (startDate) params.start_date = startDate;
             if (endDate) params.end_date = endDate;
             if (actionFilter) params.action = actionFilter;
-            const response = await axios.get('/api/logs', { params });
+            const response = await axios.get('/api/admin/logs', { params });
             setLogs(response.data.logs);
             setMessage('Logs fetched successfully');
             setSeverity('success');

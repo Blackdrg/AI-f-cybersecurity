@@ -62,3 +62,15 @@ class WikipediaProvider(BaseProvider):
             confidence += 0.1
 
         return min(confidence, 1.0)
+
+    async def get_health_status(self) -> str:
+        try:
+            # Simple check by requesting a known page
+            url = f"{self.base_url}/Main_Page"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        return "healthy"
+                    return "degraded"
+        except Exception:
+            return "unhealthy"

@@ -24,6 +24,11 @@ class BaseProvider(ABC):
         """
         pass
 
+    @abstractmethod
+    async def get_health_status(self) -> str:
+        """Return 'healthy', 'degraded', or 'unhealthy'."""
+        pass
+
     async def _make_request(self, url: str, params: Dict[str, Any] = None, headers: Dict[str, Any] = None) -> Dict[str, Any]:
         """Helper method for making HTTP requests with rate limiting."""
         # Placeholder for actual HTTP request logic

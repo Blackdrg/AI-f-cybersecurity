@@ -10,25 +10,14 @@ router = APIRouter()
 
 
 @router.post("/subscriptions", response_model=SubscriptionResponse)
-async def create_subscription(subscription: SubscriptionCreate, current_user=Depends(get_current_user), db=Depends(get_db)):
+async def create_subscription(subscription: SubscriptionCreate, current_user=Depends(get_current_user)):
     """Create a new subscription for the current user."""
+    db = await get_db()
     subscription_id = str(uuid.uuid4())
     created_at = datetime.utcnow()
-    expires_at = created_at + timedelta(days=30)  # 30-day subscription
+    expires_at = created_at + timedelta(days=30)
 
-    # Insert subscription into database
-    query = """
-    INSERT INTO subscriptions (subscription_id, user_id, plan_id, status, created_at, expires_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-    """
-    await db.execute(query, (
-        subscription_id,
-        current_user["user_id"],
-        subscription.plan_id,
-        "active",
-        created_at.isoformat(),
-        expires_at.isoformat()
-    ))
+    await db.create_subscription(subscription_id, current_user["user_id"], subscription.plan_id, "active", expires_at)
 
     return SubscriptionResponse(
         subscription_id=subscription_id,
@@ -41,46 +30,58 @@ async def create_subscription(subscription: SubscriptionCreate, current_user=Dep
 
 
 @router.get("/subscriptions/me", response_model=SubscriptionResponse)
-async def get_current_subscription(current_user=Depends(get_current_user), db=Depends(get_db)):
+async def get_current_subscription(current_user=Depends(get_current_user)):
     """Get current user's active subscription."""
-    query = "SELECT * FROM subscriptions WHERE user_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1"
-    row = await db.fetch_one(query, (current_user["user_id"],))
+    db = await get_db()
+    sub = await db.get_subscription(current_user["user_id"])
 
-    if not row:
-        raise HTTPException(
-            status_code=404, detail="No active subscription found")
+    if not sub:
+        # Return default free plan info
+        return SubscriptionResponse(
+            subscription_id="free",
+            user_id=current_user["user_id"],
+            plan_id="free",
+            status="active",
+            created_at=datetime.utcnow().isoformat(),
+            expires_at=(datetime.utcnow() + timedelta(days=365)).isoformat()
+        )
 
     return SubscriptionResponse(
-        subscription_id=row["subscription_id"],
-        user_id=row["user_id"],
-        plan_id=row["plan_id"],
-        status=row["status"],
-        created_at=row["created_at"],
-        expires_at=row["expires_at"]
+        subscription_id=sub["subscription_id"],
+        user_id=sub["user_id"],
+        plan_id=sub["plan_id"],
+        status=sub["status"],
+        created_at=sub["created_at"].isoformat() if hasattr(sub["created_at"], 'isoformat') else str(sub["created_at"]),
+        expires_at=sub["expires_at"].isoformat() if hasattr(sub["expires_at"], 'isoformat') else str(sub["expires_at"])
     )
 
 
 @router.put("/subscriptions/me/cancel")
-async def cancel_subscription(current_user=Depends(get_current_user), db=Depends(get_db)):
+async def cancel_subscription(current_user=Depends(get_current_user)):
     """Cancel current user's subscription."""
-    query = "UPDATE subscriptions SET status = 'cancelled' WHERE user_id = ? AND status = 'active'"
-    await db.execute(query, (current_user["user_id"],))
+    db = await get_db()
+    sub = await db.get_subscription(current_user["user_id"])
+    if sub:
+        await db.cancel_subscription(sub["subscription_id"])
     return {"message": "Subscription cancelled successfully"}
 
 
 @router.get("/subscriptions/history", response_model=List[SubscriptionResponse])
-async def get_subscription_history(current_user=Depends(get_current_user), db=Depends(get_db)):
+async def get_subscription_history(current_user=Depends(get_current_user)):
     """Get subscription history for current user."""
-    query = "SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC"
-    rows = await db.fetch_all(query, (current_user["user_id"],))
+    db = await get_db()
+    subs = await db.get_subscription_history(current_user["user_id"])
+
+    if not subs:
+        return []
 
     return [
         SubscriptionResponse(
-            subscription_id=row["subscription_id"],
-            user_id=row["user_id"],
-            plan_id=row["plan_id"],
-            status=row["status"],
-            created_at=row["created_at"],
-            expires_at=row["expires_at"]
-        ) for row in rows
+            subscription_id=s["subscription_id"],
+            user_id=s["user_id"],
+            plan_id=s["plan_id"],
+            status=s["status"],
+            created_at=s["created_at"].isoformat() if hasattr(s["created_at"], 'isoformat') else str(s["created_at"]),
+            expires_at=s["expires_at"].isoformat() if hasattr(s["expires_at"], 'isoformat') else str(s["expires_at"])
+        ) for s in subs
     ]

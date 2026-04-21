@@ -1,50 +1,32 @@
 from fastapi import APIRouter, HTTPException, Depends
 from ..schemas import AIAssistantRequest, AIAssistantResponse
 from ..security import get_current_user
-
-try:
-    from openai import OpenAI
-    import os
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        client = OpenAI(api_key=api_key)
-        OPENAI_AVAILABLE = True
-    else:
-        client = None
-        OPENAI_AVAILABLE = False
-except ImportError:
-    OPENAI_AVAILABLE = False
-    client = None
+from ..providers import get_llm_provider, LLMProvider
 
 router = APIRouter()
 
 
 @router.post("/ai/assistant", response_model=AIAssistantResponse)
-async def ai_assistant_query(request: AIAssistantRequest, current_user=Depends(get_current_user)):
-    """Query the AI assistant for help with face recognition tasks."""
-    if not OPENAI_AVAILABLE:
-        # Fallback response when OpenAI is not available
-        return AIAssistantResponse(
-            query=request.query,
-            response="AI assistant is currently unavailable. Please check your OpenAI API key configuration.",
-            model_used="fallback"
-        )
-
+async def ai_assistant_query(
+    request: AIAssistantRequest, 
+    current_user=Depends(get_current_user),
+    provider: LLMProvider = Depends(get_llm_provider)
+):
+    """Query the AI assistant using the configured LLM provider."""
     try:
         # Special case: Premium AI assistant for daredevil0101a@gmail.com
         if current_user.get("email") == "daredevil0101a@gmail.com":
             # Use GPT-4 with higher limits for premium user
-            response = client.chat.completions.create(
+            messages = [
+                {"role": "system", "content": "You are a premium AI assistant specialized in face recognition technology and computer vision. Provide expert-level assistance with advanced technical details, implementation guidance, and cutting-edge research insights."},
+                {"role": "user", "content": request.query}
+            ]
+            
+            ai_response = await provider.chat_completion(
+                messages=messages,
                 model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "You are a premium AI assistant specialized in face recognition technology and computer vision. Provide expert-level assistance with advanced technical details, implementation guidance, and cutting-edge research insights."},
-                    {"role": "user", "content": request.query}
-                ],
-                max_tokens=1000,
-                temperature=0.7
+                max_tokens=1000
             )
-
-            ai_response = response.choices[0].message.content
 
             return AIAssistantResponse(
                 query=request.query,
@@ -59,18 +41,17 @@ async def ai_assistant_query(request: AIAssistantRequest, current_user=Depends(g
         Provide accurate, helpful information while maintaining privacy and ethical considerations.
         """
 
-        # Make API call to OpenAI
-        response = client.chat.completions.create(
+        # Make API call via provider
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": request.query}
+        ]
+        
+        ai_response = await provider.chat_completion(
+            messages=messages,
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": request.query}
-            ],
-            max_tokens=500,
-            temperature=0.7
+            max_tokens=500
         )
-
-        ai_response = response.choices[0].message.content
 
         return AIAssistantResponse(
             query=request.query,
