@@ -1,66 +1,31 @@
-# COMPLETED: Face Recognition System v2.0.0
+# README Update Progress (Approved Plan)
+Current Status: Executing plan to update README up to current implementation (queues, RTSP, evaluation, edge).
 
-## All Tasks Complete ✓
+## Steps from Approved Plan
 
-### Backend ✓
-- Database integration (asyncpg + pgvector)
-- All ML models (face_detector, embedder, spoof, voice, gait, emotion, age/gender)
-- All API endpoints wired (enroll, recognize, stream, video, admin, federated)
-- SaaS features (users, plans, subscriptions, payments, usage, support)
-- AI Assistant
+### 1. Prepare (Current)
+- [x] Create this TODO.md with steps
+- [ ] Read/merge existing TODO.md/PHASES.md content
 
-### Production Systems ✓
-- Hybrid Search (FAISS HNSW + pgvector fallback + LRU cache)
-- Identity Scoring Engine (multi-modal fusion)
-- Continuous Evaluation (drift detection, ground truth)
-- Policy Engine (enterprise access control)
-- Legal Compliance (GDPR/CCPA)
-- Decision Engine (risk scoring)
+### 2. Analyze & Restructure
+- [ ] Generate accurate project structure tree
+- [ ] Identify implemented vs stubbed features (from search_files)
 
-### Frontend ✓
-- Enrollment Form
-- Recognition View with webcam
-- Admin Dashboard
-- AI Assistant
-- Subscription Plans
-- Proxy configuration
+### 3. Edit README.md (Multiple targeted edits)
+- [ ] Update intro/status
+- [ ] Rewrite project structure section
+- [ ] Add Implemented Features (queues, RTSP, tuning, edge)
+- [ ] Update Quick Start (docker-compose verified)
+- [ ] Add status table (✅/🔄/📋)
+- [ ] Trim future sections, reference TODO.md
 
-### Documentation ✓
-- README.md complete
-- API specification
-- Privacy policy
+### 4. Verify
+- [ ] docker-compose up in infra/
+- [ ] pytest backend/tests/
+- [ ] locust load test
 
-### Testing ✓
-- Unit tests for all modules
-- Integration test suite
+### 5. Complete
+- [ ] attempt_completion
 
-## Running the System
-
-### Docker Compose (Recommended)
-```bash
-cd infra
-docker-compose up -d
-```
-
-### Local Development
-```bash
-# Backend
-cd backend
-pip install -r requirements.txt
-python -m uvicorn app.main:app --reload
-
-# Frontend
-cd ui/react-app
-npm install
-npm start
-```
-
-### Run Integration Tests
-```bash
-cd backend
-python test_integration.py
-```
-
-## System Version
-- Version: 2.0.0
-- Production Ready: Yes
+**Next Step:** Analyze structure → Edit README
+**Update this file after each step.**

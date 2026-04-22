@@ -2,7 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from ..schemas import CameraCreate, CameraResponse
 from ..db.db_client import get_db
+from ..camera.rtsp_manager import rtsp_manager
 from ..security import require_org_operator, require_org_admin
+from typing import Dict, Any
 
 router = APIRouter()
 
@@ -27,3 +29,28 @@ async def list_cameras(org_id: str, current_user=Depends(require_org_operator)):
     db = await get_db()
     cameras = await db.get_org_cameras(org_id)
     return [CameraResponse(**c) for c in cameras]
+
+@router.post("/{org_id}/cameras/{camera_id}/start", status_code=204)
+async def start_camera_stream(org_id: str, camera_id: str, current_user=Depends(require_org_admin)):
+    """Start RTSP stream for camera."""
+    db = await get_db()
+    cameras = await db.get_org_cameras(org_id)
+    camera = next((c for c in cameras if c['camera_id'] == camera_id), None)
+    if not camera or not camera.get('rtsp_url'):
+        raise HTTPException(404, "Camera not found or no RTSP URL")
+    
+    rtsp_manager.add_camera(camera_id, camera['rtsp_url'])
+    return
+
+@router.get("/{org_id}/cameras/{camera_id}/status", response_model=Dict[str, Any])
+async def get_camera_status(org_id: str, camera_id: str, current_user=Depends(require_org_operator)):
+    """Get RTSP stream status."""
+    status = rtsp_manager.get_status(camera_id)
+    if not status:
+        raise HTTPException(404, "Camera stream not found")
+    return status[0]
+
+@router.get("/{org_id}/cameras/status", response_model=List[Dict[str, Any]])
+async def get_all_cameras_status(org_id: str, current_user=Depends(require_org_operator)):
+    """Get status for all organization cameras."""
+    return rtsp_manager.get_status()

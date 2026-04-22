@@ -14,10 +14,12 @@ from ..models.behavioral_predictor import BehavioralPredictor
 from ..models.spoof_detector import SpoofDetector
 from ..models.face_reconstructor import FaceReconstructor
 from ..db.db_client import get_db
+from ..camera.rtsp_manager import rtsp_manager
 from typing import Any, Dict, List
 from ..schemas import RecognizeResponse, DetectedFace, FaceMatch, MultiCameraRequest
 # from ..security import require_auth_ws  # Placeholder for auth
 from ..metrics import recognition_count, recognition_latency
+import asyncio
 
 router = APIRouter()
 

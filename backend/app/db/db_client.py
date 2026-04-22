@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Optional
 import os
 import uuid
 from datetime import datetime, timedelta
+from ..offline.sync import get_offline_sync
 try:
     from cryptography.fernet import Fernet
     CRYPTOGRAPHY_AVAILABLE = True
@@ -33,7 +34,10 @@ class DBClient:
         self.kms_client = self._init_kms()
         self.encryption_key = self._load_encryption_key()
 
+
     async def init_db(self):
+        await get_offline_sync().init_local_db()
+        
         if ASYNCPG_AVAILABLE:
             self.pool = await asyncpg.create_pool(
                 user=os.getenv('DB_USER', 'postgres'),
@@ -44,21 +48,9 @@ class DBClient:
             )
             await self._create_tables()
         else:
-            # Fallback: in-memory storage for testing
+            # Fallback: offline SQLite primary
             self.pool = None
-            self._in_memory_db = {
-                'persons': {},
-                'embeddings': {},
-                'consent_logs': {},
-                'audit_log': [],
-                'feedback': {},
-                'model_versions': {},
-                'federated_updates': {},
-                'edge_devices': {},
-                'consents': {},
-                'enrichment_results': {},
-                'audit_logs': []
-            }
+
 
     async def _create_tables(self):
         async with self.pool.acquire() as conn:
@@ -465,10 +457,13 @@ class DBClient:
 
         return person_id
 
-    async def recognize_faces(self, query_embedding: np.ndarray, top_k: int = 1, threshold: float = 0.4, camera_id: str = None, voice_embedding: np.ndarray = None, gait_embedding: np.ndarray = None) -> List[Dict[str, Any]]:
+    async def recognize_faces(self, query_embedding: np.ndarray, top_k: int = 1, threshold: float = 0.6, camera_id: str = None, voice_embedding: np.ndarray = None, gait_embedding: np.ndarray = None) -> List[Dict[str, Any]]:
+        offline_sync = await get_offline_sync()
         if self.pool is None:
-            # In-memory implementation
-            matches = []
+            # Offline SQLite fallback
+            return await offline_sync.recognize_local(query_embedding, top_k, threshold)
+        matches = []
+
             for emb_id, emb_data in self._in_memory_db['embeddings'].items():
                 # Filter by camera_id if specified
                 if camera_id and emb_data.get('camera_id') != camera_id:
@@ -935,13 +930,25 @@ class DBClient:
 
     # Recognition Events & Timeline
     async def log_recognition_event(self, org_id: str, person_id: Optional[str], camera_id: Optional[str], confidence: float, metadata: Dict[str, Any] = None) -> str:
-        async with self.pool.acquire() as conn:
-            event_id = str(uuid.uuid4())
-            await conn.execute("""
-                INSERT INTO recognition_events (event_id, org_id, person_id, camera_id, confidence_score, metadata)
-                VALUES ($1, $2, $3, $4, $5, $6)
-            """, event_id, org_id, person_id, camera_id, confidence, metadata)
-            return event_id
+        offline_sync = await get_offline_sync()
+        event_id = str(uuid.uuid4())
+        if self.pool is None:
+            await offline_sync.cache_event({
+                'event_id': event_id,
+                'org_id': org_id,
+                'person_id': person_id,
+                'camera_id': camera_id,
+                'confidence': confidence,
+                'metadata': metadata
+            })
+        else:
+            async with self.pool.acquire() as conn:
+                await conn.execute("""
+                    INSERT INTO recognition_events (event_id, org_id, person_id, camera_id, confidence_score, metadata)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                """, event_id, org_id, person_id, camera_id, confidence, metadata)
+        return event_id
+
 
     async def get_person_timeline(self, person_id: str, limit: int = 50) -> List[Dict[str, Any]]:
         async with self.pool.acquire() as conn:

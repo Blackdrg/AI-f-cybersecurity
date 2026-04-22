@@ -76,6 +76,33 @@ services:
     ports:
       - "9090:9090"
 
+  celery-worker:
+    build: ../backend
+    command: celery -A app.main.celery worker --loglevel=info --concurrency=4
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_NAME: face_recognition
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: secret
+      ENCRYPTION_KEY: your-32-byte-secret-key-here123456789012
+    volumes:
+      - ../backend/app:/app/app
+      - insightface_models:/root/.insightface/models
+    depends_on:
+      - postgres
+      - redis
+
+  celery-beat:
+    build: ../backend
+    command: celery -A app.main.celery beat --loglevel=info
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - redis
+
   grafana:
     image: grafana/grafana:10.0.0
     ports:
