@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.venv/
+.pytest_cache/
+
+# Docker
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+compose*.yml
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Models & Data (large files, not needed in image)
+models/*.bin
+models/*.onnx
+data/*
+!data/.gitkeep
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Tests
+tests/
+test/
+.pytest_cache/
+htmlcov/
+
+# Documentation (optional - exclude if image size critical)
+*.md
+!README.md
+docs/
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+.github/
+.gitlab/
+
+# Misc
+*.env
+.env.*
+secrets/
+!secrets/.gitkeep

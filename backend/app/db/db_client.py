@@ -70,6 +70,48 @@ class DBClient:
                     consent_record_id UUID
                 );
             """)
+            
+            # Indexes for persons table
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_persons_org_id ON persons(org_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_persons_name ON persons(name)")
+
+            # Embeddings table
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS embeddings (
+                    embedding_id UUID PRIMARY KEY,
+                    person_id UUID REFERENCES persons(person_id),
+                    embedding VECTOR(512),  -- Face embedding
+                    voice_embedding VECTOR(192),  -- Voice embedding (optional)
+                    gait_embedding VECTOR(128),  -- Gait embedding (optional)
+                    camera_id TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+            
+            # Indexes for embeddings table (vector index with HNSW for performance)
+            try:
+                # HNSW index for high-dimensional similarity search
+                await conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_embeddings_embedding 
+                    ON embeddings 
+                    USING hnsw (embedding vector_cosine_ops)
+                    WITH (m = 16, ef_construction = 64)
+                """)
+            except Exception as e:
+                logger.warning(f"Failed to create HNSW index, falling back to L2: {e}")
+                # Fallback to simple L2 index if HNSW not supported
+                await conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_embeddings_embedding 
+                    ON embeddings 
+                    USING ivfflat (embedding vector_l2_ops)
+                    WITH (lists = 100)
+                """)
+            
+            # Secondary indexes
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_embeddings_person_id ON embeddings(person_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_embeddings_camera_id ON embeddings(camera_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_embeddings_voice ON embeddings USING gin(voice_embedding) WHERE voice_embedding IS NOT NULL")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_embeddings_gait ON embeddings USING gin(gait_embedding) WHERE gait_embedding IS NOT NULL")
 
             # Embeddings table
             await conn.execute("""
@@ -96,6 +138,12 @@ class DBClient:
                     signed_token TEXT
                 );
             """)
+            
+            # Index for consent lookups
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_consent_logs_person_id ON consent_logs(person_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_consent_logs_token ON consent_logs(signed_token)")
+
+            # Audit log (append-only)
 
             # Audit log (append-only)
             await conn.execute("""
@@ -120,6 +168,12 @@ class DBClient:
                     timestamp TIMESTAMP DEFAULT NOW()
                 );
             """)
+            
+            # Index for feedback queries
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_person_id ON feedback(person_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_recognition_id ON feedback(recognition_id)")
+
+            # Model versions for OTA updates
 
             # Model versions for OTA updates
             await conn.execute("""
@@ -201,6 +255,23 @@ class DBClient:
                     created_at TIMESTAMP DEFAULT NOW()
                 );
             """)
+            
+            # Index for organizations
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_orgs_tier ON organizations(subscription_tier)")
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS org_members (
+                    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
+                    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE,
+                    role TEXT DEFAULT 'viewer',
+                    joined_at TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (org_id, user_id)
+                );
+            """)
+            
+            # Index for org members
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_org_members_user_id ON org_members(user_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_org_members_role ON org_members(role)")
 
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS org_members (
@@ -237,6 +308,12 @@ class DBClient:
                     created_at TIMESTAMP DEFAULT NOW()
                 );
             """)
+            
+            # Index for cameras
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_cameras_org_id ON cameras(org_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_cameras_status ON cameras(status)")
+
+            # Recognition Events (Timeline & Analytics)
 
             # Recognition Events (Timeline & Analytics)
             await conn.execute("""
@@ -251,6 +328,15 @@ class DBClient:
                     timestamp TIMESTAMP DEFAULT NOW()
                 );
             """)
+            
+            # Indexes for recognition_events (critical for analytics)
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_recognition_events_org_id ON recognition_events(org_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_recognition_events_timestamp ON recognition_events(timestamp DESC)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_recognition_events_camera_id ON recognition_events(camera_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_recognition_events_person_id ON recognition_events(person_id)")
+            # Composite index for org+time queries (dashboard)
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_recognition_events_org_timestamp ON recognition_events(org_id, timestamp DESC)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_recognition_events_camera_timestamp ON recognition_events(camera_id, timestamp DESC)")
 
             # Rule Engine & Alerts
             await conn.execute("""
@@ -287,6 +373,85 @@ class DBClient:
                     created_at TIMESTAMP DEFAULT NOW()
                 );
             """)
+            
+            # Indexes for users
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_users_subscription_tier ON users(subscription_tier)")
+            
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS plans (
+                    plan_id TEXT PRIMARY KEY,
+                    name TEXT,
+                    price FLOAT,
+                    currency TEXT,
+                    interval TEXT,
+                    features JSONB,
+                    limits JSONB
+                );
+            """)
+            
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS subscriptions (
+                    subscription_id TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(user_id),
+                    plan_id TEXT REFERENCES plans(plan_id),
+                    status TEXT,
+                    current_period_end TIMESTAMP,
+                    expires_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+            
+            # Indexes for subscriptions
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_subscriptions_plan_id ON subscriptions(plan_id)")
+            
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS payments (
+                    payment_id TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(user_id),
+                    amount FLOAT,
+                    currency TEXT,
+                    status TEXT,
+                    stripe_payment_id TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+            
+            # Indexes for payments
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_payments_created_at ON payments(created_at DESC)")
+            
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS usage (
+                    user_id TEXT REFERENCES users(user_id),
+                    period_start TIMESTAMP,
+                    period_end TIMESTAMP,
+                    recognitions_used INTEGER DEFAULT 0,
+                    enrollments_used INTEGER DEFAULT 0,
+                    PRIMARY KEY (user_id, period_start, period_end)
+                );
+            """)
+            
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS support_tickets (
+                    ticket_id TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(user_id),
+                    subject TEXT,
+                    description TEXT,
+                    priority TEXT,
+                    status TEXT,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+            
+            # Indexes for support_tickets
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_support_tickets_user_id ON support_tickets(user_id)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_support_tickets_priority ON support_tickets(priority)")
 
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS plans (

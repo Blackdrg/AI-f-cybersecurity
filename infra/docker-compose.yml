@@ -81,6 +81,12 @@ services:
     depends_on:
       - redis
       - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5555"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   ui:
     build: ../ui/react-app
@@ -88,6 +94,12 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   nginx:
     image: nginx:alpine
@@ -108,6 +120,11 @@ services:
              -out /etc/ssl/certs/nginx-selfsigned.crt
              -subj '/C=US/ST=State/L=City/O=Organization/CN=localhost' &&
       nginx -g 'daemon off;'"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   prometheus:
     image: prom/prometheus:v2.45.0
@@ -115,6 +132,11 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   celery-worker:
     build:
@@ -159,6 +181,12 @@ services:
       USE_GPU: ${USE_GPU:-false}
     depends_on:
       - redis
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.main.celery inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   grafana:
     image: grafana/grafana:10.0.0
@@ -166,6 +194,12 @@ services:
       - "3001:3000"
     depends_on:
       - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   postgres_data:
