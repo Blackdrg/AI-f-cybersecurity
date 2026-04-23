@@ -1,31 +1,46 @@
-FROM python:3.14.0-slim-bullseye
+FROM python:3.11-slim AS builder
+
+WORKDIR /builder
+
+COPY requirements-cpu.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements-cpu.txt
+# No GPU preload on CPU
+
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Ensure non-interactive install
-ENV DEBIAN_FRONTEND=noninteractive
+# Copy installed packages
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Install system dependencies with version locking
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx=20.3.5-1 \
-    libglib2.0-0=2.66.8-1 \
-    libsm6=1.2.3-1 \
-    libxext6=1.3.4-1 \
-    libxrender-dev=0.9.10-1 \
-    libgomp1=10.2.1-6 \
+# Clean sources (Fix 2)
+RUN rm -f /etc/apt/sources.list.d/*
+
+RUN echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list && \
+    echo "deb https://deb.debian.org/debian-security bookworm-security main" >> /etc/apt/sources.list && \
+    echo "deb https://deb.debian.org/debian bookworm-updates main" >> /etc/apt/sources.list
+
+# Fix SSL + install deps (Fix 1,3,4)
+RUN apt-get update || true && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    update-ca-certificates && \
+    apt-get -o Acquire::ForceIPv4=true update && \
+    apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Strict dependency install
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip==23.3.1 && \
-    pip install --no-cache-dir -r requirements.txt
+ENV PATH=/usr/local/bin:$PATH
 
-# Copy app directory
 COPY app ./app
-
-# Create necessary directories
-RUN mkdir -p /app/models /app/data
+RUN mkdir -p /app/models /app/data /root/.insightface
 
 EXPOSE 8000
 
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

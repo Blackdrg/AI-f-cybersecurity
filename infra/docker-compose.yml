@@ -3,44 +3,84 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15.5-bullseye
+    restart: always
     environment:
-      POSTGRES_DB: face_recognition
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${DB_NAME:-face_recognition}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7.2.3-alpine
+    restart: always
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
-    build: ../backend
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.cpu
+      args:
+        - USE_GPU=false
+    restart: always
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: password
-      DB_NAME: face_recognition
-      JWT_SECRET: secret
-      ENCRYPTION_KEY: your-32-byte-secret-key-here123456789012
-      AWS_REGION: us-east-1
-      KMS_KEY_ID: alias/face-recognition-key
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-face_recognition}
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      KMS_KEY_ID: ${KMS_KEY_ID:-alias/face-recognition-key}
+      USE_GPU: ${USE_GPU:-false}
       # Providers (Enterprise Config)
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_...}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     ports:
       - "8000:8000"
     volumes:
       - insightface_models:/root/.insightface/models
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  flower:
+    image: python:3.11-slim
+    restart: always
+    command: celery -A app.main.celery flower --persistent=True -P gevent --port=5555
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - "5555:5555"
+    volumes:
+      - ../backend/app:/app/app
+    depends_on:
       - redis
+      - backend
 
   ui:
     build: ../ui/react-app
@@ -77,29 +117,46 @@ services:
       - "9090:9090"
 
   celery-worker:
-    build: ../backend
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.cpu
+      args:
+        - USE_GPU=false
+    restart: always
     command: celery -A app.main.celery worker --loglevel=info --concurrency=4
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: password
-      DB_NAME: face_recognition
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: secret
-      ENCRYPTION_KEY: your-32-byte-secret-key-here123456789012
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-face_recognition}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      USE_GPU: ${USE_GPU:-false}
     volumes:
       - ../backend/app:/app/app
       - insightface_models:/root/.insightface/models
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.main.celery inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   celery-beat:
-    build: ../backend
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.cpu
     command: celery -A app.main.celery beat --loglevel=info
     environment:
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      USE_GPU: ${USE_GPU:-false}
     depends_on:
       - redis
 
@@ -115,3 +172,6 @@ volumes:
   ssl_certs:
   ssl_private:
   insightface_models:
+
+# For GPU: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up
+
