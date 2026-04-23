@@ -129,55 +129,58 @@ Interactive: localhost:8000/docs | Postman: postman_collection.json
 - **Monitoring**: Prometheus, Grafana
 - **Gateway**: Nginx (SSL/TLS Termination)
 
-## Project Structure (Current Implementation ✅)
+### Advanced ML Capabilities
+- **Face Detection**: **SCRFD** (Sample and Computation Redistribution) for high-efficiency detection.
+- **Face Embedding**: **ArcFace** (ResNet-50) 512-d vectors with L2 normalization.
+- **Anti-Spoofing**: Multi-modal detector using **FFT frequency analysis** and **temporal consistency**.
+- **Multi-Modal Fusion**: Identity scoring combining Face (50%), Voice (20%), and Gait (20%).
+- **Intelligence**: **Behavioral Predictor** and **Emotion Detector** for contextual awareness.
+
+### Enterprise Governance & Security
+- **Policy Engine**: Dynamic RBAC with conditions (Time, IP, Risk) and rate limiting.
+- **ZKP Authentication**: Privacy-preserving identity verification using **libsodium**.
+- **Legal Compliance**: Integrated **Consent Vault**, GDPR purpose limitation, and PII redaction.
+- **Audit Ledger**: Forensic-grade immutable audit logs of all biometric operations.
+
+### Production ML Reliability
+- **Model Calibration**: Environment-specific threshold tuning (Lobby vs. Outdoor).
+- **Drift Detection**: Continuous evaluation pipeline for monitoring model performance.
+- **Vector Sharding**: Horizontal scalability using **FAISS IndexHNSW** sharding.
+- **OTA Updates**: Secure model version management and rollback capabilities.
+
+### SaaS & Enterprise Ecosystem
+- **Billing**: Integrated **Stripe** billing with tiered plans and usage-based invoicing.
+- **Organizations**: Multi-tenant architecture with organizational isolation and RBAC.
+- **AI Assistant**: Natural language interface for system administration and analytics.
+- **Observability**: **Prometheus/Grafana** metrics and **Sentry** error tracking.
+
+## Project Structure (Production Architecture)
 
 ```
 d:/AI-F/AI-f/
-├── README.md                    # This file
-├── TODO.md                      # Task tracking
-├── PHASES.md                    # Development phases
-├── backend/                     # FastAPI service (Phase 1 complete)
-│   ├── app/
-│   │   ├── main.py              # Entry point
-│   │   ├── api/                 # REST endpoints (15+ files)
-│   │   │   ├── cameras.py       # Camera CRUD + streams
-│   │   │   ├── stream_recognize.py # WS stream processing
-│   │   │   ├── enroll.py        # Enrollment
-│   │   │   ├── recognize.py     # Single image recog
-│   │   │   ├── public_enrich.py # Public search
-│   │   │   └── ... (admin, alerts, orgs, etc.)
-│   │   ├── camera/rtsp_manager.py # RTSP multi-cam (reconnect/buffer)
-│   │   ├── services/queue_manager.py # Celery/Redis queue (<300ms)
-│   │   ├── evaluation/tuning.py # FAR/FRR tuner
-│   │   ├── edge/adapter.py      # Jetson/ONNX edge
-│   │   ├── offline/sync.py      # SQLite → Postgres sync
-│   │   ├── hybrid_search.py     # FAISS + pgvector sharded
-│   │   ├── decision_engine.py   # Multi-modal fusion
-│   │   ├── policy_engine.py     # RBAC/rate limits
-│   │   ├── continuous_evaluation.py # Drift detection
-│   │   ├── scoring_engine.py    # Identity scoring
-│   │   ├── models/              # ML stubs (face_detector.py, spoof.py, etc.)
-│   │   ├── grpc/                # gRPC proto/server
-│   │   ├── plugins/             # RTSP/edge plugins
-│   │   └── schemas.py           # Pydantic models
-│   ├── requirements.txt
-│   ├── alembic/versions/        # Migrations (enrich tables)
-│   ├── tests/                   # Unit/integration (edge, enroll, etc.)
-│   └── Dockerfile
-├── infra/                       # Deploy (docker-compose ready)
-│   ├── docker-compose.yml       # Postgres/Redis/Backend/UI/Nginx/Celery/Grafana
-│   ├── init.sql
-│   ├── nginx.conf
-│   └── prometheus.yml
-├── ui/react-app/                # Production React Dashboard (Complete)
+├── backend/app/                 # FastAPI Enterprise Backend
+│   ├── api/                     # REST/WS Endpoints (v1 & v2)
+│   │   ├── recognition_v2.py    # Scoring-engine enabled recognition
+│   │   ├── public_enrich.py     # Consent-based public data enrichment
+│   │   ├── ai_assistant.py      # LLM-powered operations interface
+│   │   └── ... (20+ enterprise modules)
+│   ├── models/                  # ML Core & Research
+│   │   ├── enhanced_spoof.py    # Production anti-spoofing
+│   │   ├── model_calibrator.py  # Environment-specific tuning
+│   │   ├── zkp_auth.py          # Zero-knowledge proof auth
+│   │   └── ethical_governor.py  # AI safety & bias filtering
+│   ├── policy_engine.py         # Enterprise RBAC & Rate Limiting
+│   ├── scoring_engine.py        # Multi-modal identity fusion
+│   ├── continuous_evaluation.py # Drift & accuracy monitoring
+│   └── legal_compliance.py      # GDPR/CCPA enforcement layer
+├── ui/react-app/                # Enterprise Dashboard (React 18)
 │   ├── src/
-│   │   ├── AdminDashboard.js    # Enterprise monitoring
-│   │   ├── AIAssistant.js      # LLM-powered operations
-│   │   ├── RecognizeView.js    # Live webcam/stream monitor
-│   │   └── EnrollmentForm.js   # Consent-based enrollment
-├── docs/                        # Compliance
-│   └── privacy_policy.md
-└── scripts/                     # Utils
+│   │   ├── AdminDashboard.js    # Multi-tenant analytics & monitoring
+│   │   ├── AIAssistant.js      # Natural language ops
+│   │   └── RecognizeView.js    # Real-time multi-stream monitor
+└── infra/                       # Cloud-native Deployment
+    ├── docker-compose.yml       # Sharded stack (Postgres/Redis/ML/Prometheus)
+    └── prometheus.yml           # Advanced metrics configuration
 ```
 
 **Legend**: ✅ Implemented | 🔄 Optimized/Hardened | 📋 Future Roadmap
