@@ -37,7 +37,7 @@ PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 PY34 = sys.version_info[0:2] >= (3, 4)
 
-if PY3:
+if sys.version_info[0] == 3:
     string_types = str,
     integer_types = int,
     class_types = type,
@@ -45,7 +45,13 @@ if PY3:
     binary_type = bytes
 
     MAXSIZE = sys.maxsize
-else:
+
+    # Names to satisfy static analysis tools in Python 3 environments
+    basestring = str
+    unicode = str
+    long = int
+    file = object
+elif sys.version_info[0] == 2:
     string_types = basestring,
     integer_types = (int, long)
     class_types = (type, types.ClassType)
@@ -644,7 +650,7 @@ _add_doc(iterlists,
          "Return an iterator over the (key, [values]) pairs of a dictionary.")
 
 
-if PY3:
+if sys.version_info[0] == 3:
     def b(s):
         return s.encode("latin-1")
 
@@ -670,7 +676,7 @@ if PY3:
         _assertRaisesRegex = "assertRaisesRegex"
         _assertRegex = "assertRegex"
         _assertNotRegex = "assertNotRegex"
-else:
+elif sys.version_info[0] == 2:
     def b(s):
         return s
     # Workaround for standalone backslash
@@ -686,8 +692,13 @@ else:
     def indexbytes(buf, i):
         return ord(buf[i])
     iterbytes = functools.partial(itertools.imap, ord)
-    import StringIO
-    StringIO = BytesIO = StringIO.StringIO
+    try:
+        _StringIO = __import__("StringIO")
+        StringIO = BytesIO = _StringIO.StringIO
+    except ImportError:
+        import io as _io
+        StringIO = _io.StringIO
+        BytesIO = _io.BytesIO
     _assertCountEqual = "assertItemsEqual"
     _assertRaisesRegex = "assertRaisesRegexp"
     _assertRegex = "assertRegexpMatches"

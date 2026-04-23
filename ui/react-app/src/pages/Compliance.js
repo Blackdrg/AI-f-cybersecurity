@@ -1,24 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Box, Typography, Paper, Grid, Button, 
   Table, TableBody, TableCell, TableHead, TableRow,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Alert, Chip, List, ListItem, ListItemText
+  Alert, Chip, TextField
 } from '@mui/material';
 import { 
   Gavel, Download, DeleteForever, 
-  Security, Policy, Visibility 
+  Security, Visibility
 } from '@mui/icons-material';
 import API from '../services/api';
 
 const Compliance = () => {
-  const [consents, setConsents] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
+  const [personId, setPersonId] = useState(''); // Target for export/delete
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  useEffect(() => {
-    // fetchConsents();
-  }, []);
+  const handleExport = async () => {
+    if (!personId) return;
+    setIsExporting(true);
+    try {
+      const response = await API.get(`/compliance/export/${personId}`);
+      const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gdpr_export_${personId}.json`;
+      a.click();
+      setIsExportDialogOpen(false);
+    } catch (err) {
+      alert("Export failed: " + err.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!personId) return;
+    try {
+      await API.delete(`/compliance/delete/${personId}`);
+      alert("Identity purged successfully.");
+      setIsDeleteDialogOpen(false);
+    } catch (err) {
+      alert("Deletion failed: " + err.message);
+    }
+  };
 
   return (
     <Box>
@@ -105,14 +132,27 @@ const Compliance = () => {
       <Dialog open={isExportDialogOpen} onClose={() => setIsExportDialogOpen(false)}>
         <DialogTitle>Data Export Request</DialogTitle>
         <DialogContent>
-          <Typography variant="body2">
-            The export process will gather all embeddings, recognition history, and consent logs into a JSON file. 
-            This may take a few moments.
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            The export process will gather all embeddings, recognition history, and consent logs into a JSON file.
           </Typography>
+          <TextField 
+            fullWidth 
+            label="Person ID" 
+            variant="outlined" 
+            size="small"
+            value={personId}
+            onChange={(e) => setPersonId(e.target.value)}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained">Start Export</Button>
+          <Button 
+            variant="contained" 
+            onClick={handleExport}
+            disabled={isExporting || !personId}
+          >
+            {isExporting ? 'Exporting...' : 'Start Export'}
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -125,7 +165,7 @@ const Compliance = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" color="error">Delete Everything</Button>
+          <Button variant="contained" color="error" onClick={handleDelete}>Delete Everything</Button>
         </DialogActions>
       </Dialog>
     </Box>

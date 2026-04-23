@@ -9,16 +9,20 @@ import {
 const drawerWidth = 240;
 
 const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
-  const menuItems = [
-    { id: 'dashboard', text: 'Dashboard', icon: <Dashboard /> },
-    { id: 'enroll', text: 'Enroll', icon: <PersonAdd /> },
-    { id: 'recognize', text: 'Recognize', icon: <CameraAlt /> },
-    { id: 'cameras', text: 'Cameras', icon: <Videocam /> },
-    { id: 'analytics', text: 'Analytics', icon: <BarChart /> },
-    { id: 'compliance', text: 'Compliance', icon: <Gavel /> },
-    { id: 'developer', text: 'Developer', icon: <Code /> },
-    { id: 'admin', text: 'Admin Panel', icon: <AdminPanelSettings /> },
+  const allItems = [
+    { id: 'dashboard', text: 'Dashboard', icon: <Dashboard />, roles: ['admin', 'security', 'hr', 'viewer'] },
+    { id: 'enroll', text: 'Enroll', icon: <PersonAdd />, roles: ['admin', 'hr'] },
+    { id: 'recognize', text: 'Recognize', icon: <CameraAlt />, roles: ['admin', 'security'] },
+    { id: 'cameras', text: 'Cameras', icon: <Videocam />, roles: ['admin', 'security'] },
+    { id: 'analytics', text: 'Analytics', icon: <BarChart />, roles: ['admin', 'security', 'hr', 'viewer'] },
+    { id: 'compliance', text: 'Compliance', icon: <Gavel />, roles: ['admin'] },
+    { id: 'developer', text: 'Developer', icon: <Code />, roles: ['admin'] },
+    { id: 'admin', text: 'Admin Panel', icon: <AdminPanelSettings />, roles: ['admin'] },
   ];
+
+  const menuItems = allItems.filter(item => 
+    !user.role || item.roles.includes(user.role.toLowerCase())
+  );
 
   return (
     <Drawer

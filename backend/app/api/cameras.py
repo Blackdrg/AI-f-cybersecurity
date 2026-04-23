@@ -23,6 +23,24 @@ async def add_camera(org_id: str, camera: CameraCreate, current_user=Depends(req
         created_at=None
     )
 
+@router.post("/cameras/test-connection")
+async def test_camera_connection(data: Dict[str, str]):
+    """Validate an RTSP URL without saving it."""
+    rtsp_url = data.get("rtsp_url")
+    if not rtsp_url:
+        raise HTTPException(400, "rtsp_url is required")
+        
+    # Attempt to open the stream
+    import cv2
+    cap = cv2.VideoCapture(rtsp_url)
+    if cap.isOpened():
+        ret, frame = cap.read()
+        cap.release()
+        if ret:
+            return {"status": "success", "message": "Stream connection verified"}
+    
+    raise HTTPException(400, "Could not connect to RTSP stream")
+
 @router.get("/{org_id}/cameras", response_model=List[CameraResponse])
 async def list_cameras(org_id: str, current_user=Depends(require_org_operator)):
     """List all cameras in the organization."""

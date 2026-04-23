@@ -11,6 +11,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 from ..offline.sync import get_offline_sync
+from ..security.secrets_vault import vault
 try:
     from cryptography.fernet import Fernet
     CRYPTOGRAPHY_AVAILABLE = True
@@ -97,14 +98,16 @@ class DBClient:
                 );
             """)
 
-            # Audit log (append-only)
+            # Audit log (Forensic Ledger - Tamper-proof hash-chained)
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS audit_log (
                     id SERIAL PRIMARY KEY,
                     action TEXT,
                     person_id UUID,
                     timestamp TIMESTAMP DEFAULT NOW(),
-                    details JSONB
+                    details JSONB,
+                    previous_hash TEXT,
+                    hash TEXT
                 );
             """)
 
@@ -275,6 +278,18 @@ class DBClient:
                 );
             """)
 
+            # System Health & SLA Tracking
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS system_health (
+                    id SERIAL PRIMARY KEY,
+                    service_name TEXT,
+                    status TEXT,
+                    latency_ms FLOAT,
+                    error_message TEXT,
+                    timestamp TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
             # SaaS - Users, Plans, Subscriptions, Payments, Usage, Support
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS users (
@@ -360,23 +375,12 @@ class DBClient:
             return None
 
     def _load_encryption_key(self) -> bytes:
-        # Use KMS for key management
-        if self.kms_client:
-            try:
-                key_id = os.getenv('KMS_KEY_ID', 'alias/face-recognition-key')
-                response = self.kms_client.generate_data_key(
-                    KeyId=key_id, KeySpec='AES_256')
-                return response['Plaintext']
-            except Exception:
-                # Fallback if KMS fails
-                pass
-        # Fallback for POC - generate a proper Fernet key
+        # Use centralized secrets vault
+        key = vault.get_encryption_key()
+        
+        # Ensure it's exactly 32 bytes and base64 encoded for Fernet
         import base64
-        key = os.getenv('ENCRYPTION_KEY',
-                        'your-32-byte-secret-key-here123456789012')  # 32 bytes
-        # Ensure it's exactly 32 bytes
         key_bytes = key.encode()[:32].ljust(32, b'\0')
-        # Fernet requires base64-encoded key
         return base64.urlsafe_b64encode(key_bytes)
 
     def _encrypt_embedding(self, embedding: np.ndarray) -> bytes:
@@ -449,11 +453,19 @@ class DBClient:
                     VALUES ($1, $2, $3, $4, $5, $6)
                 """, consent_record['consent_record_id'], person_id, consent_record.get('client_id'), consent_record.get('consent_text_version'), consent_record.get('captured_ip'), consent_record.get('signed_token'))
 
-                # Audit log
+                # Audit log with forensic hash chaining
+                last_log = await conn.fetchrow("SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1")
+                prev_hash = last_log['hash'] if last_log else "0" * 64
+                
+                import hashlib
+                import json
+                log_content = f"{prev_hash}{'enroll'}{person_id}{json.dumps({'num_embeddings': len(embeddings)})}"
+                current_hash = hashlib.sha256(log_content.encode()).hexdigest()
+
                 await conn.execute("""
-                    INSERT INTO audit_log (action, person_id, details)
-                    VALUES ('enroll', $1, $2)
-                """, person_id, {'num_embeddings': len(embeddings), 'has_voice': voice_embeddings is not None, 'has_gait': gait_embedding is not None})
+                    INSERT INTO audit_log (action, person_id, details, previous_hash, hash)
+                    VALUES ('enroll', $1, $2, $3, $4)
+                """, person_id, {'num_embeddings': len(embeddings), 'has_voice': voice_embeddings is not None, 'has_gait': gait_embedding is not None}, prev_hash, current_hash)
 
         return person_id
 
@@ -462,8 +474,9 @@ class DBClient:
         if self.pool is None:
             # Offline SQLite fallback
             return await offline_sync.recognize_local(query_embedding, top_k, threshold)
-        matches = []
-
+        # If in-memory (for POC/Test)
+        if hasattr(self, '_in_memory_db') and self._in_memory_db:
+            matches = []
             for emb_id, emb_data in self._in_memory_db['embeddings'].items():
                 # Filter by camera_id if specified
                 if camera_id and emb_data.get('camera_id') != camera_id:
@@ -601,13 +614,41 @@ class DBClient:
                 await conn.execute("DELETE FROM feedback WHERE person_id = $1", person_id)
                 # Delete person
                 await conn.execute("DELETE FROM persons WHERE person_id = $1", person_id)
-                # Audit log
+                # Delete audit logs related to this person
+                await conn.execute("DELETE FROM audit_log WHERE person_id = $1", person_id)
+                # Audit log for the deletion itself (anonymized)
                 await conn.execute("""
-                    INSERT INTO audit_log (action, person_id, details)
-                    VALUES ('delete', $1, $2)
-                """, person_id, {'deleted': True})
+                    INSERT INTO audit_log (action, details)
+                    VALUES ('gdpr_delete', $1)
+                """, {'deleted_person_id': person_id})
 
         return True
+
+    async def get_person_full_data(self, person_id: str) -> Optional[Dict[str, Any]]:
+        """GDPR Data Export: Collects all data related to a person."""
+        async with self.pool.acquire() as conn:
+            person = await conn.fetchrow("SELECT * FROM persons WHERE person_id = $1", person_id)
+            if not person: return None
+            
+            embeddings = await conn.fetch("SELECT * FROM embeddings WHERE person_id = $1", person_id)
+            consent = await conn.fetchrow("SELECT * FROM consent_logs WHERE person_id = $1", person_id)
+            audit = await conn.fetch("SELECT * FROM audit_log WHERE person_id = $1", person_id)
+            feedback = await conn.fetch("SELECT * FROM feedback WHERE person_id = $1", person_id)
+            
+            # Convert UUIDs and Datetimes to strings for JSON serialization
+            import json
+            def serial(obj):
+                if isinstance(obj, (datetime, uuid.UUID)):
+                    return str(obj)
+                raise TypeError("Type not serializable")
+
+            return {
+                "identity": dict(person) if person else None,
+                "biometrics": [dict(e) for e in embeddings],
+                "consent": dict(consent) if consent else None,
+                "activity_history": [dict(a) for a in audit],
+                "feedback": [dict(f) for f in feedback]
+            }
 
     async def submit_feedback(self, person_id: str, recognition_id: str, correct_person_id: str, confidence_score: float, feedback_type: str) -> bool:
         async with self.pool.acquire() as conn:
@@ -986,6 +1027,16 @@ class DBClient:
     async def delete_ticket(self, ticket_id: str) -> bool:
         async with self.pool.acquire() as conn:
             await conn.execute("DELETE FROM support_tickets WHERE ticket_id = $1", ticket_id)
+        return True
+
+    async def log_health_check(self, service: str, status: str, latency: float = 0, error: str = None):
+        """Logs a health check for SLA monitoring."""
+        if not self.pool: return False
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO system_health (service_name, status, latency_ms, error_message)
+                VALUES ($1, $2, $3, $4)
+            """, service, status, latency, error)
         return True
 
 

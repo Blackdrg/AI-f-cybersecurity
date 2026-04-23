@@ -18,7 +18,7 @@ sentry_sdk.init(
 )
 from .api import enroll, recognize, video_recognize, stream_recognize, admin, federated_learning
 from .api import users, plans, subscriptions, payments, usage, ai_assistant, support, public_enrich
-from .api import orgs, cameras, events, alerts
+from .api import orgs, cameras, events, alerts, compliance
 from .grpc.server import serve_grpc
 from .security import setup_security
 from .metrics import setup_metrics
@@ -107,6 +107,7 @@ app.include_router(orgs.router, prefix="/api", tags=["orgs"])
 app.include_router(cameras.router, prefix="/api/orgs", tags=["cameras"])
 app.include_router(events.router, prefix="/api/orgs", tags=["events"])
 app.include_router(alerts.router, prefix="/api/orgs", tags=["alerts"])
+app.include_router(compliance.router, prefix="/api", tags=["compliance"])
 
 # Legal compliance router
 from .api.legal import router as legal_router

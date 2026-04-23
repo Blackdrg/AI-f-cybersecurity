@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 import hashlib
 import json
+from .security.anomaly_detector import anomaly_detector
 
 
 class PolicyEffect(Enum):
@@ -197,6 +198,21 @@ class PolicyEngine:
     ) -> PolicyDecision:
         """Evaluate policy for subject + resource."""
         context = context or {}
+        
+        # 1. Anomaly Detection Integration
+        ip_addr = context.get("ip_range", "unknown")
+        anomaly_results = anomaly_detector.track_request(subject_id, ip_addr)
+        
+        if anomaly_results["is_anomaly"]:
+            return PolicyDecision(
+                effect=PolicyEffect.DENY,
+                allowed=False,
+                reason=f"Anomaly Detected: {', '.join(anomaly_results['reasons'])}",
+                matched_rule="anomaly_protection_gate"
+            )
+        
+        # Add risk score to context for further rule evaluation
+        context["risk_level"] = "high" if anomaly_detector.get_risk_score(subject_id) > 0.7 else "low"
         
         # Check each rule (sorted by priority)
         for rule in self.rules:

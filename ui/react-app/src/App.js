@@ -3,6 +3,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box } from '@mui/material';
 import LoginPage from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import SetupWizard from './components/SetupWizard';
 
 const theme = createTheme({
   palette: {
@@ -64,7 +65,11 @@ function App() {
         {!user ? (
           <LoginPage onLogin={handleLogin} />
         ) : (
-          <Dashboard onLogout={handleLogout} user={user} />
+          user.role === 'admin' && !localStorage.getItem('setup_complete') ? (
+            <SetupWizard onComplete={() => localStorage.setItem('setup_complete', 'true')} />
+          ) : (
+            <Dashboard onLogout={handleLogout} user={user} />
+          )
         )}
       </Box>
     </ThemeProvider>

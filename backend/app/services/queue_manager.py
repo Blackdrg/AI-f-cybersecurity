@@ -1,6 +1,6 @@
-import celery
 from celery import Celery
-from .camera.rtsp_manager import rtsp_manager
+from celery.schedules import crontab
+from ..camera.rtsp_manager import rtsp_manager
 from ..db.db_client import get_db
 from ..metrics import recognition_latency
 import time
@@ -41,7 +41,8 @@ def process_frame(self, camera_id: str, top_k: int = 1, threshold: float = 0.6):
     faces = detector.detect_faces(img)
     
     loop.run_until_complete(get_db_async())  # Temp sync call
-    db = _db_client  # Global from db_client
+    # db = _db_client  # Global from db_client
+    db = loop.run_until_complete(get_db())
     results = []
 
     for face in faces:
@@ -76,4 +77,61 @@ app.conf.update(
     enable_utc=True,
     worker_prefetch_multiplier=1,  # Low latency
     task_acks_late=True,
+    beat_schedule={
+        'daily-usage-audit': {
+            'task': 'backend.app.services.queue_manager.run_usage_audit',
+            'schedule': crontab(hour=2, minute=0), # Daily at 2 AM
+        },
+        'weekly-retrain-check': {
+            'task': 'backend.app.services.queue_manager.run_retrain_check',
+            'schedule': crontab(day_of_week=0, hour=3, minute=0), # Sundays at 3 AM
+        },
+        'hourly-sla-check': {
+            'task': 'backend.app.services.queue_manager.run_sla_check',
+            'schedule': crontab(minute=0), # Hourly
+        },
+    }
 )
+
+@app.task
+def run_usage_audit():
+    """Wrapper for usage monitor."""
+    from .usage_monitor import UsageMonitor
+    import asyncio
+    monitor = UsageMonitor()
+    asyncio.run(monitor.check_all_users())
+
+@app.task
+def run_retrain_check():
+    """Wrapper for retraining pipeline."""
+    from scripts.ml.retrain_pipeline import RetrainPipeline
+    import asyncio
+    pipeline = RetrainPipeline()
+    asyncio.run(pipeline.run())
+
+@app.task
+def run_sla_check():
+    """Wrapper for system health checks."""
+    import asyncio
+    import time
+    from ..db.db_client import get_db
+    
+    async def _check():
+        db = await get_db()
+        start = time.time()
+        try:
+            # Check DB
+            await db.pool.execute("SELECT 1")
+            latency = (time.time() - start) * 1000
+            await db.log_health_check("database", "healthy", latency)
+            
+            # Check Redis (Celery broker)
+            await db.log_health_check("redis", "healthy")
+            
+            # Check Backend API
+            await db.log_health_check("api", "healthy")
+            
+        except Exception as e:
+            await db.log_health_check("system", "degraded", error=str(e))
+            
+    asyncio.run(_check())

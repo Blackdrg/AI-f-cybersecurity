@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Response
 from typing import List, Optional
 from ..schemas import PaymentCreate, PaymentResponse
 from ..db.db_client import get_db
@@ -74,3 +74,32 @@ async def get_payment_history(current_user=Depends(get_current_user)):
             created_at=p["created_at"].isoformat() if hasattr(p["created_at"], 'isoformat') else str(p["created_at"])
         ) for p in payments
     ]
+
+@router.get("/payments/invoice/{payment_id}")
+async def generate_invoice(payment_id: str, current_user=Depends(get_current_user)):
+    """Generate a PDF invoice for a specific payment."""
+    db = await get_db()
+    payment = await db.pool.fetchrow("SELECT * FROM payments WHERE payment_id = $1 AND user_id = $2", payment_id, current_user["user_id"])
+    
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    # Generate PDF (Mocking the byte stream for now)
+    # In production, use reportlab or fpdf
+    invoice_content = f"""
+    LEVI-AI ENTERPRISE INVOICE
+    --------------------------
+    Invoice ID: {payment_id}
+    Date: {payment['created_at']}
+    Customer: {current_user['name']}
+    Amount: {payment['amount']} {payment['currency']}
+    Status: {payment['status']}
+    
+    Thank you for choosing LEVI-AI!
+    """
+    
+    return Response(
+        content=invoice_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=invoice_{payment_id}.pdf"}
+    )

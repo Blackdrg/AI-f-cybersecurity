@@ -2,6 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from ..schemas import StandardResponse
 from ..db.db_client import get_db
+import httpx
+import logging
 from ..security import require_org_admin
 
 router = APIRouter()
@@ -49,8 +51,14 @@ async def process_event_rules(event_id: str, org_id: str, person_id: str, camera
             """, rule['rule_id'], event_id)
             
             # Execute actions (webhooks, email placeholders)
-            actions = rule['actions']
             for action in actions:
                 if action['type'] == 'webhook':
-                    # httpx.post(action['url'], json={"event_id": event_id})
-                    pass
+                    try:
+                        async with httpx.AsyncClient() as client:
+                            await client.post(action['url'], json={
+                                "alert": rule['name'],
+                                "event_id": str(event_id),
+                                "timestamp": str(datetime.utcnow())
+                            }, timeout=5.0)
+                    except Exception as e:
+                        logging.error(f"Failed to send webhook for rule {rule['rule_id']}: {e}")
