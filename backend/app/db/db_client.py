@@ -10,7 +10,6 @@ from typing import List, Dict, Any, Optional
 import os
 import uuid
 from datetime import datetime, timedelta
-from ..offline.sync import get_offline_sync
 from ..security.secrets_vault import vault
 try:
     from cryptography.fernet import Fernet
@@ -37,6 +36,7 @@ class DBClient:
 
 
     async def init_db(self):
+        from ..offline.sync import get_offline_sync
         await get_offline_sync().init_local_db()
         
         if ASYNCPG_AVAILABLE:
@@ -470,6 +470,7 @@ class DBClient:
         return person_id
 
     async def recognize_faces(self, query_embedding: np.ndarray, top_k: int = 1, threshold: float = 0.6, camera_id: str = None, voice_embedding: np.ndarray = None, gait_embedding: np.ndarray = None) -> List[Dict[str, Any]]:
+        from ..offline.sync import get_offline_sync
         offline_sync = await get_offline_sync()
         if self.pool is None:
             # Offline SQLite fallback
