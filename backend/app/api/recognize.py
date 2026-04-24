@@ -16,7 +16,7 @@ from ..models.emotion_detector import EmotionDetector
 from ..models.age_gender_estimator import AgeGenderEstimator
 from ..models.behavioral_predictor import BehavioralPredictor
 from ..models.bias_detector import BiasDetector
-from ..models.zkp_auth import ZKPAuthenticator
+from ..models.zkp_auth import SignatureAuthenticator
 from ..db.db_client import get_db
 from ..schemas import RecognizeRequest, RecognizeResponse, DetectedFace, FaceMatch, ZKPRequest, StandardResponse
 from ..security import require_auth, check_ethical
@@ -33,7 +33,7 @@ emotion_detector = EmotionDetector()
 age_gender_estimator = AgeGenderEstimator()
 behavioral_predictor = BehavioralPredictor()
 bias_detector = BiasDetector()
-zkp_auth = ZKPAuthenticator()
+signature_auth = SignatureAuthenticator()
 
 
 from ..services.reliability import ai_model_circuit_breaker, db_circuit_breaker, CircuitBreakerOpenException
@@ -198,13 +198,12 @@ async def recognize_faces_zkp(
     user: dict = Depends(require_auth)
 ):
     try:
-        # ZKP-based recognition without revealing raw embedding
-        # Simplified: assume proof contains embedding hash
-        # In production, verify ZKP properly
+        # Digital signature-based authentication (placeholder implementation)
+        # In production, verify signature using stored public key
         db = await get_db()
-        # Placeholder: fetch user embedding and verify
+        # Placeholder: fetch user embedding and verify signature
         # For POC, assume authenticated
         return StandardResponse(success=True, data={"faces": []}, error=None)
     except Exception as e:
-        logger.error(f"ZKP recognition error: {e}", exc_info=True)
+        logger.error(f"Signature recognition error: {e}", exc_info=True)
         return StandardResponse(success=False, error=str(e))

@@ -42,7 +42,7 @@
 - [7. Enterprise Governance & Forensic Integrity](#7-enterprise-governance--forensic-integrity)
     - [7.1 Consent Vault & Legal Compliance](#71-consent-vault--legal-compliance)
     - [7.2 Forensic Audit Ledger (HMAC Chaining)](#72-forensic-audit-ledger-hmac-chaining)
-    - [7.3 Forensic ZKP Authentication](#73-forensic-zkp-authentication)
+    - [7.3 Forensic Digital Signature Authentication](#73-forensic-digital-signature-authentication)
     - [7.4 High-Performance gRPC Interface](#74-high-performance-grpc-interface)
     - [7.5 Ethical Governance Engine](#75-ethical-governance-engine)
     - [7.6 Automated Key Rotation & Data Migration](#76-automated-key-rotation--data-migration)
@@ -161,7 +161,7 @@ The `VectorShardManager` (`app/scalability.py`) ensures the system scales to mil
 
 ### 5.7 Decision Engine: Advanced Risk & Fusion Logic
 The `DecisionEngine` (`app/decision_engine.py`) serves as the cognitive intelligence layer:
-- **Confidence Fusion**: Uses a weighted aggregation of Face (50%), Voice (30%), and Gait (20%) scores, adjusted by the minimum source confidence to prevent "garbage-in" decisions.
+- **Confidence Fusion**: Uses a weighted aggregation of Face (50%), Voice (20%), and Gait (20%) scores, adjusted by the minimum source confidence to prevent "garbage-in" decisions.
 - **Risk Scoring**: Evaluates 5 key risk vectors:
     - **Confidence Variance**: High disagreement between sensors triggers a `review` action.
     - **Spoof Detection**: Integrated signals from the `EnhancedSpoofDetector` trigger immediate `deny` on high risk.
@@ -190,7 +190,7 @@ Implemented in `app/models/face_detector.py`. Optimizes anchor redistribution fo
 
 ### 6.2 Anti-Spoofing & Liveness
 The `EnhancedSpoofDetector` (`app/models/enhanced_spoof.py`) uses a multi-layered approach:
-1. **Texture Analysis**: LBP-based detection of printed photos.
+1. **Texture Analysis**: LBP (Local Binary Patterns) for basic print attack detection. Note: LBP alone is insufficient for detecting sophisticated deepfakes; production deployment should integrate CNN-based detectors (e.g., XceptionNet trained on FaceForensics++).
 2. **Reflectance**: Specular pattern analysis for screen detection.
 3. **Challenge-Response**: Real-time verification of movements (Blink, Turn Head, Nod, Smile).
 4. **Depth/IR**: Integration with 3D/Infrared sensors for mask detection.
@@ -202,9 +202,9 @@ Implemented in `app/models/age_gender_estimator.py`, utilizing **InsightFace (bu
 - **Behavioral Flow**: The `BehavioralPredictor` tracks these attributes over time to detect anomalies in human activity patterns.
 
 ### 6.4 Face Reconstruction & Occlusion Recovery
-The `FaceReconstructor` (`app/models/face_reconstructor.py`) handles challenging environmental conditions:
+The `FaceReconstructor` (`app/models/face_reconstructor.py`) handles minor occlusions:
 - **Occlusion Detection**: Identifies regions blocked by masks, glasses, or shadows using pixel variance analysis.
-- **Inpainting**: Uses **Navier-Stokes** based image reconstruction to recover missing facial landmarks, improving recognition recall by up to 15% in crowded or poorly lit areas.
+- **Inpainting**: Uses an optional GFPGAN GAN-based model for feature recovery (if available); otherwise falls back to Navier-Stokes inpainting for basic texture synthesis. Performance varies; extensive occlusions may not be recoverable.
 
 ---
 
@@ -218,10 +218,10 @@ The `LegalCompliance` layer (`app/legal_compliance.py`) provides regional govern
 ### 7.2 Forensic Audit Ledger
 The `audit_log` is chained using HMAC signatures ($H_i = HMAC(Data_i + H_{i-1})$). Any deletion or modification of history breaks the chain, triggering a "Forensic Integrity Violation" alert.
 
-### 7.3 Forensic ZKP Authentication
-Implemented in `app/models/zkp_auth.py`, the **Zero-Knowledge Proof (ZKP)** module allows identity verification without revealing the raw embedding:
-- **Protocol**: Uses `PyNaCl` (libsodium) for Ed25519 signing of embedding hashes.
-- **Privacy**: The client proves ownership of the biometric signature via a signed challenge, which is verified against the stored `VerifyKey` without the server ever "seeing" the original biometric signals during the auth round.
+### 7.3 Forensic Digital Signature Authentication
+Implemented in `app/models/zkp_auth.py`, the **Digital Signature Authentication** module provides cryptographic proof of embedding ownership:
+- **Protocol**: Uses `PyNaCl` (libsodium) Ed25519 digital signatures over embedding hashes.
+- **Privacy**: The client signs the embedding hash with a private key; the server verifies using the stored public key without storing the raw embedding on the verification server. Note: This is a digital signature scheme, not a zero-knowledge proof.
 
 ### 7.4 High-Performance gRPC Interface
 For ultra-low-latency enterprise integrations, AI-f exposes a **gRPC server** on port `50051`:
@@ -588,7 +588,7 @@ AI-f includes a comprehensive diagnostic suite for system health monitoring, tro
 | `gait_analyzer.py` | 1-51 | 128-d gait signature from video frames | `GaitAnalyzer.extract_gait_features()` (lines 12-51) | `cv2`, `numpy` |
 | `face_reconstructor.py` | 1-39 | Navier-Stokes inpainting for occlusions | `FaceReconstructor.reconstruct_face()` (lines 12-39) | `cv2` |
 | `bias_detector.py` | 1-68 | Demographic parity & equalized odds metrics | `BiasDetector.detect_bias()` (lines 18-54), `mitigate_bias()` (lines 56-68) | `fairlearn` (optional) |
-| `zkp_auth.py` | 1-73 | Ed25519 ZKP for embedding ownership | `ZKPAuthenticator.generate_proof()` (lines 20-47), `verify_proof()` (49-67) | `nacl` (PyNaCl) |
+| `zkp_auth.py` | 1-73 | Ed25519 digital signature for embedding ownership | `SignatureAuthenticator.sign_embedding()` (lines 20-47), `verify_signature()` (49-67) | `nacl` (PyNaCl) |
 | `explainable_ai.py` | 1-895 | Complete XAI engine with attribution maps, counterfactuals, calibration | `DecisionBreakdownEngine.explain_decision()` (lines 123-201), `_generate_counterfactuals()` (413-511), `_detect_bias()` (550-623) | `numpy`, `json` |
 
 **Core Engines** (`app/` root)
@@ -718,7 +718,7 @@ test_saas.py::test_org_isolation PASSED                                   [ 30%]
 |-------------|-----------|----------------|-------|
 | Printed Photo (2D) | 99.9% | 0.01% | LBP texture |
 | Replay (Screen) | 99.5% | 0.05% | Temporal variance |
-| Deepfake/Morph | 98.1% | 0.12% | EnhancedSpoofNet |
+| Deepfake/Morph | TBD | TBD | Heuristic analysis (under development) |
 | 3D Silicone Mask | 96.8% | 0.20% | Depth + IR |
 
 ---
@@ -1196,7 +1196,7 @@ tar -czf support-bundle-$(date +%Y%m%d).tar.gz \
 
 | Version | Date | Changes |
 |---------|------|---------|
-| **22.1.1 LTS** | 2026-04-24 | Final hardening: Circuit breakers, ZKP auth, federated learning, forensic audit |
+| **22.1.1 LTS** | 2026-04-24 | Final hardening: Circuit breakers, digital signature auth, federated learning, forensic audit |
 | **22.0.0** | 2026-03-15 | Major rewrite: Scoring engine v2, policy engine, hybrid search |
 | **21.5.0** | 2026-02-01 | Added explainable AI, bias detection, emotion analysis |
 | **21.0.0** | 2025-12-01 | Initial sovereign release (air-gapped deployment) |
@@ -1258,7 +1258,7 @@ backend/app/
 │
 ├── api/                             # REST API routers (22 files)
 │   ├── enroll.py                    # Enrollment + identity merge/split
-│   ├── recognize.py                 # Face recognition + ZKP
+│   ├── recognize.py                 # Face recognition + signature auth
 │   ├── admin.py                     # Admin operations, metrics, bias reports
 │   ├── orgs.py                      # Multi-tenant org management
 │   ├── cameras.py                   # RTSP camera CRUD
@@ -1286,7 +1286,7 @@ backend/app/
 │   ├── gait_analyzer.py            # Silhouette gait 128-d
 │   ├── face_reconstructor.py       # Navier-Stokes inpainting
 │   ├── bias_detector.py            # Fairlearn metrics
-│   ├── zkp_auth.py                 # Ed25519 ZKP proofs
+│   ├── zkp_auth.py                 # Ed25519 digital signature for embedding ownership
 │   ├── explainable_ai.py           # XAI engine (895 lines!)
 │   ├── spoof_detector.py           # CNN-based PAD
 │   └── [other model files]
@@ -1709,7 +1709,7 @@ graph TD
         subgraph Cognitive_Mesh [Cognitive Mesh & ML]
             EdgeManager[RTSP / Edge Manager]
             Scoring[Identity Scoring Engine]
-            ZKP[Zero-Knowledge Proof Auth]
+            SignatureAuth[Digital Signature Auth]
             Celery[Celery ML Workers]
         end
 
@@ -1727,7 +1727,7 @@ graph TD
     Ingress --> Web
     Ingress --> API
 
-    API --> ZKP
+    API --> SignatureAuth
     API --> Scoring
     API --> Celery
 
@@ -1759,10 +1759,10 @@ AI-f has been exhaustively tested against **LFW** (99.82% base), **MegaFace** (M
 #### Adversarial Presentation Attack Defeat Rate (PAD)
 | Attack Type | Detection Rate | False Positive Rate |
 | :--- | :--- | :--- |
-| **Printed Photo (2D)** | 99.9% | 0.01% |
-| **Replay Attack (Screen)**| 99.5% | 0.05% |
-| **Deepfake / Morphing** | 98.1% | 0.12% |
-| **3D Silicone Mask** | 96.8% | 0.20% |
+| **Printed Photo (2D)** | 99.9% | 0.01% | LBP texture |
+| **Replay Attack (Screen)**| 99.5% | 0.05% | Temporal variance |
+| **Deepfake / Morphing** | In development | In development | CNN-based detection (XceptionNet architecture planned) |
+| **3D Silicone Mask** | 96.8% | 0.20% | Depth + IR |
 
 #### Certified Hardware Baseline
 *   **Compute:** AWS `g4dn.xlarge`
@@ -1821,7 +1821,7 @@ backend/app/
 │
 ├── api/                             # REST API routers (22 files)
 │   ├── enroll.py                    # Enrollment + identity merge/split
-│   ├── recognize.py                 # Face recognition + ZKP
+│   ├── recognize.py                 # Face recognition + signature auth
 │   ├── admin.py                     # Admin operations, metrics, bias reports
 │   ├── orgs.py                      # Multi-tenant org management
 │   ├── cameras.py                   # RTSP camera CRUD
@@ -1849,7 +1849,7 @@ backend/app/
 │   ├── gait_analyzer.py            # Silhouette gait 128-d
 │   ├── face_reconstructor.py       # Navier-Stokes inpainting
 │   ├── bias_detector.py            # Fairlearn metrics
-│   ├── zkp_auth.py                 # Ed25519 ZKP proofs
+│   ├── zkp_auth.py                 # Ed25519 digital signature for embedding ownership
 │   ├── explainable_ai.py           # XAI engine (895 lines!)
 │   ├── spoof_detector.py           # CNN-based PAD
 │   └── [other model files]
@@ -2420,7 +2420,7 @@ tar -czf ai-f-forensic-$(date +%Y%m%d).tar.gz \
 
 | Version | Release Date | Key Changes | Upgrade Command |
 |---------|--------------|-------------|----------------|
-| **22.1.1 LTS** | 2026-04-24 | Circuit breakers, ZKP auth, FL, forensic audit, diagnostic suite | From 22.1.0: `docker compose up -d` (no migration) |
+| **22.1.1 LTS** | 2026-04-24 | Circuit breakers, signature auth, FL, forensic audit, diagnostic suite | From 22.1.0: `docker compose up -d` (no migration) |
 | **22.1.0** | 2026-04-10 | Scoring engine v2, hybrid search, policy engine, explainable AI | From 21.5.0: `python scripts/upgrade_v21_to_v22.py` |
 | **22.0.0** | 2026-03-15 | Complete rewrite: modular engines, multi-modal, SaaS | N/A (fresh install) |
 | **21.5.0** | 2026-02-01 | Emotion detection, behavioral predictor, bias metrics | `pip install -U ai-f` |

@@ -41,12 +41,12 @@ All benchmarks were reproduced on the following standardized infrastructure:
 ## 5. Adversarial & Spoof Test Report
 The LEVI-AI anti-spoofing module was subjected to presentation attacks (PAD).
 
-| Attack Type | Detection Rate | False Positive Rate |
-| :--- | :--- | :--- |
-| **Printed Photo (2D)** | 99.9% | 0.01% |
-| **Replay Attack (Screen)**| 99.5% | 0.05% |
-| **Deepfake / Morphing** | 98.1% | 0.12% |
-| **3D Silicone Mask** | 96.8% | 0.20% |
+| Attack Type | Detection Rate | False Positive Rate | Method |
+| :--- | :--- | :--- | :--- |
+| **Printed Photo (2D)** | 99.9% | 0.01% | LBP texture analysis |
+| **Replay Attack (Screen)**| 99.5% | 0.05% | Temporal consistency |
+| **Deepfake / Morphing** | In development | In development | CNN-based architecture in progress (XceptionNet planned) |
+| **3D Silicone Mask** | 96.8% | 0.20% | Depth + IR correlation |
 
 ## 6. Reproducibility Steps
 To reproduce these results within your own sovereign cluster:

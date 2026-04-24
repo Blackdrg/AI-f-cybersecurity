@@ -44,13 +44,11 @@ class KeyRotationManager:
         logger.info("Key rotation and migration complete.")
 
     async def _migrate_embeddings(self, old_key_str: str, new_key_str: str):
-        """Iterates and re-encrypts data."""
-        if not old_key_str: return
-        
-        # Placeholder for DB iteration
-        # In reality, fetch all IDs, decrypt with old, encrypt with new, save.
-        print(f"DEBUG: Re-encrypting data from {old_key_str[:5]}... to {new_key_str[:5]}...")
-        pass
+        """Iterates and re-encrypts data using batch processing with transactions."""
+        if not old_key_str:
+            return
+        # Use DBClient's batch rotation method
+        await self.db.rotate_embedding_keys(old_key_str, new_key_str)
 
 # Global instance
 key_manager = None # Initialized on app startup

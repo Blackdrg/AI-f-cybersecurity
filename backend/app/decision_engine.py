@@ -47,7 +47,7 @@ class FusionConfig:
     """Configuration for confidence fusion."""
     strategy: DecisionStrategy = DecisionStrategy.BALANCED
     face_weight: float = 0.5
-    voice_weight: float = 0.3
+    voice_weight: float = 0.2
     gait_weight: float = 0.2
     min_face_confidence: float = 0.4
     min_voice_confidence: float = 0.3

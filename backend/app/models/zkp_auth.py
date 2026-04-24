@@ -11,63 +11,59 @@ import numpy as np
 from typing import Tuple, Dict, Any
 
 
-class ZKPAuthenticator:
+class SignatureAuthenticator:
+    """
+    Ed25519 digital signature-based authentication for embedding ownership.
+    
+    Note: This provides cryptographic proof of possession of a signing key,
+    but is NOT a Zero-Knowledge Proof. The verifier must have the corresponding
+    public key to verify signatures.
+    """
     def __init__(self):
-        # Simplified ZKP for face verification (POC)
-        # In production, use proper ZKP libraries like zkSNARKs
+        # For POC, uses Ed25519 signatures; in production, use hardware-backed keys
         pass
 
-    def generate_proof(self, embedding: np.ndarray, secret_key: bytes) -> Dict[str, Any]:
+    def sign_embedding(self, embedding: np.ndarray, signing_key: bytes) -> Dict[str, Any]:
         """
-        Generate zero-knowledge proof for embedding ownership.
+        Generate digital signature for an embedding hash.
         """
         if not NACL_AVAILABLE:
-            # Fallback: simple hash-based proof
             emb_hash = hashlib.sha256(embedding.tobytes()).digest()
-            proof = {
-                'signature': hashlib.sha256(secret_key + emb_hash).hexdigest(),
-                'public_key': hashlib.sha256(secret_key).hexdigest(),
+            signature = hashlib.sha256(signing_key + emb_hash).hexdigest()
+            public_key = hashlib.sha256(signing_key).hexdigest()
+            return {
+                'signature': signature,
+                'public_key': public_key,
                 'challenge': emb_hash.hex()
             }
-            return proof
 
-        # Hash embedding
         emb_hash = hashlib.sha256(embedding.tobytes()).digest()
-
-        # Sign hash with secret key
-        signing_key = nacl.signing.SigningKey(secret_key)
-        signed = signing_key.sign(emb_hash)
-
-        # Proof: signed hash (simplified ZKP)
-        proof = {
+        signing_key_obj = nacl.signing.SigningKey(signing_key)
+        signed = signing_key_obj.sign(emb_hash)
+        return {
             'signature': signed,
-            'public_key': signing_key.verify_key.encode(),
+            'public_key': signing_key_obj.verify_key.encode(),
             'challenge': emb_hash.hex()
         }
-        return proof
 
-    def verify_proof(self, proof: Dict[str, Any], embedding: np.ndarray) -> bool:
+    def verify_signature(self, signature_data: Dict[str, Any], embedding: np.ndarray) -> bool:
         """
-        Verify ZKP without revealing embedding.
+        Verify a digital signature against an embedding hash.
         """
         if not NACL_AVAILABLE:
-            # Fallback verification
             emb_hash = hashlib.sha256(embedding.tobytes()).digest()
-            expected_signature = hashlib.sha256(bytes.fromhex(
-                proof['public_key']) + emb_hash).hexdigest()
-            return proof['signature'] == expected_signature and proof['challenge'] == emb_hash.hex()
+            expected = hashlib.sha256(bytes.fromhex(signature_data['public_key']) + emb_hash).hexdigest()
+            return signature_data['signature'] == expected and signature_data['challenge'] == emb_hash.hex()
 
         try:
             emb_hash = hashlib.sha256(embedding.tobytes()).digest()
             verify_key = nacl.signing.VerifyKey(
-                proof['public_key'], encoder=nacl.encoding.HexEncoder)
-            verify_key.verify(proof['signature'])
-            return proof['challenge'] == emb_hash.hex()
-        except:
+                signature_data['public_key'], encoder=nacl.encoding.HexEncoder)
+            verify_key.verify(signature_data['signature'])
+            return signature_data['challenge'] == emb_hash.hex()
+        except Exception:
             return False
 
-    def authenticate_user(self, proof: Dict[str, Any], stored_embedding: np.ndarray) -> bool:
-        """
-        Authenticate user with ZKP.
-        """
-        return self.verify_proof(proof, stored_embedding)
+    def authenticate(self, signature_data: Dict[str, Any], stored_embedding: np.ndarray) -> bool:
+        """Authenticate using digital signature."""
+        return self.verify_signature(signature_data, stored_embedding)

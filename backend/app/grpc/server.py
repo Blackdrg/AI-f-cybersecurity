@@ -195,9 +195,13 @@ async def serve_grpc():
             server.add_secure_port('[::]:50051', credentials)
             print("gRPC server started securely on port 50051 (TLS 1.3)")
         else:
-            server.add_insecure_port('[::]:50051')
-            print("gRPC server started on port 50051 (INSECURE - certs missing)")
-            
+            allow_insecure = os.getenv("GRPC_ALLOW_INSECURE", "false").lower() == "true"
+            if allow_insecure:
+                server.add_insecure_port('[::]:50051')
+                print("WARNING: gRPC server started on port 50051 WITHOUT TLS (insecure). Set GRPC_ALLOW_INSECURE=false for production.")
+            else:
+                print("ERROR: gRPC TLS certificates not found. Set SSL_CERT_FILE and SSL_KEY_FILE, or set GRPC_ALLOW_INSECURE=true to allow insecure (not recommended).")
+                return
         await server.start()
         await server.wait_for_termination()
     except Exception as e:

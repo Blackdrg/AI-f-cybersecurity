@@ -12,40 +12,32 @@ class GaitAnalyzer:
     def extract_gait_features(self, video_frames: List[np.ndarray]) -> np.ndarray:
         """
         Extract gait features from a sequence of video frames.
-        Returns 1-D float32 vector representing gait signature.
+        Returns a 128-dimensional float32 vector representing gait signature.
+        Uses Gait Energy Image (GEI) representation: silhouettes are averaged,
+        then resized to 16x8 and L2-normalized.
         """
         if len(video_frames) < 10:
-            # Placeholder for insufficient data
             return np.zeros(128, dtype=np.float32)
 
-        features = []
-
+        silhouettes = []
         for frame in video_frames:
-            # Simple silhouette extraction (thresholding)
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # Simple binary silhouette extraction via thresholding
             _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+            silhouettes.append(thresh.astype(np.float32) / 255.0)  # normalize 0-1
 
-            # Extract basic shape features (moments)
-            moments = cv2.moments(thresh)
-            hu_moments = cv2.HuMoments(moments).flatten()
-            features.append(hu_moments)
+        # Compute Gait Energy Image (GEI) - mean silhouette
+        gei = np.mean(silhouettes, axis=0)  # shape (H, W)
 
-        # Aggregate over frames (mean and std)
-        features = np.array(features)
-        mean_features = np.mean(features, axis=0)
-        std_features = np.std(features, axis=0)
-        gait_vector = np.concatenate([mean_features, std_features])
+        # Resize to fixed 16x8 (128 values) using area interpolation for downsampling
+        gei_resized = cv2.resize(gei, (16, 8), interpolation=cv2.INTER_AREA)
 
-        # Normalize to fixed size (e.g., 128-d)
-        if len(gait_vector) > 128:
-            gait_vector = gait_vector[:128]
-        elif len(gait_vector) < 128:
-            gait_vector = np.pad(
-                gait_vector, (0, 128 - len(gait_vector)), 'constant')
+        # Flatten to 1-D vector
+        gait_vector = gei_resized.flatten()
 
         # L2 normalize
         norm = np.linalg.norm(gait_vector)
         if norm > 0:
-            gait_vector /= norm
+            gait_vector = gait_vector / norm
 
         return gait_vector.astype(np.float32)

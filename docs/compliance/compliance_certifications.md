@@ -3,7 +3,7 @@
 **Status:** Certified / Ready for Enterprise Procurement
 
 ## 1. ISO/IEC 27001 (Information Security Management)
-LEVI-AI's deployment architecture, data handling protocols, and Zero-Knowledge Proof (ZKP) identity ledgers adhere strictly to ISO 27001 standards. 
+LEVI-AI's deployment architecture, data handling protocols, and digital signature-based authentication adhere strictly to ISO 27001 standards.
 *   **Scope:** All cryptographic operations, database at-rest encryption (AES-256), and in-transit (TLS 1.3) protocols.
 *   **Artifact:** Request full ISMS documentation from the LEVI-AI compliance team.
 

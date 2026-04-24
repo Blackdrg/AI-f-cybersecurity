@@ -1,0 +1,40 @@
+AI-f System Diagnostic Report
+Generated: 2026-04-24T20:54:06.212927
+
+ISSUES:
+  ❌ DATABASE_URL: MISSING
+  ❌ DB_HOST: MISSING
+  ❌ DB_PORT: MISSING
+  ❌ DB_NAME: MISSING
+  ❌ DB_USER: MISSING
+  ❌ DB_PASSWORD: MISSING
+  ❌ JWT_SECRET: MISSING
+  ❌ ENCRYPTION_KEY: MISSING
+  ❌ SENTRY_DSN: MISSING
+  ❌ PostgreSQL (:5432): not responding
+  ❌ Redis (:6379): not responding
+  ❌ API (HTTP) (:8000): not responding
+  ❌ API (HTTPS) (:443): not responding
+  ❌ Frontend (:3000): not responding
+  ❌ Prometheus (:9090): not responding
+  ❌ gRPC (:50051): not responding
+  ❌ Grafana (:3001): not responding
+  ❌ Database connection failed: [WinError 1225] The remote computer refused the network connection
+
+WARNINGS:
+  ⚠️ High memory usage: 87.8%
+  ⚠️ Low disk space: 94.7% used
+  ⚠️ Docker not running or not installed
+  ⚠️ redis-py not installed - Redis checks skipped
+  ⚠️ face_detector: not available (fallback mode)
+  ⚠️ face_embedder: not available (fallback mode)
+  ⚠️ spoof_detector: not available (fallback mode)
+  ⚠️ emotion_detector: not available (fallback mode)
+  ⚠️ age_gender: not available (fallback mode)
+  ⚠️ torch: not available (fallback mode)
+  ⚠️ faiss: not available (fallback mode)
+  ⚠️ Model weights directory not found - models may use mock implementations
+  ⚠️ PyTorch not available - GPU checks skipped
+
+PASSED CHECKS:
+  ✓ CPU: 9.8% used, 4 cores

@@ -15,7 +15,7 @@
 *   **Risk:** Unauthorized access to the database revealing employee biometric data.
 *   **Likelihood:** Low (System is air-gapped, vectors are encrypted at rest with AES-256).
 *   **Impact:** Moderate/High (Biometric data is immutable).
-*   **Mitigation:** Zero-Knowledge Proof (ZKP) architecture ensures that even if vectors are stolen, they cannot be reverse-engineered into a human face or used to authenticate without the client-side signing key.
+*   **Mitigation:** Digital signature-based authentication ensures that even if vectors are stolen, they cannot be used to authenticate without the client-side private signing key.
 
 ## 4. Compliance Measures
 *   **Right to Access:** API endpoint `GET /api/v1/identity/{id}/metadata` provided for data subject requests.

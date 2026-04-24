@@ -24,7 +24,7 @@ from .enhanced_spoof import (
 from .model_calibrator import ModelCalibrator
 from .bias_detector import BiasDetector
 from .ethical_governor import EthicalGovernor
-from .zkp_auth import ZKPAuthenticator
+from .zkp_auth import SignatureAuthenticator
 
 # Next-gen identity features
 from .homomorphic_encryption import (
@@ -114,7 +114,7 @@ __all__ = [
     'ModelCalibrator',
     'BiasDetector',
     'EthicalGovernor',
-    'ZKPAuthenticator',
+    'SignatureAuthenticator',
     
     # Next-gen identity
     'HomomorphicEncryptionEngine',

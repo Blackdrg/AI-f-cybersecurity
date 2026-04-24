@@ -20,7 +20,7 @@ graph TD
         subgraph Cognitive_Mesh [Cognitive Mesh & ML]
             EdgeManager[RTSP / Edge Manager]
             Scoring[Identity Scoring Engine]
-            ZKP[Zero-Knowledge Proof Auth]
+            SignatureAuth[Digital Signature Auth]
             Celery[Celery ML Workers - GPU]
         end
 
@@ -46,7 +46,7 @@ graph TD
     Ingress --> Web
     Ingress --> API
 
-    API --> ZKP
+    API --> SignatureAuth
     API --> Scoring
     API -- "Async Tasks" --> Celery
 

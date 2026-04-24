@@ -40,12 +40,21 @@ class DBClient:
         await get_offline_sync().init_local_db()
         
         if ASYNCPG_AVAILABLE:
+            # Retrieve DB credentials from Vault if configured, fallback to environment
+            db_user = os.getenv('DB_USER', 'postgres')
+            db_password = vault.get_secret('DB_PASSWORD')
+            if db_password is None:
+                db_password = os.getenv('DB_PASSWORD', 'password')
+            db_name = os.getenv('DB_NAME', 'face_recognition')
+            db_host = os.getenv('DB_HOST', 'localhost')
+            db_port = int(os.getenv('DB_PORT', 5432))
+            
             self.pool = await asyncpg.create_pool(
-                user=os.getenv('DB_USER', 'postgres'),
-                password=os.getenv('DB_PASSWORD', 'password'),
-                database=os.getenv('DB_NAME', 'face_recognition'),
-                host=os.getenv('DB_HOST', 'localhost'),
-                port=int(os.getenv('DB_PORT', 5432))
+                user=db_user,
+                password=db_password,
+                database=db_name,
+                host=db_host,
+                port=db_port
             )
             await self._create_tables()
         else:
@@ -400,6 +409,108 @@ class DBClient:
         else:
             # Fallback: no decryption
             return np.frombuffer(encrypted_data, dtype=np.float32)
+
+    async def rotate_embedding_keys(self, old_key_str: str, new_key_str: str, batch_size: int = 1000):
+        """
+        Re-encrypt all stored embeddings (face, voice, gait) using new key.
+        Processes in batches within transactions to allow resumable operation.
+        """
+        import logging
+        logger = logging.getLogger("key-rotation")
+        if not CRYPTOGRAPHY_AVAILABLE:
+            logger.warning("cryptography not available; skipping key rotation")
+            return
+        
+        if self.pool is None:
+            logger.warning("Database pool not initialized; skipping key rotation")
+            return
+        
+        # Prepare Fernet instances
+        try:
+            old_fernet = Fernet(old_key_str.encode() if isinstance(old_key_str, str) else old_key_str)
+            new_fernet = Fernet(new_key_str.encode() if isinstance(new_key_str, str) else new_key_str)
+        except Exception as e:
+            logger.error(f"Invalid Fernet key format: {e}")
+            return
+
+        last_id = None
+        total_processed = 0
+
+        while True:
+            async with self.pool.acquire() as conn:
+                # Fetch next batch ordered by embedding_id
+                if last_id is None:
+                    query = """
+                        SELECT embedding_id, embedding, voice_embedding, gait_embedding
+                        FROM embeddings
+                        ORDER BY embedding_id
+                        LIMIT $1
+                    """
+                    rows = await conn.fetch(query, batch_size)
+                else:
+                    query = """
+                        SELECT embedding_id, embedding, voice_embedding, gait_embedding
+                        FROM embeddings
+                        WHERE embedding_id > $1
+                        ORDER BY embedding_id
+                        LIMIT $2
+                    """
+                    rows = await conn.fetch(query, last_id, batch_size)
+
+                if not rows:
+                    break
+
+                # Process batch in a single transaction
+                async with conn.transaction():
+                    for row in rows:
+                        emb_id = row['embedding_id']
+                        updated = False
+                        # Face embedding
+                        if row['embedding']:
+                            try:
+                                dec_bytes = old_fernet.decrypt(row['embedding'])
+                                new_enc = new_fernet.encrypt(dec_bytes)
+                                await conn.execute(
+                                    "UPDATE embeddings SET embedding = $1 WHERE embedding_id = $2",
+                                    new_enc, emb_id
+                                )
+                                updated = True
+                            except Exception as e:
+                                logger.error(f"Failed to rotate face embedding {emb_id}: {e}")
+                                raise  # rollback batch
+                        # Voice embedding
+                        if row['voice_embedding']:
+                            try:
+                                dec_bytes = old_fernet.decrypt(row['voice_embedding'])
+                                new_enc = new_fernet.encrypt(dec_bytes)
+                                await conn.execute(
+                                    "UPDATE embeddings SET voice_embedding = $1 WHERE embedding_id = $2",
+                                    new_enc, emb_id
+                                )
+                                updated = True
+                            except Exception as e:
+                                logger.error(f"Failed to rotate voice embedding {emb_id}: {e}")
+                                raise
+                        # Gait embedding
+                        if row['gait_embedding']:
+                            try:
+                                dec_bytes = old_fernet.decrypt(row['gait_embedding'])
+                                new_enc = new_fernet.encrypt(dec_bytes)
+                                await conn.execute(
+                                    "UPDATE embeddings SET gait_embedding = $1 WHERE embedding_id = $2",
+                                    new_enc, emb_id
+                                )
+                                updated = True
+                            except Exception as e:
+                                logger.error(f"Failed to rotate gait embedding {emb_id}: {e}")
+                                raise
+                        if not updated:
+                            logger.warning(f"No embeddings found for {emb_id}")
+                total_processed += len(rows)
+                last_id = rows[-1]['embedding_id']
+                logger.info(f"Rotated embeddings for {len(rows)} records (total: {total_processed})")
+
+        logger.info(f"Embedding rotation complete. Total processed: {total_processed}")
 
     async def enroll_person(self, person_id: str, name: str, embeddings: List[np.ndarray], consent_record: Dict[str, Any], camera_id: str = None, voice_embeddings: List[np.ndarray] = None, gait_embedding: np.ndarray = None, age: int = None, gender: str = None) -> str:
         if self.pool is None:
