@@ -226,6 +226,56 @@
                     ]
                 }
             }
+        },
+        {
+            "name": "Get Audit Trail",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{admin_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/legal/audit/{{person_id}}",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "legal",
+                        "audit",
+                        "{{person_id}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "GDPR Data Export",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{admin_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/legal/export/{{person_id}}",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "legal",
+                        "export",
+                        "{{person_id}}"
+                    ]
+                }
+            }
         }
     ],
     "variable": [

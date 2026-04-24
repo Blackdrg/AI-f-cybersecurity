@@ -88,15 +88,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(enroll.router, prefix="/api", tags=["enroll"])
-app.include_router(recognize.router, prefix="/api", tags=["recognize"])
-app.include_router(video_recognize.router, prefix="/api",
+# Include routers (v1)
+app.include_router(enroll.router, prefix="/api/v1", tags=["enroll"])
+app.include_router(recognize.router, prefix="/api/v1", tags=["recognize"])
+app.include_router(video_recognize.router, prefix="/api/v1",
                    tags=["video_recognize"])
-app.include_router(stream_recognize.router, prefix="/ws",
+app.include_router(stream_recognize.router, prefix="/ws/v1",
                    tags=["stream_recognize"])
-app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
-app.include_router(federated_learning.router, prefix="/api",
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
+app.include_router(federated_learning.router, prefix="/api/v1",
                    tags=["federated_learning"])
 
 # SaaS routers
@@ -120,7 +120,7 @@ app.include_router(legal_router, prefix="/api", tags=["legal"])
 
 # Recognition v2 router (with scoring engine)
 from .api.recognition_v2 import router as recognition_v2_router
-app.include_router(recognition_v2_router, prefix="/api", tags=["recognition_v2"])
+app.include_router(recognition_v2_router, prefix="/api/v2", tags=["recognition_v2"])
 
 # Setup security, metrics, DB
 setup_security(app)
