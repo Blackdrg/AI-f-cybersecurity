@@ -266,8 +266,23 @@ AI-f is engineered for the modern SaaS provider:
 
 ## 10. Deployment & Orchestration
 
-### 10.1 Quick Start: Docker Deployment (Recommended)
-The fastest way to deploy the entire AI-f stack is using Docker Compose.
+### 10.1 Quick Start: Enterprise Deployment (Recommended)
+For production and enterprise environments, AI-f provides a hardened, automated deployment script that handles TLS 1.3, mTLS certificates, secret generation, and Celery Auto-Recovery watchdogs.
+
+#### ✅ Step-by-Step Enterprise Setup (Ubuntu/Debian)
+1. **Execute the Enterprise Installer**:
+   ```bash
+   sudo bash scripts/install_enterprise.sh
+   ```
+2. **Post-Installation Configuration**:
+   The script automatically generates secure `.env` secrets and cryptographic certificates in the `certs/` directory.
+
+#### 🌐 Open & Verify
+- **API (Backend Docs)**: [https://localhost:8000/docs](https://localhost:8000/docs) (Secure Swagger UI)
+- **Frontend Dashboard**: [http://localhost:3000](http://localhost:3000)
+
+### 10.1.1 Manual Docker Deployment (Development)
+The fastest way to deploy the stack locally for development is using Docker Compose.
 
 #### ✅ Step-by-Step Setup
 1. **Navigate to the infrastructure directory**:
