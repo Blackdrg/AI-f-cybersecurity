@@ -56,7 +56,12 @@ from .scoring_engine import scoring_engine, get_scoring_engine
 from .continuous_evaluation import evaluation_pipeline, get_evaluation_pipeline
 from .policy_engine import policy_engine, get_policy_engine
 
+from .middleware.rate_limit import RateLimitMiddleware
+
 app = FastAPI(title="Face Recognition Service", version="2.0.0")
+
+# Add Rate Limiting
+app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
 
 # Global production systems initialized
 _production_systems_ready = False

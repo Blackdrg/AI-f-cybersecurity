@@ -67,6 +67,13 @@
 - [20. Mathematical Appendix: Risk & Fusion Formulas](#20-mathematical-appendix-risk--fusion-formulas)
 - [21. System Performance Baseline](#21-system-performance-baseline)
 - [22. Governance Matrix: Roles & Permissions](#22-governance-matrix-roles--permissions)
+- [23. Project Directory Structure](#23-project-directory-structure)
+- [24. Security Hardening & Edge Intelligence](#24-security-hardening--edge-intelligence)
+- [25. Operational Maintenance & Background Tasks](#25-operational-maintenance--background-tasks)
+- [26. Developer Resources & Quick Links](#26-developer-resources--quick-links)
+- [27. Benchmarking & Forensic Accuracy](#27-benchmarking--forensic-accuracy)
+- [28. System Observability & Telemetry](#28-system-observability--telemetry)
+- [29. Operator Interface Features](#29-operator-interface-features)
 
 ---
 
@@ -308,16 +315,34 @@ Ensure the following ports are open in your security groups:
 - **3000**: Enterprise Dashboard (React)
 - **5432**: Database (Internal/VPN only)
 
-### 10.2 Maintenance Workflows
+### 10.3 Maintenance Workflows
 - **Backups**: Use `scripts/ops/backup_postgres.sh` for daily database snapshots.
 - **Scaling**: Adjust `num_shards` in `main.py` if managing > 100,000 identities for optimal search latency.
 - **Rotation**: Rotate `ENCRYPTION_KEY` every 90 days to maintain forensic compliance.
 
-### 10.3 System Startup & Resilient Initialization
+### 10.4 System Startup & Resilient Initialization
 The AI-f boot sequence ensures high availability:
 1. **Resilient DB Connection**: Retries up to 5 times with exponential backoff if PostgreSQL is not immediately reachable.
 2. **Global Production Checks**: Sets `_production_systems_ready` flag only after verifying vector store and policy engine health.
 3. **Model Warmup**: Performs a "cold-start" dummy inference on a 224x224 tensor to pre-load PyTorch/TensorRT weights into GPU memory, eliminating first-request latency spikes.
+
+### 10.5 Enterprise One-Click Installation
+For rapid on-premise deployment, AI-f provides automated installers in the `scripts/` directory:
+
+#### Linux (Ubuntu/Debian)
+```bash
+curl -sSL https://raw.githubusercontent.com/Blackdrg/AI-f-cybersecurity/main/scripts/install_enterprise.sh | bash
+```
+This script handles:
+- Prerequisite installation (Docker, Compose, Python3).
+- Repository cloning and `.env` initialization with secure random secrets.
+- Automated service orchestration and health verification.
+
+#### Windows (PowerShell)
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install_enterprise.ps1
+```
+Optimized for Windows 10/11 with Docker Desktop and WSL2 integration.
 
 ---
 
@@ -464,6 +489,114 @@ AI-f enforces a strict Role-Based Access Control (RBAC) hierarchy across all end
 | **Identity Enrollment** | ✅ | ✅ | ✅ (Own) |
 | **Public Enrichment** | ✅ | ✅ | ❌ |
 | **Billing & SaaS Mgmt** | ✅ | ❌ | ✅ (Own) |
+
+---
+
+## 23. Project Directory Structure
+
+```text
+AI-f/
+├── backend/                # FastAPI Application Core
+│   └── app/
+│       ├── api/            # REST API Route Handlers
+│       ├── camera/         # RTSP & Frame Management
+│       ├── db/             # Persistence & Vector Search
+│       ├── edge/           # Hardware Adapters (Jetson/GPU)
+│       ├── models/         # ML Architecture & Inference
+│       ├── security/       # Anomaly Detection & Key Rotation
+│       ├── services/       # Business Logic & Queue Management
+│       └── main.py         # Entry Point
+├── ui/                     # Enterprise Dashboards
+│   └── react-app/          # React 18 Frontend
+├── infra/                  # Deployment Manifests
+│   ├── docker-compose.yml  # Production Stack
+│   └── nginx/              # Reverse Proxy & SSL
+├── scripts/                # DevOps & Automation
+│   ├── ml/                 # Retraining Pipelines
+│   └── ops/                # Backup & Scaling
+├── docs/                   # Technical Reference
+└── README.md               # System Handbook
+```
+
+## 24. Security Hardening & Edge Intelligence
+
+### 24.1 Anomaly Detection Thresholds
+The `AnomalyDetector` provides real-time protection against automated attacks:
+- **Spike Detection**: Triggered at **50 requests per 5 minutes**.
+- **Credential Stuffing Prevention**: Triggered if **> 3 unique IPs** access a single identity within the tracking window.
+- **Risk Mitigation**: High-risk scores automatically trigger multi-factor biometric challenges via the Policy Engine.
+
+### 24.2 Edge Optimization (NVIDIA Jetson)
+The `EdgeAdapter` provides hardware-specific runtimes:
+- **Provider Switching**: Automatically selects `CUDAExecutionProvider` on Jetson Nano/Xavier.
+- **Batching**: Dynamic batch sizes (8 for Jetson, 32 for Server-class GPUs).
+- **ONNX Optimization**: Models are pre-compiled into ONNX with `TensorRT` acceleration where supported.
+
+## 25. Operational Maintenance & Background Tasks
+
+The system utilizes **Celery Beat** for automated maintenance workflows:
+
+| Task Name | Schedule | Description |
+|-----------|----------|-------------|
+| `daily-usage-audit` | 02:00 UTC | Generates metered billing records for SaaS tenants. |
+| `weekly-retrain-check` | Sun 03:00 UTC | Evaluates drift logs to trigger incremental model retraining. |
+| `hourly-sla-check` | Hourly | Verifies DB/Redis/API latency and logs health to `audit_log`. |
+
+## 26. Developer Resources & Quick Links
+
+- **API Specification**: `docs/api_spec.yaml`
+- **Postman Collection**: `postman_collection.json` (Import into Postman for automated API testing)
+- **Administrator Guide**: `docs/ADMIN_GUIDE.md`
+- **Integration Tests**: `backend/tests/`
+- **Docker Compose**: `infra/docker-compose.yml`
+
+---
+
+## 27. Benchmarking & Forensic Accuracy
+
+AI-f includes dedicated evaluation tools to verify model performance against custom datasets:
+
+### 27.1 Accuracy Evaluation (`evaluate.py`)
+Run the evaluation suite to generate ROC curves and find optimal thresholds:
+```bash
+python evaluate.py /path/to/validation_dataset --output_plot tar_far_plot.png
+```
+**Key Metrics Tracked:**
+- **TAR (True Accept Rate)**: Probability of correctly identifying a registered subject.
+- **FAR (False Accept Rate)**: Probability of incorrectly identifying an impostor.
+- **EER (Equal Error Rate)**: The point where TAR and FAR are equal.
+- **Target Performance**: The system is calibrated for a **FAR of 0.001%** for high-security environments.
+
+## 28. System Observability & Telemetry
+
+AI-f provides a full-stack observability suite for real-time monitoring:
+
+### 28.1 Telemetry Endpoints
+- **Core Health**: `/api/health` (Overall system status)
+- **Dependency Health**: `/api/dependencies` (Status of Stripe, OpenAI, Bing, Wiki)
+- **Metrics**: `/metrics` (Prometheus-formatted technical metrics)
+
+### 28.2 Monitoring Stack (Docker Compose)
+- **Prometheus (9090)**: Time-series database for system performance.
+- **Grafana (3001)**: Visual dashboards for recognition latency, GPU heat, and throughput.
+- **Sentry**: Integrated for asynchronous error tracking and trace analysis.
+
+## 29. Operator Interface Features
+
+The AI-f Dashboard (`ui/react-app`) is built for mission-critical operations:
+
+### 29.1 Admin Dashboard
+- **Real-time Monitoring**: Live stream feed with biometric bounding box overlays.
+- **Audit Explorer**: Searchable and cryptographically verified audit trail of all system mutations.
+- **Org Management**: Hierarchical management of cameras, users, and API keys.
+
+### 29.2 AI Assistant
+- **Natural Language Ops**: Command the system via chat (e.g., "Show me recent alerts from Camera 1" or "Enroll a new user with high priority").
+- **LLM-Powered**: Leverages GPT-4/Claude for intelligent response generation and administrative task automation.
+
+### 29.3 Enrichment Portal
+- **Public Profile Matching**: Automatically fetches public data for recognized identities via Bing and Wikipedia.
+- **Privacy Gated**: Strictly respects the `consent_token` before performing any external searches.
 
 ---
 

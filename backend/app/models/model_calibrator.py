@@ -129,6 +129,38 @@ class ModelCalibrator:
             eval_time=datetime.utcnow().isoformat()
         )
     
+    def calibrate_scores_platt(self, raw_scores: np.ndarray, labels: np.ndarray) -> Tuple[float, float]:
+        """
+        Calibrate scores using Platt scaling (Logistic Regression on scores).
+        Returns (A, B) such that P(y=1|x) = 1 / (1 + exp(A*f(x) + B))
+        """
+        from sklearn.linear_model import LogisticRegression
+        lr = LogisticRegression()
+        lr.fit(raw_scores.reshape(-1, 1), labels)
+        return lr.coef_[0][0], lr.intercept_[0]
+
+    def calibrate_scores_isotonic(self, raw_scores: np.ndarray, labels: np.ndarray):
+        """
+        Calibrate scores using Isotonic Regression.
+        Best for non-parametric calibration.
+        """
+        from sklearn.isotonic import IsotonicRegression
+        ir = IsotonicRegression(out_of_bounds='clip')
+        ir.fit(raw_scores, labels)
+        return ir
+
+    def get_calibrated_probability(self, raw_score: float, method: str = "platt", params: Any = None) -> float:
+        """Get calibrated probability from raw score."""
+        if method == "platt" and params:
+            A, B = params
+            return 1.0 / (1.0 + np.exp(A * raw_score + B))
+        elif method == "isotonic" and params:
+            ir = params
+            return float(ir.transform([raw_score])[0])
+        else:
+            # Fallback to sigmoid
+            return 1.0 / (1.0 + np.exp(-raw_score))
+
     def _evaluate_samples(
         self,
         embeddings: np.ndarray,

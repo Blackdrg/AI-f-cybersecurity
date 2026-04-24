@@ -37,12 +37,29 @@ class FaceRecognitionUser(HttpUser):
         """Tune threshold."""
         self.client.get("/api/tune_threshold")
 
+    @task(1)
+    def stress_test(self):
+        """Push the system until failure to measure degradation curve."""
+        # Rapid fire requests
+        for _ in range(10):
+            self.client.get("/api/recognize_v2?org_id=stress_test")
+
+@events.request.add_listener
+def on_request(request_type, name, response_time, response_length, exception, **kwargs):
+    if exception:
+        print(f"Request {name} failed: {exception}")
+    else:
+        # Log latency breakdown (mocking different stages)
+        if name == "multi_cam_recognize":
+            stages = {
+                "detection": response_time * 0.3,
+                "embedding": response_time * 0.4,
+                "search": response_time * 0.2,
+                "decision": response_time * 0.1
+            }
+            # This would normally be pushed to Prometheus
+
 @events.test_start.add_listener
 def on_test_start(environment):
-    print("Starting 100 user load test with 5 RTSP cams...")
-    print("Targets: <300ms latency, FAR<1%, FRR<3%")
-
-@events.test_stop.add_listener
-def on_test_stop(environment):
-    print("Load test complete - check Grafana/Prometheus")
+    print("Starting enterprise load test (1000+ streams target)...")
 

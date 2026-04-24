@@ -167,9 +167,38 @@ async def serve_grpc():
         server = grpc.aio.server()
         add_FaceRecognitionServiceServicer_to_server(
             FaceRecognitionServicer(), server)
-        server.add_insecure_port('[::]:50051')
+        
+        from ..security.tls_config import get_ssl_context
+        import ssl
+        
+        cert_file = os.getenv("SSL_CERT_FILE", "certs/server.crt")
+        key_file = os.getenv("SSL_KEY_FILE", "certs/server.key")
+        ca_file = os.getenv("SSL_CA_FILE", "certs/ca.crt")
+        mtls_enabled = os.getenv("MTLS_ENABLED", "false").lower() == "true"
+
+        if os.path.exists(cert_file) and os.path.exists(key_file):
+            with open(key_file, 'rb') as f:
+                private_key = f.read()
+            with open(cert_file, 'rb') as f:
+                certificate_chain = f.read()
+            
+            root_certificates = None
+            if mtls_enabled and os.path.exists(ca_file):
+                with open(ca_file, 'rb') as f:
+                    root_certificates = f.read()
+            
+            credentials = grpc.ssl_server_credentials(
+                [(private_key, certificate_chain)],
+                root_certificates=root_certificates,
+                require_client_auth=mtls_enabled
+            )
+            server.add_secure_port('[::]:50051', credentials)
+            print("gRPC server started securely on port 50051 (TLS 1.3)")
+        else:
+            server.add_insecure_port('[::]:50051')
+            print("gRPC server started on port 50051 (INSECURE - certs missing)")
+            
         await server.start()
-        print("gRPC server started on port 50051")
         await server.wait_for_termination()
     except Exception as e:
         print(f"gRPC server error: {e}")

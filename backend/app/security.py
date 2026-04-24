@@ -15,10 +15,12 @@ security = HTTPBearer()
 ethical_governor = EthicalGovernor() if ETHICAL_GOVERNOR_AVAILABLE else None
 
 
+from .security.secrets_manager import secrets_manager
+
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, os.getenv(
+        payload = jwt.decode(token, secrets_manager.get_secret(
             'JWT_SECRET', 'secret'), algorithms=['HS256'])
         return payload
     except jwt.ExpiredSignatureError:
@@ -102,7 +104,7 @@ def create_token(user_id: str, role: str = 'user') -> str:
         'role': role,
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
     }
-    return jwt.encode(payload, os.getenv('JWT_SECRET', 'secret'), algorithm='HS256')
+    return jwt.encode(payload, secrets_manager.get_secret('JWT_SECRET', 'secret'), algorithm='HS256')
 
 
 def require_auth_grpc(func):
@@ -119,7 +121,7 @@ def require_auth_grpc(func):
             return
 
         try:
-            payload = jwt.decode(token, os.getenv(
+            payload = jwt.decode(token, secrets_manager.get_secret(
                 'JWT_SECRET', 'secret'), algorithms=['HS256'])
             context.user = payload
             context.client_host = metadata.get('x-forwarded-for', 'unknown')

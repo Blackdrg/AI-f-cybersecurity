@@ -279,6 +279,27 @@ class LegalCompliance:
         self.activities.append(activity)
         return activity_id
     
+    def generate_signed_audit_export(self, user_id: str) -> Dict:
+        """Generates a cryptographically signed audit export for forensic use."""
+        import hmac
+        import hashlib
+        
+        audit_data = self.get_audit_trail(user_id=user_id)
+        data_string = json.dumps(audit_data, sort_keys=True)
+        
+        # Sign with system secret
+        secret = os.getenv("AUDIT_SIGNING_SECRET", "audit_secret")
+        signature = hmac.new(secret.encode(), data_string.encode(), hashlib.sha256).hexdigest()
+        
+        return {
+            "version": "1.0",
+            "generated_at": datetime.utcnow().isoformat(),
+            "user_id": user_id,
+            "audit_trail": audit_data,
+            "forensic_signature": signature,
+            "signature_algorithm": "HMAC-SHA256"
+        }
+
     def get_audit_trail(
         self,
         user_id: Optional[str] = None,
@@ -345,35 +366,34 @@ class LegalCompliance:
             ]
         }
     
-    def generate_deletion_request(
-        self,
-        user_id: str
-    ) -> Dict:
-        """Generate deletion request for GDPR art 17."""
-        # All consents
-        consent_ids = [
-            c.consent_id for c in self.consent_records.values()
-            if c.user_id == user_id
-        ]
+    async def process_deletion(self, user_id: str) -> bool:
+        """Actually process the deletion of a user (Right to be Forgotten)."""
+        from .db.db_client import get_db
+        db = await get_db()
         
-        # Activities to delete
-        activity_ids = [
-            a.activity_id for a in self.activities
-            if a.user_id == user_id
-        ]
+        # 1. Delete embeddings and person record
+        success = await db.delete_person(user_id)
         
-        return {
-            "user_id": user_id,
-            "deletion_type": "right_to_erasure",
-            "requested_at": datetime.utcnow().isoformat(),
-            "items_to_delete": {
-                "consents": consent_ids,
-                "processing_activities": activity_ids,
-                "embeddings": "all",
-                "biometric_raw_data": "all"
-            },
-            "cascade": True
-        }
+        # 2. Cleanup local compliance records
+        self.consent_records = {k: v for k, v in self.consent_records.items() if v.user_id != user_id}
+        self.activities = [a for a in self.activities if a.user_id != user_id]
+        
+        return success
+
+    async def run_retention_cleanup(self) -> int:
+        """Run periodic cleanup of expired data."""
+        from .db.db_client import get_db
+        db = await get_db()
+        
+        now = datetime.utcnow().isoformat()
+        expired_consents = [c.user_id for c in self.consent_records.values() if c.expires_at and c.expires_at < now]
+        
+        count = 0
+        for user_id in set(expired_consents):
+            if await self.process_deletion(user_id):
+                count += 1
+        
+        return count
     
     def check_cross_border_transfer(
         self,

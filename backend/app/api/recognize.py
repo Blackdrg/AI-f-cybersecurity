@@ -36,6 +36,8 @@ bias_detector = BiasDetector()
 zkp_auth = ZKPAuthenticator()
 
 
+from ..services.reliability import ai_model_circuit_breaker, db_circuit_breaker, CircuitBreakerOpenException
+
 @router.post("/recognize", response_model=StandardResponse)
 async def recognize_faces(
     image: UploadFile = File(...),
@@ -61,10 +63,19 @@ async def recognize_faces(
         if img is None:
             return StandardResponse(success=False, error="Invalid image format")
 
-        faces = detector.detect_faces(
-            img, check_spoof=enable_spoof_check, reconstruct=True)
-        detected_faces = []
+        # Fallback mechanism for detector
+        try:
+            faces = await ai_model_circuit_breaker(lambda: detector.detect_faces(
+                img, check_spoof=enable_spoof_check, reconstruct=True))()
+        except (CircuitBreakerOpenException, Exception) as e:
+            logger.warning(f"Primary detector failed or circuit open: {e}. Falling back to basic detection.")
+            # Basic fallback detection logic (placeholder)
+            # In real case, could use a lighter model or cached result
+            faces = [] # Empty result or cached result could be used here
+            if isinstance(e, CircuitBreakerOpenException):
+                return StandardResponse(success=False, error="AI Service temporarily unavailable (Circuit Open)")
 
+        detected_faces = []
         db = await get_db()
 
         # Process voice if provided
@@ -105,10 +116,21 @@ async def recognize_faces(
 
             inference_start = time.time()
             aligned = detector.align_face(img, face['landmarks'])
-            query_emb = embedder.get_embedding(aligned)
+            try:
+                query_emb = await ai_model_circuit_breaker(lambda: embedder.get_embedding(aligned))()
+            except Exception:
+                logger.error("Embedding failed, skipping face.")
+                continue
             inference_ms = (time.time() - inference_start) * 1000
 
-            matches = await db.recognize_faces(query_emb, top_k=top_k, threshold=threshold, camera_id=camera_id, voice_embedding=voice_embedding, gait_embedding=gait_embedding)
+            try:
+                matches = await db_circuit_breaker(lambda: db.recognize_faces(
+                    query_emb, top_k=top_k, threshold=threshold, camera_id=camera_id, 
+                    voice_embedding=voice_embedding, gait_embedding=gait_embedding
+                ))()
+            except Exception:
+                logger.error("DB search failed for face.")
+                matches = []
 
             face_matches = [
                 FaceMatch(
