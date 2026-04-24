@@ -42,3 +42,8 @@ aiofiles==23.2.1  # For file handling
 stripe==7.4.0  # For payment processing
 slowapi==0.1.9  # For rate limiting
 openai==1.3.0  # For AI assistant
+tenseal==0.3.16  # For homomorphic encryption
+pyyaml==6.0.1  # For policy YAML parsing
+pycryptodome==3.20.0  # For advanced crypto
+ecdsa==0.18.0  # For ECDSA signatures
+
