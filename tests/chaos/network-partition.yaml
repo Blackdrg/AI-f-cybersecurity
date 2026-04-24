@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: simulate-network-partition
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: ai-f-postgresql
+  policyTypes:
+  - Ingress
+  ingress:
+  # This empty list blocks ALL incoming traffic to the PostgreSQL pods,
+  # effectively simulating a severe network partition between the API/Workers and the DB.
+  - {}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ai-f
+description: A Helm chart for LEVI-AI Sovereign OS
+type: application
+version: 22.1.0
+appVersion: "22.1.0"

@@ -1,0 +1,42 @@
+replicaCount: 3
+
+image:
+  repository: blackdrg/levi-ai-core
+  pullPolicy: IfNotPresent
+  tag: "22.1.0"
+
+resources:
+  limits:
+    nvidia.com/gpu: 1
+    cpu: "4"
+    memory: "16Gi"
+  requests:
+    cpu: "2"
+    memory: "8Gi"
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+redis:
+  enabled: true
+  architecture: replication
+
+postgresql:
+  enabled: true
+
+healthProbes:
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8000
+    initialDelaySeconds: 15
+    periodSeconds: 5

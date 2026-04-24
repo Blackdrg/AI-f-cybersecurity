@@ -1,0 +1,14 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ai-f.fullname" . }}-postgresql
+  labels:
+    app: {{ include "ai-f.name" . }}-postgresql
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: {{ include "ai-f.name" . }}-postgresql
+{{- end }}

@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-f.fullname" . }}
+  labels:
+    app: {{ include "ai-f.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "ai-f.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "ai-f.name" . }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+{{ toYaml .Values.healthProbes.livenessProbe | indent 12 }}
+          readinessProbe:
+{{ toYaml .Values.healthProbes.readinessProbe | indent 12 }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          env:
+            - name: REDIS_URL
+              value: "redis://{{ include "ai-f.fullname" . }}-redis:6379"
+            - name: DATABASE_URL
+              value: "postgresql://postgres:postgres@{{ include "ai-f.fullname" . }}-postgresql:5432/aif"
+            - name: USE_GPU
+              value: "true"

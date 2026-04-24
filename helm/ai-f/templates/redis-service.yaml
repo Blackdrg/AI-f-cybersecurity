@@ -1,0 +1,14 @@
+{{- if .Values.redis.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ai-f.fullname" . }}-redis
+  labels:
+    app: {{ include "ai-f.name" . }}-redis
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+  selector:
+    app: {{ include "ai-f.name" . }}-redis
+{{- end }}

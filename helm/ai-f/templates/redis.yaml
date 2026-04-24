@@ -1,0 +1,23 @@
+{{- if .Values.redis.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-f.fullname" . }}-redis
+  labels:
+    app: {{ include "ai-f.name" . }}-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "ai-f.name" . }}-redis
+  template:
+    metadata:
+      labels:
+        app: {{ include "ai-f.name" . }}-redis
+    spec:
+      containers:
+        - name: redis
+          image: "redis:7.0-alpine"
+          ports:
+            - containerPort: 6379
+{{- end }}

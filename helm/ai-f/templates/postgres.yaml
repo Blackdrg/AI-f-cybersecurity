@@ -1,0 +1,40 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "ai-f.fullname" . }}-postgresql
+  labels:
+    app: {{ include "ai-f.name" . }}-postgresql
+spec:
+  serviceName: "{{ include "ai-f.fullname" . }}-postgresql"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "ai-f.name" . }}-postgresql
+  template:
+    metadata:
+      labels:
+        app: {{ include "ai-f.name" . }}-postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: "ankane/pgvector:v0.4.1" # Use pgvector image
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DB
+              value: "aif"
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: pg-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: pg-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+{{- end }}

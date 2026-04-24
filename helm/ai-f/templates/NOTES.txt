@@ -1,0 +1,10 @@
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app={{ include "ai-f.name" . }}" -o jsonpath="{.items[0].metadata.name}")
+  echo "Visit http://127.0.0.1:8000 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8000:8000
+
+2. View the GPU allocation by running:
+  kubectl describe pod $POD_NAME | grep -i nvidia
+
+3. Check logs to ensure Zero-Knowledge Ledger initialized:
+  kubectl logs -f $POD_NAME
