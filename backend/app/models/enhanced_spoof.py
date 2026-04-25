@@ -16,6 +16,257 @@ import json
 import base64
 import hashlib
 import cv2
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+
+# Conditional PyTorch import (should be available)
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    nn = None
+    F = None
+
+# Define XceptionNet only if torch is available
+if TORCH_AVAILABLE:
+    class DepthwiseSeparableConv(nn.Module):
+        """Depthwise separable convolution block."""
+        def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
+            super().__init__()
+            self.depthwise = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=stride, padding=1, groups=in_channels, bias=False)
+            self.pointwise = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+            self.bn = nn.BatchNorm2d(out_channels)
+
+        def forward(self, x):
+            x = self.depthwise(x)
+            x = self.pointwise(x)
+            x = self.bn(x)
+            return F.relu(x, inplace=True)
+
+    class XceptionNet(nn.Module):
+        """
+        Xception-based deepfake detector.
+        Input: 3x224x224; Output: 2-class logits.
+        """
+        def __init__(self, num_classes: int = 2):
+            super().__init__()
+            # Entry flow
+            self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=2, padding=1, bias=False)
+            self.bn1 = nn.BatchNorm2d(32)
+            self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1, bias=False)
+            self.bn2 = nn.BatchNorm2d(64)
+
+            # Entry flow blocks
+            self.entry_block1 = self._make_entry_block(64, 128)
+            self.entry_block2 = self._make_entry_block(128, 256)
+            self.entry_block3 = self._make_entry_block(256, 728)
+
+            # Middle flow
+            self.middle_blocks = nn.Sequential(
+                DepthwiseSeparableConv(728, 728),
+                DepthwiseSeparableConv(728, 728),
+                DepthwiseSeparableConv(728, 728)
+            )
+
+            # Exit flow
+            self.exit_conv1 = DepthwiseSeparableConv(728, 1024)
+            self.exit_conv2 = DepthwiseSeparableConv(1024, 1536)
+            self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+            self.fc = nn.Linear(1536, num_classes)
+
+        def _make_entry_block(self, in_channels: int, out_channels: int):
+            return nn.Sequential(
+                DepthwiseSeparableConv(in_channels, out_channels, stride=2),
+                DepthwiseSeparableConv(out_channels, out_channels),
+                DepthwiseSeparableConv(out_channels, out_channels)
+            )
+
+        def forward(self, x):
+            x = F.relu(self.bn1(self.conv1(x)), inplace=True)
+            x = F.relu(self.bn2(self.conv2(x)), inplace=True)
+            x = self.entry_block1(x)
+            x = self.entry_block2(x)
+            x = self.entry_block3(x)
+            x = self.middle_blocks(x)
+            x = self.exit_conv1(x)
+            x = self.exit_conv2(x)
+            x = self.global_avg_pool(x)
+            x = torch.flatten(x, 1)
+            x = self.fc(x)
+            return x
+else:
+    XceptionNet = None
+
+
+class DepthwiseSeparableConv(nn.Module):
+    """Depthwise separable convolution block."""
+    def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
+        super().__init__()
+        self.depthwise = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=stride, padding=1, groups=in_channels, bias=False)
+        self.pointwise = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+        self.bn = nn.BatchNorm2d(out_channels)
+
+    def forward(self, x):
+        x = self.depthwise(x)
+        x = self.pointwise(x)
+        x = self.bn(x)
+        return F.relu(x, inplace=True)
+
+
+class XceptionNet(nn.Module):
+    """
+    Xception-based deepfake detector.
+    Architecture: Entry flow → Middle flow → Exit flow with depthwise separable convolutions.
+    Input: 224x224 RGB face crop.
+    Output: Binary classification (real=0, deepfake=1) probability.
+    """
+    def __init__(self, num_classes: int = 2):
+        super().__init__()
+        # Entry flow
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=2, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(64)
+
+        # Entry flow blocks (3 blocks)
+        self.entry_block1 = self._make_entry_block(64, 128)
+        self.entry_block2 = self._make_entry_block(128, 256)
+        self.entry_block3 = self._make_entry_block(256, 728)
+
+        # Middle flow blocks (3 blocks for lightweight version)
+        self.middle_blocks = nn.Sequential(
+            DepthwiseSeparableConv(728, 728),
+            DepthwiseSeparableConv(728, 728),
+            DepthwiseSeparableConv(728, 728)
+        )
+
+        # Exit flow
+        self.exit_conv1 = DepthwiseSeparableConv(728, 1024)
+        self.exit_conv2 = DepthwiseSeparableConv(1024, 1536)
+        self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(1536, num_classes)
+
+    def _make_entry_block(self, in_channels: int, out_channels: int):
+        return nn.Sequential(
+            DepthwiseSeparableConv(in_channels, out_channels, stride=2),
+            DepthwiseSeparableConv(out_channels, out_channels),
+            DepthwiseSeparableConv(out_channels, out_channels)
+        )
+
+    def forward(self, x):
+        # Entry
+        x = F.relu(self.bn1(self.conv1(x)), inplace=True)
+        x = F.relu(self.bn2(self.conv2(x)), inplace=True)
+        x = self.entry_block1(x)
+        x = self.entry_block2(x)
+        x = self.entry_block3(x)
+        # Middle
+        x = self.middle_blocks(x)
+        # Exit
+        x = self.exit_conv1(x)
+        x = self.exit_conv2(x)
+        x = self.global_avg_pool(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        return x  # logits
+
+
+class DeepfakeDetector:
+    """
+    XceptionNet-based deepfake detection for faces.
+    Loads pre-trained weights if available; otherwise uses heuristic fallback.
+    """
+    def __init__(self, weights_path: Optional[str] = None):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if TORCH_AVAILABLE else None
+        self.model = None
+        self.weights_loaded = False
+
+        if TORCH_AVAILABLE:
+            try:
+                self.model = XceptionNet(num_classes=2).to(self.device)
+                # Try to load weights
+                if weights_path is None:
+                    weights_path = os.getenv("DEEPFAKE_MODEL_PATH", "models/deepfake_xception.pth")
+                if os.path.exists(weights_path):
+                    state_dict = torch.load(weights_path, map_location=self.device)
+                    self.model.load_state_dict(state_dict)
+                    self.model.eval()
+                    self.weights_loaded = True
+                    logger.info(f"Loaded XceptionNet deepfake weights from {weights_path}")
+                else:
+                    logger.warning(f"Deepfake model weights not found at {weights_path}. Using random init (for testing only).")
+                    self.model.eval()
+                    self.weights_loaded = False  # Treat as unready but still usable for demo
+            except Exception as e:
+                logger.warning(f"Failed to initialize XceptionNet: {e}. Falling back to heuristic detection.")
+                self.model = None
+        else:
+            logger.warning("PyTorch not available; deepfake detection using heuristic fallback.")
+
+    def predict(self, face_image: np.ndarray) -> Tuple[float, str]:
+        """
+        Predict whether a face image is real or deepfake.
+        Args:
+            face_image: BGR or RGB numpy array (H, W, 3)
+        Returns:
+            (probability_deepfake, method_used)
+        """
+        if self.model is not None and self.weights_loaded:
+            try:
+                # Preprocess: BGR->RGB, resize to 224x224, normalize
+                if len(face_image.shape) != 3 or face_image.shape[2] != 3:
+                    raise ValueError("Expected 3-channel image")
+                # Convert BGR to RGB if needed (assume input BGR from OpenCV)
+                img = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
+                img = cv2.resize(img, (224, 224)).astype(np.float32) / 255.0
+                # Normalize to ImageNet stats (approximate)
+                mean = np.array([0.485, 0.456, 0.406])
+                std = np.array([0.229, 0.224, 0.225])
+                img = (img - mean) / std
+                tensor = torch.from_numpy(img).permute(2, 0, 1).unsqueeze(0).float().to(self.device)
+                with torch.no_grad():
+                    logits = self.model(tensor)
+                    prob = F.softmax(logits, dim=1)[0, 1].item()  # probability of class 1 (deepfake)
+                return float(prob), "xceptionnet"
+            except Exception as e:
+                logger.warning(f"XceptionNet inference failed: {e}. Fallback to heuristic.")
+        # Fallback to heuristic
+        return self._heuristic_deepfake_score(face_image), "heuristic"
+
+    def _heuristic_deepfake_score(self, face_image: np.ndarray) -> float:
+        """Simple heuristic fallback when model unavailable."""
+        gray = cv2.cvtColor(face_image, cv2.COLOR_BGR2GRAY) if len(face_image.shape) == 3 else face_image
+        # Compute local variance
+        laplacian = cv2.Laplacian(gray, cv2.CV_64F).var()
+        # Low variance may indicate smooth synthetic texture
+        if laplacian < 100:  # very smooth
+            return 0.7
+        elif laplacian < 200:
+            return 0.4
+        return 0.1
+
+    def analyze(self, face_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Analyze face data for deepfake indicators.
+        Expects face_data to contain 'aligned_face' or 'face_box' + full image.
+        """
+        image = face_data.get("aligned_face")
+        if image is None:
+            # If only bbox and full image not available, return neutral
+            return {"is_deepfake": False, "confidence": 0.0, "method": "unavailable"}
+
+        prob, method = self.predict(image)
+        return {
+            "is_deepfake": prob > 0.5,
+            "confidence": prob,
+            "risk_score": prob,
+            "method": method
+        }
 
 
 @dataclass
@@ -736,7 +987,11 @@ class TemporalAnalyzer:
 
 
 class DeepfakeDetector:
-    """Advanced deepfake and synthetic identity detection."""
+    """
+    Advanced deepfake and synthetic identity detection using XceptionNet.
+    Primary method: XceptionNet deepfake classification (if weights available).
+    Fallback: Heuristic artifact detection when model unavailable.
+    """
     
     def __init__(self):
         self.detection_history = []
@@ -745,6 +1000,14 @@ class DeepfakeDetector:
         self.synthetic_risk_model = SyntheticRiskModel()
         # Face detector for temporal analysis (lazy-loaded to avoid circular imports)
         self._face_detector = None
+        # XceptionNet-based deepfake classifier (if available)
+        self.xception_detector = None
+        if XceptionNet is not None:
+            try:
+                self.xception_detector = XceptionNet()
+            except Exception as e:
+                logger.warning(f"XceptionNet deepfake detector init failed: {e}")
+                self.xception_detector = None
 
     def _get_face_detector(self):
         """Lazy-load face detector to avoid circular imports."""
@@ -811,48 +1074,56 @@ class DeepfakeDetector:
         return results
     
     def _analyze_face_deepfake(self, face_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze face for deepfake artifacts."""
+        """Analyze face for deepfake artifacts using XceptionNet + heuristics."""
         analysis = {
             "risk_score": 0.0,
             "artifacts": [],
             "gan_indicators": [],
-            "geometry_score": 1.0
+            "geometry_score": 1.0,
+            "detection_method": "heuristic"
         }
         
-        # Check for GAN artifacts
+        # Primary: Use XceptionNet if available
+        if self.xception_detector is not None:
+            xception_prob, method = self.xception_detector.predict(face_data.get("aligned_face") or face_data.get("face_crop"))
+            if method == "xceptionnet" and xception_prob > 0.5:
+                analysis["risk_score"] = xception_prob
+                analysis["artifacts"].append("xception_deepfake")
+                analysis["detection_method"] = "xceptionnet"
+                analysis["gan_indicators"].append({"type": "xceptionnet", "confidence": xception_prob})
+                # Skip heavy heuristics if model confident
+                analysis["risk_score"] = min(analysis["risk_score"], 1.0)
+                return analysis
+            else:
+                # If model says likely real, still run heuristics as backup
+                analysis["risk_score"] = max(analysis["risk_score"], xception_prob * 0.5)
+        
+        # Heuristic fallbacks
         if "face_box" in face_data:
             geometry_score = self._check_3d_geometry(face_data)
             analysis["geometry_score"] = geometry_score
-            
             if geometry_score < 0.6:
                 analysis["artifacts"].append("inconsistent_3d_geometry")
                 analysis["risk_score"] += 0.3
         
-        # Check temporal consistency (if multiple frames)
         if "temporal_analysis" in face_data:
             temporal_score = face_data["temporal_analysis"].get("consistency_score", 1.0)
             if temporal_score < 0.7:
                 analysis["artifacts"].append("temporal_inconsistency")
                 analysis["risk_score"] += 0.2
         
-        # Check for blending artifacts
         if "blending_score" in face_data:
             blending = face_data["blending_score"]
             if blending < 0.5:
                 analysis["artifacts"].append("edge_blending_artifact")
                 analysis["risk_score"] += 0.2
         
-        # GAN-specific detection
         gan_score = self._detect_gan_artifacts(face_data)
         if gan_score > 0.5:
-            analysis["gan_indicators"].append({
-                "type": "gan_artifact",
-                "confidence": gan_score
-            })
+            analysis["gan_indicators"].append({"type": "gan_artifact", "confidence": gan_score})
             analysis["risk_score"] += 0.3
         
         analysis["risk_score"] = min(analysis["risk_score"], 1.0)
-        
         return analysis
     
     def _analyze_voice_deepfake(self, voice_data: Dict[str, Any]) -> Dict[str, Any]:
