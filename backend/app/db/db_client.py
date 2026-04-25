@@ -51,6 +51,7 @@ class DBClient:
         await get_offline_sync()
         
         if ASYNCPG_AVAILABLE:
+            try:
             # Retrieve DB credentials from Vault if configured, fallback to environment
             db_user = os.getenv('DB_USER', 'postgres')
             db_password = vault.get_secret('DB_PASSWORD')
@@ -74,6 +75,10 @@ class DBClient:
             
             # Initialize read replica pools if configured
             await self._init_read_replicas(db_user, db_password, db_name)
+            except Exception as e:
+                import logging
+                logging.getLogger('__name__').warning(f"PostgreSQL connection failed: {e}. Using in-memory fallback.")
+                self.pool = None
         else:
             # Fallback: offline SQLite primary
             self.pool = None
