@@ -1,7 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 import os
-import openai
+
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    openai = None
 
 class LLMProvider(ABC):
     @abstractmethod
@@ -16,6 +22,8 @@ class LLMProvider(ABC):
 
 class OpenAIProvider(LLMProvider):
     def __init__(self, api_key: Optional[str] = None):
+        if not OPENAI_AVAILABLE:
+            raise ImportError("OpenAI Python package is not installed. Install with: pip install openai")
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if self.api_key:
             self.client = openai.OpenAI(api_key=self.api_key)

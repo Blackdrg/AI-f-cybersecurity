@@ -78,7 +78,9 @@ class HybridSearchEngine:
             self.hnsw_indexes.append({"index": idx, "mapping": {}})
 
     def _get_shard(self, person_id: str) -> int:
-        return hash(person_id) % self.num_shards
+        import hashlib
+        hash_int = int(hashlib.md5(person_id.encode()).hexdigest(), 16)
+        return hash_int % self.num_shards
 
     async def index_person(self, person_id: str, embedding: np.ndarray, metadata: Optional[Dict] = None) -> bool:
         cached = self.lru_cache.get(person_id)

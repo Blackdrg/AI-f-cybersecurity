@@ -19,29 +19,40 @@ class BiasDetector:
         """
         Detect bias in predictions across sensitive attributes.
         Returns bias metrics.
+        Handles both 'is_known' (explicit) and 'is_unknown' (inverted) fields.
         """
         if not predictions:
-            return {'demographic_parity': 0.0, 'equalized_odds': 0.0}
+            return {'demographic_parity_difference': 0.0, 'equalized_odds_difference': 0.0}
 
-        # Extract labels and sensitive attrs (simplified)
-        y_true = [1 if p.get('is_known', False) else 0 for p in predictions]
-        y_pred = [1 if p.get('matches', []) else 0 for p in predictions]
+        # Extract true labels: support both 'is_known' and 'is_unknown'
+        y_true = []
+        for p in predictions:
+            if 'is_known' in p:
+                y_true.append(1 if p['is_known'] else 0)
+            elif 'is_unknown' in p:
+                y_true.append(0 if p['is_unknown'] else 1)
+            else:
+                y_true.append(0)  # default to unknown/false
 
-        # Assume sensitive attrs from predictions (age, gender)
+        # Predicted labels: non-empty matches list means recognized
+        y_pred = [1 if p.get('matches') else 0 for p in predictions]
+
+        # Build sensitive attribute strings from age/gender
         sensitive = []
         for p in predictions:
-            attr = p.get('gender', 'unknown') + '_' + \
-                str(p.get('age', 'unknown'))
-            sensitive.append(attr)
+            gender = p.get('gender', 'unknown')
+            age = p.get('age', 'unknown')
+            sensitive.append(f"{gender}_{age}")
 
-        # Calculate bias metrics (simplified)
+        # Calculate bias metrics if fairlearn available
         if FAIRLEARN_AVAILABLE:
             try:
+                # fairlearn expects 'sensitive_attributes' keyword
                 dp_diff = demographic_parity_difference(
-                    y_true, y_pred, sensitive_attr=sensitive)
+                    y_true, y_pred, sensitive_attributes=sensitive)
                 eo_diff = equalized_odds_difference(
-                    y_true, y_pred, sensitive_attr=sensitive)
-            except:
+                    y_true, y_pred, sensitive_attributes=sensitive)
+            except Exception:
                 dp_diff = 0.0
                 eo_diff = 0.0
         else:
@@ -49,8 +60,8 @@ class BiasDetector:
             eo_diff = 0.0
 
         return {
-            'demographic_parity_difference': dp_diff,
-            'equalized_odds_difference': eo_diff
+            'demographic_parity_difference': float(dp_diff),
+            'equalized_odds_difference': float(eo_diff)
         }
 
     def mitigate_bias(self, predictions: List[Dict[str, Any]], bias_metrics: Dict[str, float]) -> List[Dict[str, Any]]:

@@ -63,10 +63,10 @@ except Exception as e:
     print(f"✗ BiasDetector import failed: {e}")
 
 try:
-    from app.models.zkp_auth import SignatureAuthenticator
-    print("✓ SignatureAuthenticator imported successfully")
+    from app.models.crypto_attestation import CryptoAttestation
+    print("✓ CryptoAttestation imported successfully")
 except Exception as e:
-    print(f"✗ SignatureAuthenticator import failed: {e}")
+    print(f"✗ CryptoAttestation import failed: {e}")
 
 try:
     from app.models.ethical_governor import EthicalGovernor

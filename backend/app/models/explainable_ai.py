@@ -219,7 +219,7 @@ class DecisionBreakdownEngine:
             # Face contribution (weighted)
             face_factor = DecisionFactor(
                 source="face",
-                contribution=score * 0.5,  # 50% weight
+                contribution=score * 0.5,  # 50% weight (aligned with decision_engine)
                 confidence=face_result.get("confidence", 1.0),
                 raw_score=score,
                 normalized_score=score,
@@ -252,7 +252,7 @@ class DecisionBreakdownEngine:
             score = voice_result.get("score", 0.0)
             voice_factor = DecisionFactor(
                 source="voice",
-                contribution=score * 0.3,  # 30% weight
+                contribution=score * 0.2,  # 20% weight (aligned with decision_engine)
                 confidence=voice_result.get("confidence", 1.0),
                 raw_score=score,
                 normalized_score=score,
@@ -269,7 +269,7 @@ class DecisionBreakdownEngine:
             score = gait_result.get("score", 0.0)
             gait_factor = DecisionFactor(
                 source="gait",
-                contribution=score * 0.2,  # 20% weight
+                contribution=score * 0.2,  # 20% weight (aligned with decision_engine)
                 confidence=gait_result.get("confidence", 1.0),
                 raw_score=score,
                 normalized_score=score,
@@ -874,15 +874,15 @@ def create_comprehensive_explanation(
 ) -> ExplainableDecision:
     """
     Create a comprehensive explanation from recognition results.
-    
+
     Args:
         recognition_result: Full recognition result
-    
+
     Returns:
         Explainable decision with full breakdown
     """
     engine = DecisionBreakdownEngine()
-    
+
     return engine.explain_decision(
         decision=recognition_result.get("decision", "review"),
         confidence=recognition_result.get("confidence", 0.5),
@@ -893,3 +893,8 @@ def create_comprehensive_explanation(
         liveness_result=recognition_result.get("liveness_result"),
         metadata=recognition_result.get("metadata", {})
     )
+
+
+# Global singleton instance for runtime use
+decision_breakdown_engine = DecisionBreakdownEngine()
+

@@ -790,17 +790,21 @@ def check_ethical_compliance(
 ) -> EthicalDecision:
     """
     Check ethical compliance for a request.
-    
+
     Args:
         request_data: Request data
         user_role: User role
         jurisdiction: Applicable jurisdiction
-    
+
     Returns:
         Ethical decision
     """
     governor = EthicalGovernor()
     return governor.check_request(request_data, user_role, jurisdiction)
+
+
+# Global singleton instance for runtime use
+ethical_governor = EthicalGovernor()
 
 
 if __name__ == "__main__":

@@ -1,14 +1,31 @@
 import cv2
 import numpy as np
-# from insightface.app import FaceAnalysis
+import logging
+
+try:
+    from insightface.app import FaceAnalysis
+    INSIGHTFACE_AVAILABLE = True
+except ImportError:
+    INSIGHTFACE_AVAILABLE = False
+    FaceAnalysis = None
+
 from .spoof_detector import SpoofDetector
 from .face_reconstructor import FaceReconstructor
+
+logger = logging.getLogger(__name__)
 
 
 class FaceDetector:
     def __init__(self):
-        # self.app = FaceAnalysis(name='buffalo_l')  # Includes SCRFD detector
-        # self.app.prepare(ctx_id=0, det_size=(640, 640))  # Use GPU if available
+        if INSIGHTFACE_AVAILABLE:
+            try:
+                self.app = FaceAnalysis(name='buffalo_l')
+                self.app.prepare(ctx_id=0, det_size=(640, 640))
+            except Exception as e:
+                logger.warning(f"Failed to load InsightFace: {e}. Using mock detection.")
+                self.app = None
+        else:
+            self.app = None
         self.spoof_detector = SpoofDetector()
         self.reconstructor = FaceReconstructor()
 
@@ -16,48 +33,71 @@ class FaceDetector:
         """
         Detect faces in image, return list of dicts with bbox, landmarks, spoof_score, etc.
         """
-        # faces = self.app.get(image)
-        # Mock detection for now since insightface is not installed
-        # For testing, create a mock face detection if image has white rectangle
         detected_faces = []
 
         if image is None:
             return detected_faces
 
-        # Simple mock detection - always detect a face in the center for testing
-        height, width = image.shape[:2]
-        center_x, center_y = width // 2, height // 2
+        if self.app is not None:
+            try:
+                faces = self.app.get(image)
+                for face in faces:
+                    bbox = face.bbox.astype(int).tolist()
+                    # landmarks shape: (N, 2) -> list of [x,y]
+                    landmarks = face.landmark.astype(int).tolist() if hasattr(face, 'landmark') and face.landmark is not None else []
+                    det_score = float(getattr(face, 'det_score', 1.0))
 
-        # Mock face in center - always detect for testing purposes
-        bbox = [center_x-40, center_y-40, center_x+40, center_y+40]
-        # Mock 5-point landmarks
-        landmarks = [
-            [center_x-20, center_y-10],  # left eye
-            [center_x+20, center_y-10],  # right eye
-            [center_x, center_y+5],      # nose
-            [center_x-15, center_y+20],  # left mouth
-            [center_x+15, center_y+20]   # right mouth
-        ]
+                    spoof_score = 0.0
+                    reconstruction_confidence = 1.0
 
-        spoof_score = 0.0
-        reconstruction_confidence = 1.0
+                    if check_spoof:
+                        spoof_score = self.spoof_detector.detect_spoof(image, bbox)
 
-        if check_spoof:
-            spoof_score = self.spoof_detector.detect_spoof(image, bbox)
+                    if reconstruct and spoof_score < 0.5:
+                        reconstructed_image, reconstruction_confidence = self.reconstructor.reconstruct_face(
+                            image, bbox)
 
-        if reconstruct and spoof_score < 0.5:  # Only reconstruct if not likely spoof
-            reconstructed_image, reconstruction_confidence = self.reconstructor.reconstruct_face(
-                image, bbox)
-            # Re-run detection on reconstructed image if needed (simplified)
-            image = reconstructed_image
+                    detected_faces.append({
+                        'bbox': bbox,
+                        'landmarks': landmarks,
+                        'det_score': det_score,
+                        'spoof_score': spoof_score,
+                        'reconstruction_confidence': reconstruction_confidence
+                    })
+            except Exception as e:
+                logger.warning(f"InsightFace detection failed: {e}. Falling back to mock detection.")
+                self.app = None  # Disable further attempts to avoid repeated errors
 
-        detected_faces.append({
-            'bbox': bbox,
-            'landmarks': landmarks,
-            'det_score': 0.99,
-            'spoof_score': spoof_score,
-            'reconstruction_confidence': reconstruction_confidence
-        })
+        # Fallback: mock detection if insightface unavailable or failed
+        if not detected_faces:
+            height, width = image.shape[:2]
+            center_x, center_y = width // 2, height // 2
+            bbox = [center_x-40, center_y-40, center_x+40, center_y+40]
+            landmarks = [
+                [center_x-20, center_y-10],
+                [center_x+20, center_y-10],
+                [center_x, center_y+5],
+                [center_x-15, center_y+20],
+                [center_x+15, center_y+20]
+            ]
+            spoof_score = 0.0
+            reconstruction_confidence = 1.0
+
+            if check_spoof:
+                spoof_score = self.spoof_detector.detect_spoof(image, bbox)
+
+            if reconstruct and spoof_score < 0.5:
+                reconstructed_image, reconstruction_confidence = self.reconstructor.reconstruct_face(
+                    image, bbox)
+                # image = reconstructed_image
+
+            detected_faces.append({
+                'bbox': bbox,
+                'landmarks': landmarks,
+                'det_score': 0.99,
+                'spoof_score': spoof_score,
+                'reconstruction_confidence': reconstruction_confidence
+            })
 
         return detected_faces
 

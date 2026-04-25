@@ -88,7 +88,7 @@ class DBClient:
                     person_id UUID REFERENCES persons(person_id),
                     embedding VECTOR(512),  -- Face embedding
                     voice_embedding VECTOR(192),  -- Voice embedding (optional)
-                    gait_embedding VECTOR(128),  -- Gait embedding (optional)
+                    gait_embedding VECTOR(7),  -- Gait embedding (Hu Moments, 7-d)
                     camera_id TEXT,
                     created_at TIMESTAMP DEFAULT NOW()
                 );
@@ -542,21 +542,19 @@ class DBClient:
                     VALUES ($1, $2, $3, $4, $5)
                 """, person_id, name, age, gender, consent_record['consent_record_id'])
 
-                # Insert embeddings (encrypted)
+                # Insert embeddings (plain vectors for pgvector similarity search)
                 for i, emb in enumerate(embeddings):
                     emb_id = str(uuid.uuid4())
-                    encrypted_emb = self._encrypt_embedding(emb)
+                    # Convert numpy arrays to Python lists for pgvector
+                    emb_list = emb.tolist()
                     voice_emb = voice_embeddings[i] if voice_embeddings and i < len(
                         voice_embeddings) else None
-                    encrypted_voice = self._encrypt_embedding(
-                        voice_emb) if voice_emb is not None else None
-                    encrypted_gait = self._encrypt_embedding(
-                        gait_embedding) if gait_embedding is not None else None
-
+                    voice_list = voice_emb.tolist() if voice_emb is not None else None
+                    gait_list = gait_embedding.tolist() if gait_embedding is not None else None
                     await conn.execute("""
                         INSERT INTO embeddings (embedding_id, person_id, embedding, voice_embedding, gait_embedding, camera_id)
                         VALUES ($1, $2, $3, $4, $5, $6)
-                    """, emb_id, person_id, encrypted_emb, encrypted_voice, encrypted_gait, camera_id)
+                    """, emb_id, person_id, emb_list, voice_list, gait_list, camera_id)
 
                 # Insert consent log
                 await conn.execute("""
@@ -611,7 +609,7 @@ class DBClient:
                     voice_distance = 1 - np.dot(voice_embedding, voice_emb) / (
                         np.linalg.norm(voice_embedding) * np.linalg.norm(voice_emb))
                     if voice_distance <= threshold:
-                        combined_score += (1 - voice_distance) * 0.3
+                        combined_score += (1 - voice_distance) * 0.2
 
                 # Add gait score if available
                 if gait_embedding is not None and emb_data.get('gait_embedding') is not None:
@@ -667,8 +665,8 @@ class DBClient:
                         LIMIT 1
                     """, voice_embedding.tolist(), person_id)
                     if voice_row and voice_row['distance'] <= threshold:
-                        # Weight
-                        combined_score += (1 - voice_row['distance']) * 0.3
+                        # Weight: voice contributes 20% of face score
+                        combined_score += (1 - voice_row['distance']) * 0.2
 
                 # Add gait score if available
                 if gait_embedding is not None:
@@ -1162,3 +1160,12 @@ async def get_db():
         _db_client = DBClient()
         await _db_client.init_db()
     return _db_client
+
+
+async def init_db():
+    """
+    Initialize the database connection pool.
+    This function is called at application startup.
+    """
+    await get_db()
+

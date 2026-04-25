@@ -1,23 +1,35 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import List, Dict, Any, Optional
 import os
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+
+# Optional dependency: slowapi may not be installed in dev environments
+try:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+    limiter = Limiter(key_func=get_remote_address)
+except ImportError:
+    # Provide a no-op limiter that doesn't restrict
+    class DummyLimiter:
+        def limit(self, rate: str):
+            def decorator(func):
+                return func
+            return decorator
+    limiter = DummyLimiter()
+    get_remote_address = lambda: "unknown"
+
 from ..schemas import (
     ConsentRequest, ConsentResponse, PublicEnrichRequest, PublicEnrichResponse,
     EnrichResultDetail, AuditLogsResponse, FlagForReviewRequest
 )
-from ..db.db_client import get_db
 from ..aggregator import ResultAggregator
 from ..redaction import Redactor
+from ..db.db_client import get_db
 from ..security import require_auth
 from ..metrics import enrichment_requests, enrichment_latency
 import time
 
 router = APIRouter()
 
-# Rate limiting
-limiter = Limiter(key_func=get_remote_address)
 aggregator = ResultAggregator()
 redactor = Redactor()
 

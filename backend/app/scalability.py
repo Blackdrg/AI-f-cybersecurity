@@ -155,10 +155,12 @@ class VectorShardManager:
             self.shards[shard_id] = VectorShard(shard_id, dimension, index_type)
     
     def _get_shard_for_id(self, person_id: str) -> str:
-        """Determine shard for a person_id."""
-        # Consistent hashing
-        hash_val = hash(person_id) % self.num_shards
-        return f"shard_{hash_val}"
+        """Determine shard for a person_id using stable consistent hashing."""
+        import hashlib
+        # Use MD5 hash for stable distribution across processes
+        hash_int = int(hashlib.md5(person_id.encode()).hexdigest(), 16)
+        shard_idx = hash_int % self.num_shards
+        return f"shard_{shard_idx}"
     
     def add_vectors(
         self,

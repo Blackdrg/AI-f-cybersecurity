@@ -14,10 +14,12 @@ from ..models.face_embedder import FaceEmbedder
 from ..models.voice_embedder import VoiceEmbedder
 from ..models.gait_analyzer import GaitAnalyzer
 from ..models.age_gender_estimator import AgeGenderEstimator
+from ..models.privacy_engine import dp_engine
 from ..db.db_client import get_db
-from ..schemas import EnrollRequest, EnrollResponse, StandardResponse
+from ..schemas import StandardResponse
 from ..security import require_auth
 from ..metrics import enroll_count, enroll_latency
+from ..middleware.policy_enforcement import require_enroll_policy
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -73,7 +75,8 @@ async def enroll_person(
     voice_files: List[UploadFile] = File(None),
     gait_video: UploadFile = File(None),
     physiological_data: str = Form("{}"),
-    user: dict = Depends(require_auth)
+    user: dict = Depends(require_auth),
+    _policy_ok: bool = Depends(require_enroll_policy)
 ):
     try:
         start_time = time.time()
@@ -140,20 +143,30 @@ async def enroll_person(
         gait_embedding = None
         if gait_video:
             contents = await gait_video.read()
-            nparr_gait = np.frombuffer(contents, np.uint8)
-            cap = cv2.VideoCapture()
-            cap.open(nparr_gait)
-            frames = []
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                frames.append(frame)
-                if len(frames) >= 30:  # Limit frames
-                    break
-            cap.release()
-            if frames:
-                gait_embedding = gait_analyzer.extract_gait_features(frames)
+            # Write to a temporary file for cv2.VideoCapture
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp:
+                tmp.write(contents)
+                tmp_path = tmp.name
+            try:
+                cap = cv2.VideoCapture(tmp_path)
+                frames = []
+                while cap.isOpened() and len(frames) < 30:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    frames.append(frame)
+                cap.release()
+                if frames:
+                    gait_embedding = gait_analyzer.extract_gait_features(frames)
+            finally:
+                os.unlink(tmp_path)
+
+        # Apply differential privacy noise to embeddings before storage
+        embeddings = [dp_engine.add_noise(emb) for emb in embeddings]
+        if voice_embeddings:
+            voice_embeddings = [dp_engine.add_noise(v) for v in voice_embeddings]
+        if gait_embedding is not None:
+            gait_embedding = dp_engine.add_noise(gait_embedding)
 
         person_id = str(uuid.uuid4())
 

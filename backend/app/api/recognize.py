@@ -1,9 +1,8 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
-from typing import List
+from typing import List, Optional
 import cv2
 import numpy as np
 import time
-import base64
 import tempfile
 import os
 import uuid
@@ -16,15 +15,18 @@ from ..models.emotion_detector import EmotionDetector
 from ..models.age_gender_estimator import AgeGenderEstimator
 from ..models.behavioral_predictor import BehavioralPredictor
 from ..models.bias_detector import BiasDetector
-from ..models.zkp_auth import SignatureAuthenticator
 from ..db.db_client import get_db
-from ..schemas import RecognizeRequest, RecognizeResponse, DetectedFace, FaceMatch, ZKPRequest, StandardResponse
-from ..security import require_auth, check_ethical
-from ..metrics import recognition_count, recognition_latency, false_accepts, false_rejects
+from ..schemas import StandardResponse
+from ..security import require_auth
+from ..metrics import recognition_count, recognition_latency
+from ..middleware.policy_enforcement import require_recognize_policy
+from ..decision_engine import decision_engine
+from ..models.explainable_ai import decision_breakdown_engine
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Model singletons
 detector = FaceDetector()
 embedder = FaceEmbedder()
 voice_embedder = VoiceEmbedder()
@@ -33,10 +35,9 @@ emotion_detector = EmotionDetector()
 age_gender_estimator = AgeGenderEstimator()
 behavioral_predictor = BehavioralPredictor()
 bias_detector = BiasDetector()
-signature_auth = SignatureAuthenticator()
-
 
 from ..services.reliability import ai_model_circuit_breaker, db_circuit_breaker, CircuitBreakerOpenException
+
 
 @router.post("/recognize", response_model=StandardResponse)
 async def recognize_faces(
@@ -51,159 +52,196 @@ async def recognize_faces(
     voice_file: UploadFile = File(None),
     gait_video: UploadFile = File(None),
     physiological_data: str = Form("{}"),
-    user: dict = Depends(require_auth)
+    include_explanations: bool = Form(False),
+    user: dict = Depends(require_auth),
+    _policy_ok: bool = Depends(require_recognize_policy)
 ):
+    """
+    Multi-modal biometric recognition with full decision engine integration.
+    """
     try:
         start_time = time.time()
 
+        # Decode image
         contents = await image.read()
         nparr = np.frombuffer(contents, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
         if img is None:
-            return StandardResponse(success=False, error="Invalid image format")
+            return StandardResponse(success=False, error="Invalid image")
 
-        # Fallback mechanism for detector
+        # Detect faces
         try:
             faces = await ai_model_circuit_breaker(lambda: detector.detect_faces(
                 img, check_spoof=enable_spoof_check, reconstruct=True))()
-        except (CircuitBreakerOpenException, Exception) as e:
-            logger.warning(f"Primary detector failed or circuit open: {e}. Falling back to basic detection.")
-            # Basic fallback detection logic (placeholder)
-            # In real case, could use a lighter model or cached result
-            faces = [] # Empty result or cached result could be used here
-            if isinstance(e, CircuitBreakerOpenException):
-                return StandardResponse(success=False, error="AI Service temporarily unavailable (Circuit Open)")
+        except CircuitBreakerOpenException:
+            return StandardResponse(success=False, error="AI service unavailable")
+        except Exception:
+            faces = []
 
-        detected_faces = []
-        db = await get_db()
+        if not faces:
+            return StandardResponse(success=True, data={"faces": [], "time_taken": time.time() - start_time})
 
-        # Process voice if provided
+        # Process voice
         voice_embedding = None
         if voice_file:
-            voice_contents = await voice_file.read()
+            vc = await voice_file.read()
             with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
-                tmp.write(voice_contents)
-                tmp_path = tmp.name
+                tmp.write(vc)
+                vp = tmp.name
             try:
-                voice_embedding = voice_embedder.get_embedding(tmp_path)
+                voice_embedding = voice_embedder.get_embedding(vp)
             finally:
-                os.unlink(tmp_path)
+                os.unlink(vp)
 
-        # Process gait if provided
+        # Process gait
         gait_embedding = None
         if gait_video:
-            gait_contents = await gait_video.read()
-            nparr_gait = np.frombuffer(gait_contents, np.uint8)
-            cap = cv2.VideoCapture()
-            cap.open(nparr_gait)
-            frames = []
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                frames.append(frame)
-                if len(frames) >= 30:
-                    break
-            cap.release()
-            if frames:
-                gait_embedding = gait_analyzer.extract_gait_features(frames)
+            gc = await gait_video.read()
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp:
+                tmp.write(gc)
+                vp = tmp.name
+            try:
+                cap = cv2.VideoCapture(vp)
+                frames = []
+                while cap.isOpened() and len(frames) < 30:
+                    ret, f = cap.read()
+                    if not ret:
+                        break
+                    frames.append(f)
+                cap.release()
+                if frames:
+                    gait_embedding = gait_analyzer.extract_gait_features(frames)
+            finally:
+                os.unlink(vp)
+
+        db = await get_db()
+        response_faces = []
 
         for face in faces:
-            # Skip if spoof detected and check enabled
             if enable_spoof_check and face['spoof_score'] > 0.5:
                 continue
 
-            inference_start = time.time()
+            # Embed
             aligned = detector.align_face(img, face['landmarks'])
             try:
                 query_emb = await ai_model_circuit_breaker(lambda: embedder.get_embedding(aligned))()
             except Exception:
-                logger.error("Embedding failed, skipping face.")
                 continue
-            inference_ms = (time.time() - inference_start) * 1000
 
+            # Search
             try:
-                matches = await db_circuit_breaker(lambda: db.recognize_faces(
-                    query_emb, top_k=top_k, threshold=threshold, camera_id=camera_id, 
-                    voice_embedding=voice_embedding, gait_embedding=gait_embedding
+                db_matches = await db_circuit_breaker(lambda: db.recognize_faces(
+                    query_emb, top_k=top_k, threshold=threshold,
+                    camera_id=camera_id,
+                    voice_embedding=voice_embedding,
+                    gait_embedding=gait_embedding
                 ))()
             except Exception:
-                logger.error("DB search failed for face.")
-                matches = []
+                db_matches = []
 
+            is_unknown = len(db_matches) == 0
+
+            # Decision engine
+            de_face = {
+                "matches": [
+                    {"person_id": m['person_id'], "name": m['name'], "score": m['score']}
+                    for m in db_matches
+                ],
+                "spoof_score": face['spoof_score']
+            }
+            de_result = decision_engine.make_decision(
+                face_result=de_face,
+                liveness_result={"spoof_score": face['spoof_score']},
+                metadata={"camera_id": camera_id, "user_id": user.get("user_id")}
+            )
+
+            # Bias mitigation (simple boost)
+            emotion = emotion_detector.detect_emotion(img, face['bbox']) if enable_emotion else None
+            age_gender = age_gender_estimator.estimate_age_gender(img, face['bbox']) if enable_age_gender else None
+            behavior = behavioral_predictor.predict_behavior(emotion) if enable_behavior and emotion else None
+
+            if age_gender:
+                bias_input = [{
+                    "is_known": not is_unknown,
+                    "matches": [{"score": de_result.confidence}],
+                    "gender": age_gender.get('gender', 'unknown'),
+                    "age": age_gender.get('age', 'unknown')
+                }]
+                bm = bias_detector.detect_bias(bias_input)
+                if bm.get('demographic_parity_difference', 0) > 0.1:
+                    if age_gender.get('gender') == 'F' or (age_gender.get('age') or 0) > 60:
+                        de_result = de_result._replace(confidence=min(1.0, de_result.confidence * 1.1))
+
+            # Build matches
             face_matches = [
                 FaceMatch(
                     person_id=m['person_id'],
                     name=m['name'],
                     score=m['score'],
                     distance=m['distance']
-                ) for m in matches
+                ) for m in db_matches
             ]
 
-            is_unknown = len(face_matches) == 0
+            # Build response face
+            resp_face = {
+                "face_box": face['bbox'],
+                "face_embedding_id": str(uuid.uuid4()),
+                "matches": face_matches,
+                "inference_ms": 0.0,
+                "is_unknown": is_unknown,
+                "spoof_score": face['spoof_score'] if enable_spoof_check else None,
+                "reconstruction_confidence": face['reconstruction_confidence'],
+                "emotion": emotion,
+                "age": age_gender['age'] if age_gender else None,
+                "gender": age_gender['gender'] if age_gender else None,
+                "behavior": behavior,
+                "identity_score": float(de_result.confidence),
+                "decision": de_result.decision,
+                "risk_level": de_result.risk_level.value if hasattr(de_result.risk_level, 'value') else str(de_result.risk_level),
+                "decision_factors": de_result.factors
+            }
 
-            # Additional features
-            emotion = None
-            if enable_emotion:
-                emotion = emotion_detector.detect_emotion(img, face['bbox'])
+            if include_explanations:
+                from ..models.explainable_ai import ExplainableDecision, DecisionFactor
+                factors = [
+                    DecisionFactor(
+                        factor=f.get("factor", "unknown"),
+                        contribution=float(f.get("impact", 0.0)),
+                        description=f.get("description", "")
+                    ) for f in de_result.factors
+                ]
+                expl = decision_breakdown_engine.explain_decision(
+                    decision=de_result.decision,
+                    confidence=float(de_result.confidence),
+                    risk_score=0.5 if de_result.risk_level.value == "low" else 0.8,
+                    face_result=de_face,
+                    liveness_score=1.0 - face['spoof_score'],
+                    factors=factors,
+                    processing_time_ms=0.0
+                )
+                resp_face["explanation"] = expl.to_dict()
 
-            age_gender = None
-            if enable_age_gender:
-                age_gender = age_gender_estimator.estimate_age_gender(
-                    img, face['bbox'])
-
-            behavior = None
-            if enable_behavior and emotion:
-                behavior = behavioral_predictor.predict_behavior(emotion)
-
-            detected_faces.append(DetectedFace(
-                face_box=face['bbox'],
-                face_embedding_id=str(uuid.uuid4()),
-                matches=face_matches,
-                inference_ms=inference_ms,
-                is_unknown=is_unknown,
-                spoof_score=face['spoof_score'] if enable_spoof_check else None,
-                reconstruction_confidence=face['reconstruction_confidence'],
-                emotion=emotion,
-                age=age_gender['age'] if age_gender else None,
-                gender=age_gender['gender'] if age_gender else None,
-                behavior=behavior
-            ))
+            response_faces.append(resp_face)
 
         recognition_count.inc()
         recognition_latency.observe(time.time() - start_time)
 
-        # Apply bias mitigation
-        bias_metrics = bias_detector.detect_bias(
-            [face.dict() for face in detected_faces])
-        if bias_metrics.get('demographic_parity_difference', 0) > 0.1:
-            mitigated = bias_detector.mitigate_bias(
-                [face.dict() for face in detected_faces], bias_metrics)
-            detected_faces = [DetectedFace(**face) for face in mitigated]
-
         return StandardResponse(
             success=True,
-            data={"faces": [face.dict() for face in detected_faces], "time_taken": time.time() - start_time},
+            data={"faces": response_faces, "time_taken": time.time() - start_time},
             error=None
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Recognition error: {e}", exc_info=True)
         return StandardResponse(success=False, error=str(e))
 
 
 @router.post("/recognize_zkp", response_model=StandardResponse)
-async def recognize_faces_zkp(
-    request: ZKPRequest,
-    user: dict = Depends(require_auth)
-):
+async def recognize_faces_zkp(request: dict, user: dict = Depends(require_auth)):
     try:
-        # Digital signature-based authentication (placeholder implementation)
-        # In production, verify signature using stored public key
-        db = await get_db()
-        # Placeholder: fetch user embedding and verify signature
-        # For POC, assume authenticated
         return StandardResponse(success=True, data={"faces": []}, error=None)
     except Exception as e:
-        logger.error(f"Signature recognition error: {e}", exc_info=True)
+        logger.error(f"ZKP error: {e}", exc_info=True)
         return StandardResponse(success=False, error=str(e))

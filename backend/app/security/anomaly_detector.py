@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import json
 
 class AnomalyDetector:

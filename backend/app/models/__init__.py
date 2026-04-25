@@ -24,7 +24,7 @@ from .enhanced_spoof import (
 from .model_calibrator import ModelCalibrator
 from .bias_detector import BiasDetector
 from .ethical_governor import EthicalGovernor
-from .zkp_auth import SignatureAuthenticator
+from .crypto_attestation import CryptoAttestation
 
 # Next-gen identity features
 from .homomorphic_encryption import (
@@ -77,7 +77,8 @@ from .explainable_ai import (
     CalibrationPoint,
     BiasMetrics,
     ConfidenceCalibrator,
-    BiasAuditor
+    BiasAuditor,
+    decision_breakdown_engine
 )
 from .continuous_monitoring import (
     PrivacyAwareSessionManager,
@@ -92,7 +93,8 @@ from .enhanced_spoof import (
     DeepfakeDetector,
     DeepfakeThreatIntelligence,
     WatermarkDetector,
-    SyntheticRiskModel
+    SyntheticRiskModel,
+    enhanced_spoof_detector
 )
 
 __all__ = [
@@ -114,7 +116,7 @@ __all__ = [
     'ModelCalibrator',
     'BiasDetector',
     'EthicalGovernor',
-    'SignatureAuthenticator',
+    'CryptoAttestation',
     
     # Next-gen identity
     'HomomorphicEncryptionEngine',
@@ -132,6 +134,7 @@ __all__ = [
     'ExplainableDecision',
     'ConfidenceCalibrator',
     'BiasAuditor',
+    'decision_breakdown_engine',
     
     # Monitoring
     'PrivacyAwareSessionManager',
@@ -142,4 +145,5 @@ __all__ = [
     'DeepfakeThreatIntelligence',
     'WatermarkDetector',
     'SyntheticRiskModel',
+    'enhanced_spoof_detector',
 ]

@@ -1,8 +1,10 @@
 """
-Enhanced Anti-Deepfake & Synthetic Identity Defense.
+Enhanced Anti-Spoof & Synthetic Defense.
 
-Advanced defense against deepfakes, synthetic identities, and presentation attacks.
-Implements multimodal detection and temporal consistency analysis.
+Multi-modal liveness detection and spoof classification.
+Note: This is a POC implementation using hand-crafted features.
+For production deepfake detection, integrate a dedicated XceptionNet or
+other deep learning-based deepfake detector (e.g., DeepFaceTrace, Face X-ray).
 """
 
 import numpy as np
@@ -410,8 +412,10 @@ class WatermarkDetector:
                     result["detected"] = True
                     result["confidence"] = min(energy_ratio / 3.0, 1.0)
                     result["patterns"].append("high_frequency_grid")
-        
-        except Exception:
+         
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).debug(f"Frequency domain analysis skipped: {e}")
             pass
         
         return result
@@ -447,8 +451,10 @@ class WatermarkDetector:
                 result["detected"] = True
                 result["confidence"] = 0.5
                 result["artifacts"].append("slight_uniformity")
-        
-        except Exception:
+         
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).debug(f"Texture analysis skipped: {e}")
             pass
         
         return result
@@ -737,6 +743,15 @@ class DeepfakeDetector:
         self.threat_intelligence = DeepfakeThreatIntelligence()
         self.watermark_detector = WatermarkDetector()
         self.synthetic_risk_model = SyntheticRiskModel()
+        # Face detector for temporal analysis (lazy-loaded to avoid circular imports)
+        self._face_detector = None
+
+    def _get_face_detector(self):
+        """Lazy-load face detector to avoid circular imports."""
+        if self._face_detector is None:
+            from ..models.face_detector import FaceDetector
+            self._face_detector = FaceDetector()
+        return self._face_detector
     
     def analyze_multimodal(
         self,
@@ -889,6 +904,7 @@ class DeepfakeDetector:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
             
             # Detect face in frame
+            detector = self._get_face_detector()
             faces = detector.detect_faces(gray, check_spoof=False)
             
             if faces:

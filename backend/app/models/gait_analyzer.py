@@ -5,39 +5,50 @@ from typing import List
 
 class GaitAnalyzer:
     def __init__(self):
-        # For POC, use simple silhouette-based gait features
-        # In production, use a pre-trained model like GaitSet or OpenPose + temporal analysis
+        # For POC, use Hu Moments of gait silhouette as gait signature.
+        # In production, use a deep learning model like GaitSet or OpenPose.
         pass
 
     def extract_gait_features(self, video_frames: List[np.ndarray]) -> np.ndarray:
         """
-        Extract gait features from a sequence of video frames.
-        Returns a 128-dimensional float32 vector representing gait signature.
-        Uses Gait Energy Image (GEI) representation: silhouettes are averaged,
-        then resized to 16x8 and L2-normalized.
+        Extract gait features from a sequence of video frames using temporal stacking of Hu Moments.
+        Returns a 7-dimensional float32 vector representing Hu moments of the gait silhouette.
+        Process: For each frame, compute binary silhouette → Hu Moments (7-d).
+        Then aggregate across temporal frames by averaging (temporal pooling).
+        Finally apply log transform and L2 normalize.
+        This approach preserves temporal dynamics better than single GEI.
         """
         if len(video_frames) < 10:
-            return np.zeros(128, dtype=np.float32)
+            return np.zeros(7, dtype=np.float32)
 
-        silhouettes = []
+        frame_hu_moments = []
         for frame in video_frames:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # Simple binary silhouette extraction via thresholding
             _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-            silhouettes.append(thresh.astype(np.float32) / 255.0)  # normalize 0-1
+            binary = (thresh > 0).astype(np.uint8)
 
-        # Compute Gait Energy Image (GEI) - mean silhouette
-        gei = np.mean(silhouettes, axis=0)  # shape (H, W)
+            # Compute spatial moments
+            moments = cv2.moments(binary, binaryImage=False)
+            if moments["m00"] == 0:
+                continue  # skip empty frames
 
-        # Resize to fixed 16x8 (128 values) using area interpolation for downsampling
-        gei_resized = cv2.resize(gei, (16, 8), interpolation=cv2.INTER_AREA)
+            # Compute Hu moments for this frame
+            hu = cv2.HuMoments(moments).flatten().astype(np.float32)
+            frame_hu_moments.append(hu)
 
-        # Flatten to 1-D vector
-        gait_vector = gei_resized.flatten()
+        if not frame_hu_moments:
+            return np.zeros(7, dtype=np.float32)
+
+        # Temporal aggregation: average Hu moments across all frames
+        hu_avg = np.mean(frame_hu_moments, axis=0)
+
+        # Log transform
+        hu_log = -np.sign(hu_avg) * np.log10(np.abs(hu_avg) + 1e-10)
 
         # L2 normalize
-        norm = np.linalg.norm(gait_vector)
+        norm = np.linalg.norm(hu_log)
         if norm > 0:
-            gait_vector = gait_vector / norm
+            hu_log = hu_log / norm
 
-        return gait_vector.astype(np.float32)
+        return hu_log.astype(np.float32)

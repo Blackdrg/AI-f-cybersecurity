@@ -3,8 +3,21 @@ import asyncio
 from collections import defaultdict
 from .providers.base import BaseProvider
 from .providers.mock_provider import MockProvider
-from .providers.bing_provider import BingProvider
-from .providers.wikipedia_provider import WikipediaProvider
+
+# Optional providers (may have extra dependencies)
+try:
+    from .providers.bing_provider import BingProvider
+    _BING_AVAILABLE = True
+except ImportError:
+    _BING_AVAILABLE = False
+    BingProvider = None
+
+try:
+    from .providers.wikipedia_provider import WikipediaProvider
+    _WIKIPEDIA_AVAILABLE = True
+except ImportError:
+    _WIKIPEDIA_AVAILABLE = False
+    WikipediaProvider = None
 
 
 class ResultAggregator:
@@ -12,10 +25,12 @@ class ResultAggregator:
 
     def __init__(self):
         self.providers = {
-            "mock": MockProvider(),
-            "bing": BingProvider(),
-            "wikipedia": WikipediaProvider()
+            "mock": MockProvider()
         }
+        if _BING_AVAILABLE:
+            self.providers["bing"] = BingProvider()
+        if _WIKIPEDIA_AVAILABLE:
+            self.providers["wikipedia"] = WikipediaProvider()
 
     async def enrich(self, query: str, providers: List[str], limit: int = 10) -> List[Dict[str, Any]]:
         """Enrich query using specified providers and aggregate results."""
