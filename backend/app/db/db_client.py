@@ -29,10 +29,21 @@ except ImportError:
 
 
 class DBClient:
-    def __init__(self):
+    def __init__(self, read_replicas: list = None):
         self.pool = None
+        self.read_replica_pools = []
         self.kms_client = self._init_kms()
         self.encryption_key = self._load_encryption_key()
+        
+        # Initialize read replicas if provided
+        if read_replicas:
+            self.read_replica_urls = read_replicas
+        else:
+            # Read from environment variable (comma-separated)
+            replica_urls = os.getenv('DB_READ_REPLICAS', '')
+            self.read_replica_urls = [url.strip() for url in replica_urls.split(',') if url.strip()]
+        
+        self.current_replica_index = 0
 
 
     async def init_db(self):
@@ -49,17 +60,75 @@ class DBClient:
             db_host = os.getenv('DB_HOST', 'localhost')
             db_port = int(os.getenv('DB_PORT', 5432))
             
+            # Initialize primary connection pool
             self.pool = await asyncpg.create_pool(
                 user=db_user,
                 password=db_password,
                 database=db_name,
                 host=db_host,
-                port=db_port
+                port=db_port,
+                min_size=5,
+                max_size=20
             )
             await self._create_tables()
+            
+            # Initialize read replica pools if configured
+            await self._init_read_replicas(db_user, db_password, db_name)
         else:
             # Fallback: offline SQLite primary
             self.pool = None
+    
+    async def _init_read_replicas(self, db_user: str, db_password: str, db_name: str):
+        """
+        Initialize read replica connection pools for load balancing reads.
+        """
+        if not self.read_replica_urls:
+            return
+        
+        for replica_url in self.read_replica_urls:
+            try:
+                # Parse replica URL (format: host:port or full connection string)
+                if '://' in replica_url:
+                    # Full connection string
+                    replica_pool = await asyncpg.create_pool(
+                        replica_url,
+                        min_size=2,
+                        max_size=10
+                    )
+                else:
+                    # host:port format
+                    if ':' in replica_url:
+                        replica_host, replica_port = replica_url.split(':')
+                        replica_port = int(replica_port)
+                    else:
+                        replica_host = replica_url
+                        replica_port = 5432
+                    
+                    replica_pool = await asyncpg.create_pool(
+                        user=db_user,
+                        password=db_password,
+                        database=db_name,
+                        host=replica_host,
+                        port=replica_port,
+                        min_size=2,
+                        max_size=10
+                    )
+                
+                self.read_replica_pools.append(replica_pool)
+                print(f"Read replica connected: {replica_url}")
+            except Exception as e:
+                print(f"Failed to connect to read replica {replica_url}: {e}")
+    
+    async def _get_read_pool(self):
+        """
+        Get a read replica pool using round-robin load balancing.
+        Falls back to primary pool if no replicas available.
+        """
+        if self.read_replica_pools:
+            pool = self.read_replica_pools[self.current_replica_index]
+            self.current_replica_index = (self.current_replica_index + 1) % len(self.read_replica_pools)
+            return pool
+        return self.pool
 
 
     async def _create_tables(self):
@@ -578,65 +647,7 @@ class DBClient:
 
         return person_id
 
-    async def recognize_faces(self, query_embedding: np.ndarray, top_k: int = 1, threshold: float = 0.6, camera_id: str = None, voice_embedding: np.ndarray = None, gait_embedding: np.ndarray = None) -> List[Dict[str, Any]]:
-        from ..offline.sync import get_offline_sync
-        offline_sync = await get_offline_sync()
-        if self.pool is None:
-            # Offline SQLite fallback
-            return await offline_sync.recognize_local(query_embedding, top_k, threshold)
-        # If in-memory (for POC/Test)
-        if hasattr(self, '_in_memory_db') and self._in_memory_db:
-            matches = []
-            for emb_id, emb_data in self._in_memory_db['embeddings'].items():
-                # Filter by camera_id if specified
-                if camera_id and emb_data.get('camera_id') != camera_id:
-                    continue
 
-                # Decrypt and compute face distance
-                face_emb = self._decrypt_embedding(emb_data['embedding'])
-                face_distance = 1 - np.dot(query_embedding, face_emb) / (
-                    np.linalg.norm(query_embedding) * np.linalg.norm(face_emb))
-                if face_distance > threshold:
-                    continue
-
-                person_id = emb_data['person_id']
-                combined_score = 1 - face_distance  # Start with face score
-
-                # Add voice score if available
-                if voice_embedding is not None and emb_data.get('voice_embedding') is not None:
-                    voice_emb = self._decrypt_embedding(
-                        emb_data['voice_embedding'])
-                    voice_distance = 1 - np.dot(voice_embedding, voice_emb) / (
-                        np.linalg.norm(voice_embedding) * np.linalg.norm(voice_emb))
-                    if voice_distance <= threshold:
-                        combined_score += (1 - voice_distance) * 0.2
-
-                # Add gait score if available
-                if gait_embedding is not None and emb_data.get('gait_embedding') is not None:
-                    gait_emb = self._decrypt_embedding(
-                        emb_data['gait_embedding'])
-                    gait_distance = 1 - np.dot(gait_embedding, gait_emb) / (
-                        np.linalg.norm(gait_embedding) * np.linalg.norm(gait_emb))
-                    if gait_distance <= threshold:
-                        combined_score += (1 - gait_distance) * 0.2
-
-                if combined_score >= (1 - threshold):  # Adjusted threshold
-                    person = self._in_memory_db['persons'].get(person_id)
-                    if person:
-                        matches.append({
-                            'person_id': person_id,
-                            'name': person['name'],
-                            'age': person.get('age'),
-                            'gender': person.get('gender'),
-                            'distance': 1 - combined_score,  # Convert back to distance
-                            'score': combined_score
-                        })
-
-            # Sort by combined score and limit to top_k
-            matches.sort(key=lambda x: x['score'], reverse=True)
-            return matches[:top_k]
-
-        async with self.pool.acquire() as conn:
             # Multi-modal fusion: combine face, voice, gait scores
             face_query = """
                 SELECT person_id, embedding <=> $1 as distance

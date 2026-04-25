@@ -1,0 +1,70 @@
+name: Benchmark & Performance Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+jobs:
+  benchmark:
+    name: Run Benchmarks (simulated AWS g4dn.xlarge)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-benchmark
+
+      - name: Run Performance Benchmarks
+        run: |
+          cd backend
+          python -m pytest tests/test_benchmark.py -v --benchmark-only
+
+      - name: Generate Benchmark Report
+        run: |
+          cd backend
+          python scripts/generate_benchmark_report.py
+
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            backend/benchmark_results.json
+            backend/benchmark_report.md
+
+      - name: Comment PR with Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('backend/benchmark_report.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## Benchmark Results\n\n' + report
+            });
+
+  performance-validation:
+    name: Validate Performance SLAs
+    runs-on: ubuntu-latest
+    needs: benchmark
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Latency Requirements
+        run: |
+          echo "Checking performance against SLAs..."
+          python backend/scripts/validate_performance.py

@@ -1,0 +1,106 @@
+# Sandbox Override for Docker Compose
+# Extends the base docker-compose.yml with sandbox-specific configurations
+
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      - ENVIRONMENT=sandbox
+      - DEBUG=true
+      - ENABLE_METRICS=true
+      - ENABLE_PROMETHEUS=true
+    volumes:
+      - ./backend:/app
+      - ./backend/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    environment:
+      - REACT_APP_API_URL=https://localhost:8000
+      - REACT_APP_ENV=sandbox
+      - REACT_APP_ENABLE_DEBUG=true
+    volumes:
+      - ./ui/react-app:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+  postgres:
+    environment:
+      - POSTGRES_DB=ai_f_sandbox
+      - POSTGRES_USER=ai_f_admin
+      - POSTGRES_PASSWORD=SandboxPass123!
+    volumes:
+      - postgres_data_sandbox:/var/lib/postgresql/data
+      - ./infra/init.sql:/docker-entrypoint-initdb.d/init.sql
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  postgres-replica-1:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=ai_f_sandbox
+      - POSTGRES_USER=ai_f_admin
+      - POSTGRES_PASSWORD=SandboxPass123!
+      - POSTGRES_REPLICATE_FROM=postgres
+    volumes:
+      - postgres_replica1_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+    environment:
+      - NGINX_SSL=true
+      - NGINX_DOMAIN=sandbox.ai-f.local
+
+volumes:
+  postgres_data_sandbox:
+  postgres_replica1_data:
+
+networks:
+  default:
+    name: ai_f_sandbox_net
+    driver: bridge
