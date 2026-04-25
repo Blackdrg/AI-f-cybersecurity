@@ -48,7 +48,7 @@ class DBClient:
 
     async def init_db(self):
         from ..offline.sync import get_offline_sync
-        await get_offline_sync().init_local_db()
+        await get_offline_sync()
         
         if ASYNCPG_AVAILABLE:
             # Retrieve DB credentials from Vault if configured, fallback to environment
@@ -647,8 +647,9 @@ class DBClient:
 
         return person_id
 
-
-            # Multi-modal fusion: combine face, voice, gait scores
+    async def recognize_faces(self, query_embedding: np.ndarray, top_k: int = 1, threshold: float = 0.6, camera_id: str = None, voice_embedding: np.ndarray = None, gait_embedding: np.ndarray = None) -> List[Dict[str, Any]]:
+        # Multi-modal fusion: combine face, voice, gait scores
+        async with self.pool.acquire() as conn:
             face_query = """
                 SELECT person_id, embedding <=> $1 as distance
                 FROM embeddings
