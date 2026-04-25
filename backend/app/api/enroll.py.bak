@@ -65,8 +65,6 @@ async def split_identity(person_id: str, embedding_ids: List[str], new_name: str
         await db.pool.execute("UPDATE embeddings SET person_id = $1 WHERE embedding_id = $2", new_person_id, emb_id)
         
     return {"success": True, "new_person_id": new_person_id}
-@router.post('/v1/enroll')
-@router.post('/enroll')
 async def enroll_person(
     request: Request,
     images: List[UploadFile] = File(...),
