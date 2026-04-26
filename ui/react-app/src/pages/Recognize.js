@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import {
   Container, Typography, Box, Grid, Card, CardContent,
   Paper, Button, TextField, LinearProgress, Chip,
-  IconButton, Tooltip, Tabs, Tab, Divider
+  IconButton, Tooltip, Tabs, Tab, Divider, Alert, Stack
 } from '@mui/material';
 import {
   CameraAlt, Search, Image as ImageIcon,
   BarChart, Timeline, ShowChart, CompareArrows,
-  FilterCenterFocus, AccountCircle, Radar
+  FilterCenterFocus, AccountCircle, Radar,
+  BugReport, Warning, Refresh
 } from '@mui/icons-material';
 import RecognizeView from './RecognizeView';
 import API from '../services/api';
+import OperatorWorkflowPanel from '../components/OperatorWorkflowPanel';
+import RecognitionErrorRecovery from '../components/RecognitionErrorRecovery';
 
 function TabPanel({ children, value, index }) {
   return (
@@ -34,6 +37,8 @@ function Recognize() {
     enable_behavior: true,
     threshold: 0.4,
   });
+  const [recognitionError, setRecognitionError] = useState(null);
+  const [recoveryAction, setRecoveryAction] = useState(null);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -50,6 +55,7 @@ function Recognize() {
     if (!selectedFile) return;
 
     setLoading(true);
+    setRecognitionError(null);
     try {
       const formData = new FormData();
       formData.append('image', selectedFile);
@@ -63,9 +69,35 @@ function Recognize() {
 
       const explanation = generateExplanation(res.data);
       setExplainableAI(explanation);
+      setRecognitionError(null);
+
+      // Check for warning-level issues
+      const face = res.data?.faces?.[0];
+      if (face) {
+        if (face.spoof_score > 0.3) {
+          setRecognitionError({
+            type: 'spoof_warning',
+            severity: face.spoof_score > 0.5 ? 'critical' : 'warning',
+            message: `Potential spoof detected (${(face.spoof_score * 100).toFixed(1)}%)`,
+            details: { spoof_score: face.spoof_score }
+          });
+        } else if (face.score < 0.4) {
+          setRecognitionError({
+            type: 'low_confidence',
+            severity: 'warning',
+            message: `Low match confidence (${(face.score * 100).toFixed(1)}%)`,
+            details: { confidence: face.score }
+          });
+        }
+      }
     } catch (error) {
       console.error('Recognition failed:', error);
-      alert('Recognition failed: ' + error.message);
+      setRecognitionError({
+        type: 'recognition_failed',
+        severity: 'error',
+        message: error.message || 'Recognition failed',
+        details: { error: error.message }
+      });
     } finally {
       setLoading(false);
     }
@@ -326,18 +358,33 @@ function Recognize() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={8}>
-          {recognitionResult ? (
-            <>
-              <Tabs
-                value={tabValue}
-                onChange={(e, v) => setTabValue(v)}
-                sx={{ mb: 2, bgcolor: 'background.paper', borderRadius: 1, p: 0.5 }}
-              >
-                <Tab label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChart /> Results</span>} />
-                <Tab label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ShowChart /> Explainable AI</span>} />
-                <Tab label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Radar /> Analysis</span>} />
-              </Tabs>
+         <Grid item xs={12} md={8}>
+           {recognitionResult ? (
+             <>
+               {recognitionError && (
+                 <React.Suspense fallback={<Box sx={{ p: 2 }}><CircularProgress size={20} /></Box>}>
+                   <RecognitionErrorRecovery
+                     recognitionResult={recognitionResult}
+                     onErrorResolve={() => setRecognitionError(null)}
+                     onEscalate={() => setRecoveryAction('escalate')}
+                   />
+                 </React.Suspense>
+               )}
+               
+               <React.Suspense fallback={<Box sx={{ p: 2 }}><CircularProgress size={20} /></Box>}>
+                 <OperatorWorkflowPanel
+                   recognitionResult={recognitionResult}
+                   onRetry={(adjustments) => handleRecognize()}
+                   onOverride={(data) => setRecoveryAction(data)}
+                   onEscalate={(data) => setRecoveryAction(data)}
+                 />
+               </React.Suspense>
+
+               <Tabs
+                 value={tabValue}
+                 onChange={(e, v) => setTabValue(v)}
+                 sx={{ mb: 2, bgcolor: 'background.paper', borderRadius: 1, p: 0.5 }}
+               >
 
               <TabPanel value={tabValue} index={0}>
                 <RecognizeView result={recognitionResult} />
@@ -481,17 +528,36 @@ function Recognize() {
                 )}
               </TabPanel>
             </>
-          ) : (
-            <Paper sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
-              <CameraAlt sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
-              <Typography variant="h6" gutterBottom>
-                No Recognition Results
-              </Typography>
-              <Typography>
-                Upload an image to begin recognition
-              </Typography>
-            </Paper>
-          )}
+           ) : (
+             <Paper sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+               {recognitionError ? (
+                 <>
+                   <BugReport sx={{ fontSize: 48, mb: 2, color: recognitionError.severity === 'critical' || recognitionError.severity === 'error' ? '#ef4444' : '#f59e0b' }} />
+                   <Typography variant="h6" gutterBottom color={recognitionError.severity === 'critical' || recognitionError.severity === 'error' ? 'error' : 'warning'}>
+                     {recognitionError.message}
+                   </Typography>
+                   <Button
+                     variant="contained"
+                     startIcon={<Refresh />}
+                     onClick={handleRecognize}
+                     sx={{ mt: 2 }}
+                   >
+                     Retry Recognition
+                   </Button>
+                 </>
+               ) : (
+                 <>
+                   <CameraAlt sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+                   <Typography variant="h6" gutterBottom>
+                     No Recognition Results
+                   </Typography>
+                   <Typography>
+                     Upload an image to begin recognition
+                   </Typography>
+                 </>
+               )}
+             </Paper>
+           )}
         </Grid>
       </Grid>
     </Container>

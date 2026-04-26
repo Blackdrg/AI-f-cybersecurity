@@ -163,6 +163,48 @@ export const terminateSession = async (sessionId) => {
   return res.data;
 };
 
+// Alerts & Incidents
+export const getActiveAlerts = async () => {
+  const res = await API.get('/api/alerts/active');
+  return res.data;
+};
+
+export const acknowledgeAlert = async (alertId) => {
+  const res = await API.put(`/api/alerts/${alertId}/acknowledge`);
+  return res.data;
+};
+
+export const createAlertRule = async (orgId, rule) => {
+  const res = await API.post(`/api/orgs/${orgId}/rules`, rule);
+  return res.data;
+};
+
+export const getIncidents = async () => {
+  const res = await API.get('/api/incidents');
+  return res.data;
+};
+
+export const updateIncidentStatus = async (incidentId, status) => {
+  const res = await API.put(`/api/incidents/${incidentId}/status`, { status });
+  return res.data;
+};
+
+export const getForensicTrace = async (eventId) => {
+  const res = await API.get(`/api/audit/forensic/${eventId}`);
+  return res.data;
+};
+
+export const verifyChainIntegrity = async () => {
+  const res = await API.get('/api/audit/verify');
+  return res.data;
+};
+
+export const getAuditLogs = async (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  const res = await API.get(`/api/admin/logs${query ? '?' + query : ''}`);
+  return res.data;
+};
+
 // Identity Management
 export const getIdentities = async (params = {}) => {
   const query = new URLSearchParams(params).toString();

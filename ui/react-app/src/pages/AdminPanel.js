@@ -1,20 +1,37 @@
 /* Enhanced Admin Panel with Enterprise Features */
 import React, { useState, useEffect } from 'react';
 import { 
-  Box, Typography, Grid, Paper, List, ListItem, 
+  Box, Typography, Grid, Paper, List, ListItem, ListItemText, 
   Divider, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
   Chip, Table, TableBody, TableCell, TableHead, TableRow, Card, CardContent,
   Tabs, Tab, Alert, LinearProgress, IconButton, Tooltip, Switch,
-  FormControlLabel, Select, MenuItem, InputAdornment
+  FormControlLabel, Select, MenuItem, InputAdornment, CircularProgress
 } from '@mui/material';
 import { 
   VpnKey, Business, People, Receipt, Shield, Gavel, 
   Security, TrendingUp, BugReport, Public, Key, 
   Settings, Analytics, Timeline, Radar, Database,
   Eye, Brain, AlertCircle, CheckCircle, Error as ErrorIcon,
-  PlayArrow, Pause, History, BarChart
+  PlayArrow, Pause, History, BarChart, Article, CompareArrows
 } from '@mui/icons-material';
 import API from '../services/api';
+
+// Lazy-loaded components
+const OperatorWorkflowPanel = React.lazy(() => 
+  import('../components/OperatorWorkflowPanel').catch(() => ({ default: () => <Box>Component unavailable</Box> }))
+);
+const ExplainableAIPanel = React.lazy(() => 
+  import('../components/ExplainableAIPanel').catch(() => ({ default: () => <Box>Component unavailable</Box> }))
+);
+const DashboardIntelligencePanel = React.lazy(() => 
+  import('../components/DashboardIntelligencePanel').catch(() => ({ default: () => <Box>Component unavailable</Box> }))
+);
+const EnrichmentPortalPanel = React.lazy(() => 
+  import('../components/EnrichmentPortalPanel').catch(() => ({ default: () => <Box>Component unavailable</Box> }))
+);
+const RecognitionErrorRecovery = React.lazy(() => 
+  import('../components/RecognitionErrorRecovery').catch(() => ({ default: () => <Box>Component unavailable</Box> }))
+);
 
 const AdminPanel = () => {
   const [orgs, setOrgs] = useState([]);
@@ -29,6 +46,8 @@ const AdminPanel = () => {
   const [threats, setThreats] = useState([]);
   const [riskMetrics, setRiskMetrics] = useState({});
   const [darkMode, setDarkMode] = useState(true);
+  const [intelligenceTimeframe, setIntelligenceTimeframe] = useState('24h');
+  const [selectedRecognition, setSelectedRecognition] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -383,26 +402,140 @@ const AdminPanel = () => {
         </Typography>
       </Box>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
-          <Tab label={<span><Business /> Organizations</span>} />
-          <Tab label={<span><Shield /> Policy Engine</span>} />
-          <Tab label={<span><Security /> Compliance</span>} />
-          <Tab label={<span><Brain /> Explainable AI</span>} />
-          <Tab label={<span><BugReport /> Anti-Spoof</span>} />
-          <Tab label={<span><Key /> Identity Tokens</span>} />
-          <Tab label={<span>Settings</span>} />
-        </Tabs>
-      </Box>
+       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+         <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+           <Tab label={<span><Business /> Organizations</span>} />
+           <Tab label={<span><Shield /> Policy Engine</span>} />
+           <Tab label={<span><Security /> Compliance</span>} />
+           <Tab label={<span><Brain /> Explainable AI</span>} />
+           <Tab label={<span><Timeline /> Operator Workflow</span>} />
+           <Tab label={<span><Analytics /> Intelligence</span>} />
+           <Tab label={<span><Article /> Enrichment</span>} />
+           <Tab label={<span><BugReport /> Anti-Spoof</span>} />
+           <Tab label={<span><Key /> Identity Tokens</span>} />
+           <Tab label={<span>Settings</span>} />
+         </Tabs>
+       </Box>
 
       {/* Tab Content */}
       {activeTab === 0 && renderOriginalAdmin()}
-      {activeTab === 1 && (
-        <Box>
-          {renderSystemHealth()}
-          {renderPolicyManager()}
-        </Box>
-      )}
+        {activeTab === 1 && (
+          <Box>
+            {renderSystemHealth()}
+            {renderPolicyManager()}
+          </Box>
+        )}
+        {activeTab === 2 && (
+          <Box>
+            {renderComplianceDashboard()}
+            {renderRiskAnalytics()}
+          </Box>
+        )}
+        {activeTab === 3 && (
+          <Box>
+            <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
+              <ExplainableAIPanel
+                explanation={{
+                  summary: 'Recognition based on multiple biometric modalities with 4 contributing factors',
+                  factors: [
+                    { name: 'Face Recognition', contribution: 52, confidence: 94 },
+                    { name: 'Spoof Detection', contribution: -8, confidence: 87 },
+                    { name: 'Emotion Analysis', contribution: 10, confidence: 87 },
+                    { name: 'Demographic Analysis', contribution: 8, confidence: 82 }
+                  ],
+                  metrics: {
+                    overallAccuracy: 94.2,
+                    biasScore: 0.96,
+                    confidenceVariance: 0.03
+                  }
+                }}
+              />
+            </React.Suspense>
+          </Box>
+        )}
+        {activeTab === 4 && (
+          <Box>
+            <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
+              <OperatorWorkflowPanel 
+                recognitionResult={selectedRecognition}
+                onRetry={(adjustments) => {
+                  console.log('Retry requested with:', adjustments);
+                }}
+                onOverride={(data) => {
+                  console.log('Override requested:', data);
+                }}
+                onEscalate={(data) => {
+                  console.log('Escalation requested:', data);
+                }}
+              />
+            </React.Suspense>
+          </Box>
+        )}
+        {activeTab === 5 && (
+          <Box>
+            <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
+              <DashboardIntelligencePanel
+                timeframe={intelligenceTimeframe}
+                onTimeframeChange={setIntelligenceTimeframe}
+                onAlertAction={(alert, action) => console.log('Alert action:', alert, action)}
+                onDrillDown={(metric, data) => console.log('Drill down:', metric, data)}
+              />
+            </React.Suspense>
+          </Box>
+        )}
+        {activeTab === 6 && (
+          <Box>
+            <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
+              <EnrichmentPortalPanel
+                personId={activeOrg?.org_id || null}
+                onEnrichmentComplete={(results) => console.log('Enrichment complete:', results)}
+                onAlertAction={(alert, action) => console.log('Alert action:', alert, action)}
+              />
+            </React.Suspense>
+          </Box>
+        )}
+        {activeTab === 7 && (
+          <Box>
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  <BugReport /> Deepfake Detection Settings
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 2, bgcolor: 'error.light' }}>
+                      <Typography variant="h6" sx={{ color: 'white' }}>
+                        {threats.length} Active Threats
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'white', opacity: 0.8 }}>
+                        Blocked in last 24h
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>Detection Sensitivity</Typography>
+                      <Select fullWidth size="small" defaultValue="high">
+                        <MenuItem value="low">Low (Fewer false positives)</MenuItem>
+                        <MenuItem value="medium">Medium (Balanced)</MenuItem>
+                        <MenuItem value="high">High (Catch all threats)</MenuItem>
+                      </Select>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>Auto-Block</Typography>
+                      <FormControlLabel
+                        control={<Switch defaultChecked />}
+                        label="Block high-risk attempts"
+                      />
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
       {activeTab === 2 && (
         <Box>
           {renderComplianceDashboard()}

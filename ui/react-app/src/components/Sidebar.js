@@ -74,7 +74,7 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
     {
       key: 'security',
       label: 'Anti-Spoof & Defense',
-      icon: <SecurityIcon />,
+      icon: <Security />,
       alert: true,
       items: [
         { id: 'deepfake', text: 'Deepfake Detection', icon: <BugReport />, badge: 12, roles: ['admin', 'security'] },
