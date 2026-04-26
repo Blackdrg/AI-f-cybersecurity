@@ -19,6 +19,8 @@ sentry_sdk.init(
 from .api import enroll, recognize, video_recognize, stream_recognize, admin, federated_learning
 from .api import users, plans, subscriptions, payments, usage, ai_assistant, support, public_enrich
 from .api import orgs, cameras, events, alerts, compliance
+from .api import plugins
+from . import federated_learning
 from .grpc.server import serve_grpc
 from .security import setup_security
 from .metrics import setup_metrics
@@ -56,6 +58,10 @@ from .models.age_gender_estimator import AgeGenderEstimator
 from .models.behavioral_predictor import BehavioralPredictor
 from .models.face_reconstructor import FaceReconstructor
 from .models.bias_detector import BiasDetector
+
+# Import plugin system
+from .plugins.loader import plugin_loader
+from .models.emotion_behavior import get_emotion_behavior_engine, EmotionBehaviorEngine
 
 app = FastAPI(title="Face Recognition Service", version="2.0.0")
 
@@ -128,6 +134,33 @@ async def startup_event():
         EmotionDetector()
         AgeGenderEstimator()
 
+        # 7. Initialize Emotion + Behavior Engine
+        logger.info("Initializing Emotion + Behavior Engine...")
+        _emotion_behavior_engine = get_emotion_behavior_engine()
+
+        # 8. Initialize Federated Learning
+        logger.info("Initializing Federated Learning server...")
+        # federated_server and client_orchestrator are global singletons
+        logger.info(f"Federated Learning ready: {len(client_orchestrator.registered_clients)} clients registered")
+
+        # 9. Discover and Load Plugins
+        logger.info("Discovering plugins...")
+        plugin_loader.discover_plugins()
+        
+        # Auto-enable configured plugins from environment
+        import json
+        plugins_config = os.getenv("ENABLED_PLUGINS")
+        if plugins_config:
+            try:
+                enabled_list = json.loads(plugins_config)
+                for plugin_name in enabled_list:
+                    asyncio.create_task(
+                        plugin_loader.enable_plugin(plugin_name, {})
+                    )
+                    logger.info(f"Scheduled plugin enable: {plugin_name}")
+            except Exception as e:
+                logger.warning(f"Failed to parse ENABLED_PLUGINS: {e}")
+
         _production_systems_ready = True
         logger.info("All production systems initialized successfully")
     except Exception as e:
@@ -177,6 +210,9 @@ app.include_router(legal_router, prefix="/api", tags=["legal"])
 # V2 recognition (with enhanced scoring)
 from .api.recognition_v2 import router as recognition_v2_router
 app.include_router(recognition_v2_router, prefix="/api/v2", tags=["recognition_v2"])
+
+# Plugin management
+app.include_router(plugins.router, tags=["plugins"])
 
 # Setup security, metrics, and rate limiting
 setup_security(app)

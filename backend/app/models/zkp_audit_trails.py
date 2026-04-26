@@ -1,15 +1,19 @@
 """
-Zero-Knowledge Proof Audit Trails.
+Zero-Knowledge Proof Audit Trails - SIMULATION MODULE.
 
-Implements privacy-preserving audit logging using ZKP.
-Proves that decisions were made correctly without revealing
-sensitive data or decision logic.
+⚠️ WARNING: This module uses HASH-BASED SIMULATIONS of ZKP,
+NOT real cryptographic zero-knowledge proofs.
 
-Supports:
-- ZKP of decision correctness
-- Privacy-preserving audit logs
-- Selective disclosure of audit data
-- Compliance verification without data exposure
+For production use with actual ZKPs, see:
+`backend/app/models/zkp_proper.py`
+
+Real ZKP features (Schnorr NIZK) are implemented separately.
+This simulation is for architectural demonstration only.
+
+Supports (simulated):
+- Hash-based commitment to decisions
+- Tamper-evident audit chains
+- Simulated proof structures
 """
 
 import hashlib
@@ -101,7 +105,12 @@ class ZKProofGenerator:
         self._generate_keypair()
     
     def _generate_keypair(self):
-        """Generate key pair for signing proofs."""
+        """
+        Generate key pair for signing (NOT ZKP).
+        
+        Note: ECDSA signing is NOT zero-knowledge.
+        Real ZKPs are in zkp_proper.py (Schnorr protocol).
+        """
         private_key = ec.generate_private_key(ec.SECP256R1())
         self.private_key = private_key
         self.public_key = private_key.public_key()
@@ -113,32 +122,31 @@ class ZKProofGenerator:
         public_input: str
     ) -> Dict[str, Any]:
         """
-        Generate Schnorr-type ZKP.
+        ⚠️ SIMULATED proof - NOT real ZKP.
         
-        Proves knowledge of witness without revealing it.
+        WARNING: This uses hash-based commitments which do NOT
+        provide zero-knowledge properties. For real ZKP,
+        use backend/app/models/zkp_proper.py (Schnorr protocol).
         
-        Args:
-            statement: Statement to prove (e.g., "score > threshold")
-            witness: Secret witness (e.g., actual score)
-            public_input: Public input for verification
+        Real Schnorr requires:
+          - Prover: r <- Zq, t = g^r, c = H(g,y,t,stmt), s = r+cx
+          - Verifier: check g^s = t * y^c
         
-        Returns:
-            ZKP proof data
+        This simulation only demonstrates the API structure.
         """
-        # In production: use actual Schnorr protocol
-        # Here: simulate with hash-based commitment
-        
+        # SIMULATION ONLY - not cryptographically sound
         commitment = hashlib.sha256(
             f"{statement}{witness}{public_input}".encode()
         ).hexdigest()
         
-        # "Proof" is a hash that commits to witness
         proof = hashlib.sha256(
             f"{commitment}{witness}{uuid.uuid4()}".encode()
         ).hexdigest()
         
         return {
-            "type": "schnorr_simulated",
+            "type": "schnorr_simulated_NOT_ZKP",
+            "warning": "Hash commitment only - not zero-knowledge",
+            "use_instead": "backend.app.models.zkp_proper.RealZKPProtocol",
             "commitment": commitment,
             "proof": proof,
             "public_input": public_input,

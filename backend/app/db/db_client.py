@@ -52,29 +52,29 @@ class DBClient:
         
         if ASYNCPG_AVAILABLE:
             try:
-            # Retrieve DB credentials from Vault if configured, fallback to environment
-            db_user = os.getenv('DB_USER', 'postgres')
-            db_password = vault.get_secret('DB_PASSWORD')
-            if db_password is None:
-                db_password = os.getenv('DB_PASSWORD', 'password')
-            db_name = os.getenv('DB_NAME', 'face_recognition')
-            db_host = os.getenv('DB_HOST', 'localhost')
-            db_port = int(os.getenv('DB_PORT', 5432))
+                # Retrieve DB credentials from Vault if configured, fallback to environment
+                db_user = os.getenv('DB_USER', 'postgres')
+                db_password = vault.get_secret('DB_PASSWORD')
+                if db_password is None:
+                    db_password = os.getenv('DB_PASSWORD', 'password')
+                db_name = os.getenv('DB_NAME', 'face_recognition')
+                db_host = os.getenv('DB_HOST', 'localhost')
+                db_port = int(os.getenv('DB_PORT', 5432))
             
-            # Initialize primary connection pool
-            self.pool = await asyncpg.create_pool(
-                user=db_user,
-                password=db_password,
-                database=db_name,
-                host=db_host,
-                port=db_port,
-                min_size=5,
-                max_size=20
-            )
-            await self._create_tables()
-            
-            # Initialize read replica pools if configured
-            await self._init_read_replicas(db_user, db_password, db_name)
+                # Initialize primary connection pool
+                self.pool = await asyncpg.create_pool(
+                    user=db_user,
+                    password=db_password,
+                    database=db_name,
+                    host=db_host,
+                    port=db_port,
+                    min_size=5,
+                    max_size=20
+                )
+                await self._create_tables()
+                
+                # Initialize read replica pools if configured
+                await self._init_read_replicas(db_user, db_password, db_name)
             except Exception as e:
                 import logging
                 logging.getLogger('__name__').warning(f"PostgreSQL connection failed: {e}. Using in-memory fallback.")

@@ -15,6 +15,7 @@ from ..models.voice_embedder import VoiceEmbedder
 from ..models.gait_analyzer import GaitAnalyzer
 from ..models.age_gender_estimator import AgeGenderEstimator
 from ..models.privacy_engine import dp_engine
+from ..models.ethical_governor import ethical_governor
 from ..db.db_client import get_db
 from ..schemas import StandardResponse
 from ..security import require_auth
@@ -126,6 +127,30 @@ async def enroll_person(
 
         if not embeddings:
             return StandardResponse(success=False, error="No valid faces found in images")
+
+        # Ethical Governor check: age and consent validation
+        # Estimate jurisdiction from user or default
+        user_metadata = user.get("metadata", {})
+        jurisdiction = user_metadata.get("jurisdiction", "DEFAULT")
+        
+        ethical_decision = ethical_governor.check_request(
+            request_data={
+                "age": age,
+                "consent": consent,
+                "person_id": None,  # Not yet created
+                "user_id": user.get("user_id") or user.get("sub"),
+                "jurisdiction": jurisdiction,
+                "purpose": "enrollment"
+            },
+            user_role=user.get("role", "user"),
+            jurisdiction=jurisdiction
+        )
+        
+        if not ethical_decision.approved:
+            return StandardResponse(
+                success=False,
+                error=f"Ethical compliance check failed: {ethical_decision.explanation}"
+            )
 
         # Process voice files
         if voice_files:

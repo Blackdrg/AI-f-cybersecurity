@@ -74,7 +74,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "39df876634daca6c",
@@ -178,8 +179,27 @@
   },
   "active": "81a368f3b1dc4df0",
   "lastOpenFiles": [
+    "backend/app/api/plugins.py",
+    "ui/react-app/node_modules/eslint-plugin-import/README.md",
+    "backend/app/api/__pycache__/__init__.cpython-314.pyc",
+    "backend/app/plugins/__pycache__/loader.cpython-311.pyc",
+    "backend/app/models/emotion_behavior.py",
+    "WORK_COMPLETION_SUMMARY.md",
+    "FIXES_COMPLETION_REPORT.md",
+    "ENTERPRISE_FIXES_SUMMARY.md",
+    "backend/tests/__pycache__/test_validation_framework.cpython-311-pytest-8.3.2.pyc",
+    "backend/benchmark_validation.json",
+    "docs/ENTERPRISE_READINESS_FIXES.md",
+    "ui/react-app/src/services/apiEnhanced.js",
+    "scripts/validate_performance.py",
+    "docs/deployment/load_test_results.md",
+    "docs/deployment",
+    "backend/app/models/zkp_proper.py",
+    "docs/security/pentest_report.md",
+    "docs/security/threat_model_stride.md",
+    "docs/security",
+    "ui/react-app/node_modules/eslint-plugin-jest/docs/rules/no-focused-tests.md",
     "docs/rules/display-name.md",
-    "docs/rules",
     "ui/react-app/node_modules/workbox-build/node_modules/fs-extra/README.md"
   ]
 }

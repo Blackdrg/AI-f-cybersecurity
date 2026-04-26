@@ -8,13 +8,15 @@ import os
 import uuid
 import logging
 from ..models.face_detector import FaceDetector
-from ..models.face_embedder import FaceEmbedder
+from .models.face_embedder import FaceEmbedder
 from ..models.voice_embedder import VoiceEmbedder
 from ..models.gait_analyzer import GaitAnalyzer
 from ..models.emotion_detector import EmotionDetector
 from ..models.age_gender_estimator import AgeGenderEstimator
 from ..models.behavioral_predictor import BehavioralPredictor
 from ..models.bias_detector import BiasDetector
+from ..models.emotion_behavior import get_emotion_behavior_engine, BehaviorContext
+from ..models.emotion_behavior import get_emotion_behavior_engine, BehaviorContext
 from ..db.db_client import get_db
 from ..schemas import StandardResponse
 from ..security import require_auth
@@ -158,7 +160,43 @@ async def recognize_faces(
             # Bias mitigation (simple boost)
             emotion = emotion_detector.detect_emotion(img, face['bbox']) if enable_emotion else None
             age_gender = age_gender_estimator.estimate_age_gender(img, face['bbox']) if enable_age_gender else None
-            behavior = behavioral_predictor.predict_behavior(emotion) if enable_behavior and emotion else None
+            
+            # Use integrated Emotion + Behavior Engine if enabled
+            behavior_analysis = None
+            if enable_behavior:
+                try:
+                    behavior_engine = get_emotion_behavior_engine()
+                    # Build context from request metadata
+                    context = BehaviorContext(
+                        person_id=db_matches[0]['person_id'] if db_matches else 'unknown',
+                        session_id=str(uuid.uuid4()),
+                        location=camera_id or 'unknown',
+                        time_of_day=time.strftime('%H:%M'),
+                        crowd_density=0.5,  # Would come from camera analytics
+                        weather='unknown',  # Could fetch from weather API
+                        previous_interactions=0,  # Would query DB
+                        known_individual=not is_unknown
+                    )
+                    # Run behavior analysis
+                    behavior_analysis = await behavior_engine.analyze_frame(
+                        person_id=context.person_id,
+                        face_data={'embedding': query_emb, 'landmarks': face.get('landmarks')},
+                        voice_data=None,
+                        gait_data=None,
+                        context=context
+                    )
+                    behavior = {
+                        'state': behavior_analysis.behavior_state.value if hasattr(behavior_analysis.behavior_state, 'value') else str(behavior_analysis.behavior_state),
+                        'risk_level': behavior_analysis.risk_level,
+                        'risk_score': behavior_analysis.risk_score,
+                        'action': behavior_analysis.action,
+                        'explanation': behavior_analysis.explanation
+                    }
+                except Exception as e:
+                    logger.warning(f"Behavior analysis failed: {e}")
+                    behavior = None
+            else:
+                behavior = behavioral_predictor.predict_behavior(emotion) if emotion else None
 
             if age_gender:
                 bias_input = [{

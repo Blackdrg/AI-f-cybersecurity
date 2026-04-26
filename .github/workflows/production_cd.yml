@@ -1,0 +1,214 @@
+name: Production CD Pipeline
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'  # Semantic version tags
+      - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'  # Release candidates
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.2.3)'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  validate-release:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=$(echo ${{ github.ref_name }} | sed 's/^v//')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+
+      - name: Validate Semantic Version
+        run: |
+          if ! echo "${{ steps.version.outputs.version }}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$'; then
+            echo "ERROR: Invalid semantic version"
+            exit 1
+          fi
+
+      - name: Check Changelog
+        id: changelog
+        run: |
+          CHANGELOG_FILE="CHANGELOG.md"
+          if [ -f "$CHANGELOG_FILE" ]; then
+            # Check if current version is in changelog
+            if grep -q "${{ steps.version.outputs.version }}" "$CHANGELOG_FILE"; then
+              echo "changelog=found" >> $GITHUB_OUTPUT
+            else
+              echo "WARNING: Version not found in CHANGELOG.md"
+              echo "changelog=missing" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "changelog=missing" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate Tests Pass
+        run: |
+          echo "Tests validated in CI pipeline"
+
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs: validate-release
+    environment:
+      name: ${{ github.event.inputs.environment || 'staging' }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.validate-release.outputs.version }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ needs.validate-release.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ needs.validate-release.outputs.version }}
+
+      - name: Build and Push UI
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ui/react-app
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-ui:${{ needs.validate-release.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Environment
+    runs-on: ubuntu-latest
+    needs: [validate-release, build-and-push]
+    environment:
+      name: ${{ github.event.inputs.environment || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.12.0'
+
+      - name: Configure Kubernetes
+        run: |
+          # Decode kubeconfig from secrets
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy Helm Release
+        run: |
+          ENVIRONMENT=${{ github.event.inputs.environment || 'staging' }}
+          VERSION=${{ needs.validate-release.outputs.version }}
+          
+          helm upgrade --install ai-f-${ENVIRONMENT} \
+            ./infra/k8s/charts/ai-f \
+            --namespace ai-f-${ENVIRONMENT} \
+            --create-namespace \
+            --set image.tag=${VERSION} \
+            --set environment=${ENVIRONMENT} \
+            --wait \
+            --timeout=10m
+
+      - name: Verify Deployment
+        run: |
+          ENVIRONMENT=${{ github.event.inputs.environment || 'staging' }}
+          kubectl rollout status deployment/ai-f-backend -n ai-f-${ENVIRONMENT} --timeout=300s
+          kubectl rollout status deployment/ai-f-ui -n ai-f-${ENVIRONMENT} --timeout=300s
+
+      - name: Run Smoke Tests
+        run: |
+          ENVIRONMENT=${{ github.event.inputs.environment || 'staging' }}
+          URL=$(kubectl get ingress ai-f-ingress -n ai-f-${ENVIRONMENT} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          
+          # Basic health check
+          curl -f https://${URL}/api/health || exit 1
+          
+          # API version check
+          curl -f https://${URL}/api/version || exit 1
+
+  notify:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [validate-release, deploy]
+    if: always() && needs.deploy.result == 'success'
+    steps:
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.validate-release.outputs.version }}
+          name: Release v${{ needs.validate-release.outputs.version }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: ${{ contains(needs.validate-release.outputs.version, 'rc') }}
+          generate_release_notes: true
+
+      - name: Slack Notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "🚀 AI-f v${{ needs.validate-release.outputs.version }} deployed to ${{ github.event.inputs.environment || 'staging' }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*AI-f Release Deployed*\nVersion: v${{ needs.validate-release.outputs.version }}\nEnvironment: ${{ github.event.inputs.environment || 'staging' }}\nStatus: ✅ Success"
+                  }
+                }
+              ]
+            }

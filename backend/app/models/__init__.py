@@ -97,6 +97,16 @@ from .enhanced_spoof import (
     enhanced_spoof_detector
 )
 
+# Emotion + Behavior Layer
+from .emotion_behavior import (
+    EmotionBehaviorEngine,
+    EmotionDetector as BehaviorEmotionDetector,
+    BehaviorTracker,
+    RulesEngine,
+    get_emotion_behavior_engine,
+    analyze_recognition_with_behavior
+)
+
 __all__ = [
     # Core models
     'FaceDetector',
@@ -146,4 +156,12 @@ __all__ = [
     'WatermarkDetector',
     'SyntheticRiskModel',
     'enhanced_spoof_detector',
+    
+    # Emotion + Behavior Layer
+    'EmotionBehaviorEngine',
+    'BehaviorEmotionDetector',
+    'BehaviorTracker',
+    'RulesEngine',
+    'get_emotion_behavior_engine',
+    'analyze_recognition_with_behavior'
 ]

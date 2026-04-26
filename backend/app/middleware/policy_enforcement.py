@@ -130,7 +130,38 @@ async def require_enroll_policy(
         request=request,
         metadata={"purpose": "enrollment"}
     )
-    return await enforce_policy(context, require_consent=True, require_age_gate=True)
+    # Only enforce policy engine (auth, rate limits). Ethical checks (age, consent)
+    # are performed by the endpoint after processing biometric data.
+    policy_engine = get_policy_engine()
+    subject_type_map = {
+        "admin": SubjectType.ADMIN,
+        "operator": SubjectType.OPERATOR,
+        "service": SubjectType.SERVICE,
+    }
+    subject_type = subject_type_map.get(user.get("role", "user"), SubjectType.USER)
+    decision = policy_engine.evaluate(
+        subject_id=user.get("user_id") or user.get("sub"),
+        subject_type=subject_type,
+        resource=ResourceType.ENROLL,
+        context={
+            "ip_range": context.client_ip,
+            "purpose": "enrollment",
+            "day_of_week": datetime.utcnow().strftime("%A").lower(),
+            "time_of_day": datetime.utcnow().strftime("%H:%M")
+        }
+    )
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "policy_denied",
+                "reason": decision.reason,
+                "matched_rule": decision.matched_rule
+            }
+        )
+    if decision.rate_limit_remaining is not None and decision.rate_limit_remaining <= 0:
+        raise HTTPException(status_code=429, detail={"error": "rate_limit_exceeded"})
+    return True
 
 
 async def require_recognize_policy(

@@ -59,3 +59,6 @@ class EdgeDevicePlugin(PluginBase):
             UPDATE edge_devices SET model_version = $1, last_seen = NOW()
             WHERE device_id = $2
         """, model_version, device_id)
+
+
+Plugin = EdgeDevicePlugin
