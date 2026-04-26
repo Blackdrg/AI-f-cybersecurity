@@ -179,6 +179,7 @@
   },
   "active": "81a368f3b1dc4df0",
   "lastOpenFiles": [
+    "ui/react-app/node_modules/eslint-plugin-react/README.md",
     "backend/app/api/plugins.py",
     "ui/react-app/node_modules/eslint-plugin-import/README.md",
     "backend/app/api/__pycache__/__init__.cpython-314.pyc",
@@ -197,7 +198,6 @@
     "backend/app/models/zkp_proper.py",
     "docs/security/pentest_report.md",
     "docs/security/threat_model_stride.md",
-    "docs/security",
     "ui/react-app/node_modules/eslint-plugin-jest/docs/rules/no-focused-tests.md",
     "docs/rules/display-name.md",
     "ui/react-app/node_modules/workbox-build/node_modules/fs-extra/README.md"
