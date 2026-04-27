@@ -9,6 +9,8 @@ import numpy as np
 from typing import List, Dict, Any, Optional
 import os
 import uuid
+import json
+import hashlib
 from datetime import datetime, timedelta
 from ..security.secrets_vault import vault
 try:
@@ -207,14 +209,39 @@ class DBClient:
                 );
             """)
 
-            # Model versions for OTA updates
+            # Model versions for OTA updates - Model Registry
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS model_versions (
-                    version_id UUID PRIMARY KEY,
-                    model_data BYTEA,
+                    version_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name VARCHAR(255) NOT NULL,
+                    version VARCHAR(100) NOT NULL,
+                    framework VARCHAR(50) NOT NULL,
+                    architecture TEXT,
+                    input_shape INTEGER[],
+                    output_dim INTEGER,
+                    description TEXT,
+                    training_dataset TEXT,
+                    metrics JSONB,
+                    model_path TEXT NOT NULL,
+                    size_bytes BIGINT,
+                    checksum CHAR(64) NOT NULL,
+                    signature TEXT,
+                    status VARCHAR(50) DEFAULT 'staging',
+                    tags JSONB DEFAULT '[]',
+                    min_requirements JSONB DEFAULT '{}',
+                    uploaded_by TEXT REFERENCES users(user_id),
                     created_at TIMESTAMP DEFAULT NOW(),
-                    description TEXT
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    download_count INTEGER DEFAULT 0,
+                    promoted_at TIMESTAMP,
+                    CONSTRAINT unique_name_version UNIQUE(name, version)
                 );
+            """)
+            
+            # Index for model lookups
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_model_versions_name ON model_versions(name);
+                CREATE INDEX IF NOT EXISTS idx_model_versions_status ON model_versions(status);
             """)
 
             # Federated learning updates
@@ -1165,6 +1192,327 @@ class DBClient:
                 VALUES ($1, $2, $3, $4)
             """, service, status, latency, error)
         return True
+
+    # Model Registry Methods
+    async def store_model_metadata(self, metadata) -> bool:
+        """Store model metadata in DB"""
+        if not self.pool:
+            return False
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO model_versions 
+                (name, version, framework, architecture, input_shape, output_dim,
+                 description, training_dataset, metrics, model_path, size_bytes,
+                 checksum, signature, status, tags, min_requirements, uploaded_by,
+                 created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
+                ON CONFLICT (name, version) DO UPDATE SET
+                    framework = EXCLUDED.framework,
+                    architecture = EXCLUDED.architecture,
+                    input_shape = EXCLUDED.input_shape,
+                    output_dim = EXCLUDED.output_dim,
+                    description = EXCLUDED.description,
+                    metrics = EXCLUDED.metrics,
+                    size_bytes = EXCLUDED.size_bytes,
+                    checksum = EXCLUDED.checksum,
+                    signature = EXCLUDED.signature,
+                    status = EXCLUDED.status,
+                    tags = EXCLUDED.tags,
+                    min_requirements = EXCLUDED.min_requirements,
+                    updated_at = NOW()
+            """,
+            metadata.name, metadata.version, metadata.framework,
+            metadata.architecture, json.dumps(metadata.input_shape), metadata.output_dim,
+            metadata.description, metadata.training_dataset,
+            json.dumps(metadata.metrics), f"{metadata.model_id}.{metadata.framework}",
+            metadata.size_bytes, metadata.checksum, metadata.signature,
+            metadata.status, json.dumps(metadata.tags or []),
+            json.dumps(metadata.min_requirements or {}),
+            metadata.uploaded_by
+            )
+        return True
+    
+    async def get_model_metadata(self, model_id: str) -> Optional[Dict]:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT * FROM model_versions WHERE version_id = $1", model_id)
+            return dict(row) if row else None
+    
+    async def list_model_metadata(self, name_filter: str = None, status: str = None) -> List[Dict]:
+        async with self.pool.acquire() as conn:
+            query = "SELECT * FROM model_versions"
+            params = []
+            conditions = []
+            if name_filter:
+                conditions.append(f"name LIKE ${len(params)+1}")
+                params.append(f"%{name_filter}%")
+            if status:
+                conditions.append(f"status = ${len(params)+1}")
+                params.append(status)
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+            query += " ORDER BY created_at DESC"
+            rows = await conn.fetch(query, *params)
+            return [dict(row) for row in rows]
+    
+    async def get_production_model(self, name: str) -> Optional[Dict]:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT * FROM model_versions WHERE name = $1 AND status = 'production' ORDER BY created_at DESC LIMIT 1",
+                name
+            )
+            return dict(row) if row else None
+    
+    async def update_model_status(self, model_id: str, status: str) -> bool:
+        async with self.pool.acquire() as conn:
+            result = await conn.execute(
+                "UPDATE model_versions SET status = $1, updated_at = NOW() WHERE version_id = $2",
+                status, model_id
+            )
+            if status == "production":
+                await conn.execute(
+                    "UPDATE model_versions SET promoted_at = NOW() WHERE version_id = $1",
+                    model_id
+                )
+            return result == "UPDATE 1"
+    
+    async def update_model_status_by_name(self, name: str, status: str, exclude_version: str = None) -> int:
+        """Update status for all versions of a model except excluded"""
+        async with self.pool.acquire() as conn:
+            if exclude_version:
+                result = await conn.execute(
+                    "UPDATE model_versions SET status = $1 WHERE name = $2 AND version_id != $3",
+                    status, name, exclude_version
+                )
+            else:
+                result = await conn.execute(
+                    "UPDATE model_versions SET status = $1 WHERE name = $2",
+                    status, name
+                )
+            return int(result.split()[1]) if result.startswith('UPDATE') else 0
+    
+    async def increment_model_downloads(self, model_id: str) -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE model_versions SET download_count = download_count + 1 WHERE version_id = $1",
+                model_id
+            )
+            return True
+    
+    async def delete_model_metadata(self, model_id: str) -> bool:
+        async with self.pool.acquire() as conn:
+            result = await conn.execute("DELETE FROM model_versions WHERE version_id = $1", model_id)
+            return result == "DELETE 1"
+    
+    async def get_config(self, key: str, default=None):
+        """Get system configuration value (for registry settings)"""
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT value FROM system_config WHERE key = $1", key)
+            return row['value'] if row else default
+
+    # ============================================
+    # Audit & Chain Integrity
+    # ============================================
+    async def log_audit_event(self, action: str, person_id: Optional[str] = None, 
+                              details: Dict = None, zkp_proof: Optional[Dict] = None) -> str:
+        """
+        Log an event to the hash-chained audit_log.
+        Returns the generated event ID.
+        """
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                # Get last hash
+                last_log = await conn.fetchrow("SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1")
+                prev_hash = last_log['hash'] if last_log else "0" * 64
+                
+                event_id = str(uuid.uuid4())
+                timestamp = datetime.utcnow()
+                
+                # Compute hash of current log
+                content = f"{event_id}|{action}|{person_id or ''}|{json.dumps(details or {})}|{prev_hash}|{timestamp.isoformat()}"
+                current_hash = hashlib.sha256(content.encode()).hexdigest()
+                
+                await conn.execute("""
+                    INSERT INTO audit_log (action, person_id, details, previous_hash, hash, zkp_proof)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                """, action, person_id, json.dumps(details or {}), prev_hash, current_hash, json.dumps(zkp_proof or {}))
+                
+                return event_id
+
+    async def get_audit_logs_range(self, start_id: int = None, end_id: int = None) -> List[Dict]:
+        """Get audit logs within an ID range (for chain verification)"""
+        async with self.pool.acquire() as conn:
+            if start_id and end_id:
+                rows = await conn.fetch("SELECT * FROM audit_log WHERE id BETWEEN $1 AND $2 ORDER BY id", start_id, end_id)
+            elif start_id:
+                rows = await conn.fetch("SELECT * FROM audit_log WHERE id >= $1 ORDER BY id", start_id)
+            else:
+                rows = await conn.fetch("SELECT * FROM audit_log ORDER BY id")
+            return [dict(row) for row in rows]
+
+    async def verify_audit_chain(self) -> List[Dict]:
+        """Verify tamper-evident chain; return list of broken links."""
+        async with self.pool.acquire() as conn:
+            logs = await conn.fetch("SELECT id, previous_hash, hash FROM audit_log ORDER BY id")
+            broken = []
+            for i in range(1, len(logs)):
+                prev = logs[i-1]
+                curr = logs[i]
+                if curr['previous_hash'] != prev['hash']:
+                    broken.append({
+                        "broken_at_id": curr['id'],
+                        "expected_prev": curr['previous_hash'],
+                        "actual_prev": prev['hash']
+                    })
+            return broken
+
+    # ============================================
+    # MFA
+    # ============================================
+    async def log_mfa_attempt(self, user_id: str, attempt_type: str, success: bool, 
+                              ip_address: str = None, user_agent: str = None) -> bool:
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO mfa_attempts (user_id, attempt_type, success, ip_address, user_agent)
+                VALUES ($1, $2, $3, $4, $5)
+            """, user_id, attempt_type, success, ip_address, user_agent)
+            return True
+
+    # ============================================
+    # Video Recognition
+    # ============================================
+    async def log_video_recognition(self, video_path: str, camera_id: str, 
+                                    org_id: str, total_frames: int, recognized_faces: List) -> str:
+        """Log a video processing summary as a recognition_event"""
+        event_id = str(uuid.uuid4())
+        # Store a summary record
+        summary = {
+            "video_path": video_path,
+            "total_frames": total_frames,
+            "recognitions": len(recognized_faces),
+            "faces": recognized_faces
+        }
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO recognition_events 
+                (event_id, org_id, camera_id, person_id, metadata)
+                VALUES ($1, $2, $3, NULL, $4)
+            """, event_id, org_id, camera_id, json.dumps(summary))
+        return event_id
+
+    # ============================================
+    # Sessions Cleanup
+    # ============================================
+    async def cleanup_expired_sessions(self, max_age_hours: int) -> int:
+        """Delete sessions older than given hours. Returns count deleted."""
+        async with self.pool.acquire() as conn:
+            result = await conn.execute("""
+                DELETE FROM sessions 
+                WHERE expires_at < NOW() - INTERVAL '1 second' * ($1 * 3600)
+            """, max_age_hours)
+            # Result like 'DELETE 5'
+            parts = result.split()
+            return int(parts[1]) if len(parts) >= 2 else 0
+
+    async def delete_expired_sessions(self, max_age_hours: int) -> int:
+        """Alias for cleanup_expired_sessions"""
+        return await self.cleanup_expired_sessions(max_age_hours)
+
+    # ============================================
+    # Redis Cache Cleanup
+    # ============================================
+    async def cleanup_redis_cache(self, pattern: str = "*") -> int:
+        """Delete keys matching pattern from Redis. Returns count deleted."""
+        import redis.asyncio as redis
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        client = await redis.from_url(redis_url, decode_responses=True)
+        keys = await client.keys(pattern)
+        if keys:
+            await client.delete(*keys)
+        return len(keys)
+
+    # ============================================
+    # User Organizations
+    # ============================================
+    async def get_user_orgs(self, user_id: str) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT o.*, m.role as user_role 
+                FROM org_members m
+                JOIN organizations o ON m.org_id = o.org_id
+                WHERE m.user_id = $1
+            """, user_id)
+            return [dict(row) for row in rows]
+
+    # ============================================
+    # Recognition Queries
+    # ============================================
+    async def get_recognitions_since(self, org_id: str, since: datetime) -> List[Dict]:
+        """Get recognition events for an organization since a datetime"""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT * FROM recognition_events 
+                WHERE org_id = $1 AND timestamp >= $2
+                ORDER BY timestamp DESC
+            """, org_id, since)
+            return [dict(row) for row in rows]
+
+    async def get_recent_recognitions(self, org_id: str, hours: int = 24) -> List[Dict]:
+        """Get recent recognition events within last N hours"""
+        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        return await self.get_recognitions_since(org_id, cutoff)
+
+    async def get_unscored_recognitions(self, org_id: str, limit: int = 1000) -> List[Dict]:
+        """Get recent recognitions that haven't been risk-scored yet"""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT * FROM recognition_events
+                WHERE org_id = $1 AND risk_score IS NULL
+                ORDER BY timestamp DESC
+                LIMIT $2
+            """, org_id, limit)
+            return [dict(row) for row in rows]
+
+    async def update_risk_score(self, event_id: str, risk: float) -> bool:
+        """Update risk_score for a recognition event"""
+        async with self.pool.acquire() as conn:
+            result = await conn.execute(
+                "UPDATE recognition_events SET risk_score = $1 WHERE event_id = $2",
+                risk, event_id
+            )
+            return result == "UPDATE 1"
+
+    # ============================================
+    # Bias Reports
+    # ============================================
+    async def store_bias_report(self, org_id: str, report: Dict) -> str:
+        """Store a bias/fairness audit report"""
+        report_id = str(uuid.uuid4())
+        report_date = datetime.utcnow().date()
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO bias_reports (report_id, org_id, report_date, metrics)
+                VALUES ($1, $2, $3, $4)
+            """, report_id, org_id, report_date, json.dumps(report))
+        return report_id
+
+    # ============================================
+    # OTA & Edge Devices
+    # ============================================
+    async def create_ota_job(self, device_id: str, model_version: str) -> str:
+        """Create an OTA update job for an edge device"""
+        update_id = str(uuid.uuid4())
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO ota_updates (update_id, device_id, model_version, status)
+                VALUES ($1, $2, $3, 'pending')
+            """, update_id, device_id, model_version)
+        return update_id
+
+    async def get_active_edge_devices(self) -> List[Dict]:
+        """Get all active/online edge devices"""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("SELECT * FROM edge_devices WHERE status = 'active'")
+            return [dict(row) for row in rows]
 
 
 # Global instance

@@ -1,0 +1,48 @@
+---
+# Application deployment (Docker-based)
+- name: Create app directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0755'
+  loop:
+    - /opt/ai-f
+    - /opt/ai-f/models
+    - /opt/ai-f/data
+    - /opt/ai-f/logs
+    - /opt/ai-f/.config
+
+- name: Clone repository
+  git:
+    repo: "{{ git_repo_url | default('https://github.com/owner/ai-f.git') }}"
+    dest: /opt/ai-f/src
+    version: "{{ git_branch | default('main') }}"
+    force: yes
+  become_user: "{{ deploy_user }}"
+
+- name: Build Docker image
+  command: docker build -t ai-f-backend:latest ./backend
+  args:
+    chdir: /opt/ai-f/src
+  environment:
+    BUILDKIT_PROGRESS: plain
+
+- name: Create docker-compose override for environment
+  template:
+    src: templates/docker-compose.override.yml.j2
+    dest: /opt/ai-f/docker-compose.override.yml
+    mode: '0644'
+
+- name: Deploy with Docker Compose
+  command: docker-compose up -d
+  args:
+    chdir: /opt/ai-f
+  environment:
+    COMPOSE_PROJECT_NAME: ai-f
+
+- name: Ensure deployment marker
+  file:
+    path: /opt/ai-f/.deployed
+    state: touch

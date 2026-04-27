@@ -18,13 +18,15 @@ sentry_sdk.init(
 
 from .api import enroll, recognize, video_recognize, stream_recognize, admin, federated_learning
 from .api import users, plans, subscriptions, payments, usage, ai_assistant, support, public_enrich
-from .api import orgs, cameras, events, alerts, compliance
+from .api import orgs, cameras, events, alerts, compliance, mfa, oauth
 from .api import plugins
-from . import federated_learning
 from .grpc.server import serve_grpc
 from .security import setup_security
 from .metrics import setup_metrics
 from .db.db_client import init_db
+from . import celery as celery_module
+from .pubsub import pubsub_manager
+from .websocket_manager import connection_manager
 
 # Configure structured logging
 logging.basicConfig(
@@ -65,10 +67,19 @@ from .models.emotion_behavior import get_emotion_behavior_engine, EmotionBehavio
 
 app = FastAPI(title="Face Recognition Service", version="2.0.0")
 
-# Add rate limiting
+# Celery application
+celery = celery_module.celery_app
+
+from .middleware.authentication import AuthenticationMiddleware
 from .middleware.rate_limit import RateLimitMiddleware
 from .middleware.usage_limiter import UsageLimiter, init_usage_limiter, get_usage_limiter
-app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
+
+# Get secret from env
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
+
+# Add middlewares (order matters: auth first, then rate limit)
+app.add_middleware(AuthenticationMiddleware, secret_key=JWT_SECRET)
+app.add_middleware(RateLimitMiddleware, redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"))
 app.add_middleware(UsageLimiter, redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"))
 
 # Global production systems ready flag
@@ -103,16 +114,29 @@ async def startup_event():
     # Initialize production systems
     global _production_systems_ready
     try:
+        # 0. Redis PubSub & WebSocket Manager
+        logger.info("Initializing Redis PubSub...")
+        from app.pubsub import pubsub_manager
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        await pubsub_manager.initialize(redis_url)
+        
+        from app.websocket_manager import connection_manager
+        await connection_manager.initialize()
+        logger.info("PubSub + WebSocket manager ready")
+        
+        # 0b. Initialize Rate Limiter (after Redis)
+        from app.middleware.rate_limit import rate_limiter_middleware
+        await rate_limiter_middleware.initialize()
+        logger.info("Rate limiter initialized")
+        
         # 1. Policy Engine
         logger.info("Initializing PolicyEngine...")
         policy_engine._init_default_policies()
 
         # 2. Ethical Governor
         logger.info("Initializing EthicalGovernor...")
-        # Already instantiated at module level
 
         # 3. Usage Limiter (Redis-backed)
-        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         await init_usage_limiter(redis_url)
         logger.info("UsageLimiter initialized")
 
@@ -140,7 +164,6 @@ async def startup_event():
 
         # 8. Initialize Federated Learning
         logger.info("Initializing Federated Learning server...")
-        # federated_server and client_orchestrator are global singletons
         logger.info(f"Federated Learning ready: {len(client_orchestrator.registered_clients)} clients registered")
 
         # 9. Discover and Load Plugins
@@ -202,6 +225,8 @@ app.include_router(cameras.router, prefix="/api/orgs", tags=["cameras"])
 app.include_router(events.router, prefix="/api/orgs", tags=["events"])
 app.include_router(alerts.router, prefix="/api/orgs", tags=["alerts"])
 app.include_router(compliance.router, prefix="/api", tags=["compliance"])
+app.include_router(mfa.router, prefix="/api", tags=["mfa"])
+app.include_router(oauth.router, prefix="/api", tags=["oauth"])
 
 # Legal compliance router
 from .api.legal import router as legal_router

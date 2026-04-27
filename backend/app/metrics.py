@@ -26,6 +26,12 @@ enrichment_requests = Counter(
 enrichment_latency = Histogram(
     'enrichment_latency_seconds', 'Enrichment latency')
 
+# Celery task metrics
+tasks_successful = Counter('celery_tasks_successful_total', 'Total successful Celery tasks')
+tasks_failed = Counter('celery_tasks_failed_total', 'Total failed Celery tasks')
+task_duration_seconds = Histogram('celery_task_duration_seconds', 'Task execution duration', ['task_name'])
+
+
 
 def setup_metrics(app):
     from fastapi import Response

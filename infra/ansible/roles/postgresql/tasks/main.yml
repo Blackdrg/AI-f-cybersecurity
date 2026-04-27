@@ -1,0 +1,66 @@
+---
+# PostgreSQL with pgvector extension
+- name: Install PostgreSQL
+  apt:
+    name:
+      - postgresql-15
+      - postgresql-client-15
+      - postgresql-contrib-15
+    state: present
+
+- name: Ensure PostgreSQL is running
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Create database
+  become_user: postgres
+  postgresql_db:
+    name: face_recognition
+    state: present
+
+- name: Create database user
+  become_user: postgres
+  postgresql_user:
+    name: ai_f_user
+    password: "{{ db_password | default('changeme') }}"
+    priv: "face_recognition:ALL"
+    state: present
+
+- name: Enable pgvector extension
+  become_user: postgres
+  postgresql_query:
+    db: face_recognition
+    query: "CREATE EXTENSION IF NOT EXISTS vector;"
+    
+- name: Configure PostgreSQL for performance
+  become_user: postgres
+  lineinfile:
+    path: /etc/postgresql/15/main/postgresql.conf
+    regexp: '^{{ item.key }}'
+    line: "{{ item.key }} = {{ item.value }}"
+    state: present
+  loop:
+    - { key: 'shared_buffers', value: '256MB' }
+    - { key: 'effective_cache_size', value: '1GB' }
+    - { key: 'max_connections', value: '200' }
+    - { key: 'work_mem', value: '16MB' }
+  notify: restart postgresql
+
+- name: Deploy database initialization script
+  copy:
+    src: ../../../infra/init.sql
+    dest: /tmp/init.sql
+    mode: '0644'
+
+- name: Initialize database schema
+  become_user: postgres
+  command: psql -U ai_f_user -d face_recognition -f /tmp/init.sql
+  args:
+    creates: /var/lib/postgresql/.init_complete
+
+- name: Mark initialization complete
+  file:
+    path: /var/lib/postgresql/.init_complete
+    state: touch

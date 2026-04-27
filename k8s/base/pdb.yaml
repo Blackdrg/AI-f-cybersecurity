@@ -1,0 +1,12 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend
+  namespace: face-recognition
+spec:
+  minAvailable: 2
+  podDisruptionBudget:
+    selector:
+      matchLabels:
+        app: ai-f-backend

@@ -1,0 +1,6 @@
+---
+# handlers for base-system role
+- name: restart docker
+  service:
+    name: docker
+    state: restarted

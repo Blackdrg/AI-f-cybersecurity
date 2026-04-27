@@ -8,7 +8,7 @@ import os
 import uuid
 import logging
 from ..models.face_detector import FaceDetector
-from .models.face_embedder import FaceEmbedder
+from ..models.face_embedder import FaceEmbedder
 from ..models.voice_embedder import VoiceEmbedder
 from ..models.gait_analyzer import GaitAnalyzer
 from ..models.emotion_detector import EmotionDetector

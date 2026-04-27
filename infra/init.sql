@@ -1,7 +1,81 @@
--- Enable pgvector extension
-CREATE EXTENSION IF NOT EXISTS vector;
+-- AI-f Database Initialization Script
+-- Production-ready schema for PostgreSQL 15 + pgvector
 
--- B2B & Organization Tables
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================
+-- 1. Core Identity Tables
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS persons (
+    person_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
+    name TEXT,
+    age INTEGER,
+    gender TEXT,
+    metadata JSONB,
+    consent_record_id UUID,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_persons_org ON persons(org_id);
+
+-- ============================================
+-- 2. Biometric Vectors
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS embeddings (
+    embedding_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    person_id UUID REFERENCES persons(person_id) ON DELETE CASCADE,
+    embedding VECTOR(512),
+    voice_embedding VECTOR(192),
+    gait_embedding VECTOR(7),
+    camera_id TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- HNSW index for fast vector search
+CREATE INDEX IF NOT EXISTS embedding_idx ON embeddings 
+USING hnsw (embedding vector_cosine_ops) 
+WITH (m=16, ef_construction=64);
+
+CREATE INDEX IF NOT EXISTS idx_embeddings_person ON embeddings(person_id);
+
+-- ============================================
+-- 3. Audit Log (Hash-Chain Ledger)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id SERIAL PRIMARY KEY,
+    action TEXT NOT NULL,
+    person_id UUID,
+    details JSONB,
+    previous_hash TEXT,
+    hash TEXT,
+    zkp_proof JSONB,
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_log(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_person ON audit_log(person_id);
+
+-- ============================================
+-- 4. Users & SaaS
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    full_name TEXT,
+    hashed_password TEXT,
+    subscription_tier TEXT DEFAULT 'free',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS organizations (
     org_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -13,7 +87,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 CREATE TABLE IF NOT EXISTS org_members (
     org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
     user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE,
-    role TEXT DEFAULT 'viewer', -- admin, operator, viewer
+    role TEXT DEFAULT 'viewer',
     joined_at TIMESTAMP DEFAULT NOW(),
     PRIMARY KEY (org_id, user_id)
 );
@@ -23,42 +97,56 @@ CREATE TABLE IF NOT EXISTS api_keys (
     org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
     api_key TEXT UNIQUE NOT NULL,
     name TEXT,
-    scopes JSONB, -- list of permissions
+    scopes JSONB,
     last_used TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Camera & Stream Management
+-- ============================================
+-- 5. Cameras & Streams
+-- ============================================
+
 CREATE TABLE IF NOT EXISTS cameras (
     camera_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     rtsp_url TEXT,
     location TEXT,
-    status TEXT DEFAULT 'offline', -- online, offline, error
+    status TEXT DEFAULT 'offline',
     metadata JSONB,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Recognition Events (Timeline & Analytics)
+-- ============================================
+-- 6. Recognition Timeline
+-- ============================================
+
 CREATE TABLE IF NOT EXISTS recognition_events (
     event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
     camera_id UUID REFERENCES cameras(camera_id),
     person_id UUID REFERENCES persons(person_id),
     confidence_score FLOAT,
+    risk_score FLOAT,
     image_path TEXT,
-    metadata JSONB, -- landmarks, spoof_score, etc.
+    metadata JSONB,
     timestamp TIMESTAMP DEFAULT NOW()
 );
 
--- Rule Engine & Alerts
+CREATE INDEX IF NOT EXISTS idx_recognition_org ON recognition_events(org_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_recognition_camera ON recognition_events(camera_id);
+CREATE INDEX IF NOT EXISTS idx_recognition_person ON recognition_events(person_id);
+
+-- ============================================
+-- 7. Alerts & Incidents
+-- ============================================
+
 CREATE TABLE IF NOT EXISTS alert_rules (
     rule_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    condition JSONB, -- e.g., {"person_type": "unknown", "camera_id": "..."}
-    actions JSONB, -- e.g., [{"type": "email", "to": "..."}, {"type": "webhook", "url": "..."}]
+    condition JSONB,
+    actions JSONB,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT NOW()
 );
@@ -67,56 +155,16 @@ CREATE TABLE IF NOT EXISTS alerts (
     alert_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     rule_id UUID REFERENCES alert_rules(rule_id) ON DELETE CASCADE,
     event_id UUID REFERENCES recognition_events(event_id),
-    status TEXT DEFAULT 'new', -- new, acknowledged, resolved
+    status TEXT DEFAULT 'new',
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create tables for face recognition system
-CREATE TABLE IF NOT EXISTS persons (
-    person_id UUID PRIMARY KEY,
-    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    age INTEGER,
-    gender TEXT,
-    metadata JSONB,
-    consent_record_id UUID,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
+-- ============================================
+-- 8. Feedback & Learning
+-- ============================================
 
-CREATE TABLE IF NOT EXISTS embeddings (
-    embedding_id UUID PRIMARY KEY,
-    person_id UUID REFERENCES persons(person_id) ON DELETE CASCADE,
-    embedding VECTOR(512),
-    voice_embedding VECTOR(192),
-    gait_embedding VECTOR(128),
-    camera_id TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Consent logs table
-CREATE TABLE IF NOT EXISTS consent_logs (
-    consent_record_id UUID PRIMARY KEY,
-    person_id UUID,
-    timestamp TIMESTAMP DEFAULT NOW(),
-    client_id TEXT,
-    consent_text_version TEXT,
-    captured_ip TEXT,
-    signed_token TEXT
-);
-
--- Create audit log table
-CREATE TABLE IF NOT EXISTS audit_log (
-    id SERIAL PRIMARY KEY,
-    action TEXT NOT NULL,
-    person_id UUID,
-    details JSONB,
-    timestamp TIMESTAMP DEFAULT NOW()
-);
-
--- Create feedback table for adaptive learning
 CREATE TABLE IF NOT EXISTS feedback (
-    feedback_id UUID PRIMARY KEY,
+    feedback_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     person_id UUID,
     recognition_id UUID,
     correct_person_id UUID,
@@ -125,14 +173,9 @@ CREATE TABLE IF NOT EXISTS feedback (
     timestamp TIMESTAMP DEFAULT NOW()
 );
 
--- SaaS Tables
-CREATE TABLE IF NOT EXISTS users (
-    user_id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    subscription_tier TEXT DEFAULT 'free',
-    created_at TIMESTAMP DEFAULT NOW()
-);
+-- ============================================
+-- 9. SaaS Billing
+-- ============================================
 
 CREATE TABLE IF NOT EXISTS plans (
     plan_id TEXT PRIMARY KEY,
@@ -143,7 +186,6 @@ CREATE TABLE IF NOT EXISTS plans (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Seed Plans
 INSERT INTO plans (plan_id, name, price, features, limits)
 VALUES 
 ('free', 'Free Starter', 0.00, '["Basic Recognition", "10 Enrollments", "Standard Support"]', '{"recognitions": 100, "enrollments": 10}'),
@@ -192,32 +234,76 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Model versions for OTA
+-- ============================================
+-- 10. Model Registry (OTA)
+-- ============================================
+
 CREATE TABLE IF NOT EXISTS model_versions (
-    version_id UUID PRIMARY KEY,
-    model_data BYTEA,
+    version_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    version VARCHAR(100) NOT NULL,
+    framework VARCHAR(50) NOT NULL,
+    architecture TEXT,
+    input_shape INTEGER[],
+    output_dim INTEGER,
+    description TEXT,
+    training_dataset TEXT,
+    metrics JSONB,
+    model_path TEXT NOT NULL,
+    size_bytes BIGINT,
+    checksum CHAR(64) NOT NULL,
+    signature TEXT,
+    status VARCHAR(50) DEFAULT 'staging',
+    tags JSONB DEFAULT '[]',
+    min_requirements JSONB DEFAULT '{}',
+    uploaded_by TEXT REFERENCES users(user_id),
     created_at TIMESTAMP DEFAULT NOW(),
-    description TEXT
+    updated_at TIMESTAMP DEFAULT NOW(),
+    download_count INTEGER DEFAULT 0,
+    promoted_at TIMESTAMP,
+    CONSTRAINT unique_name_version UNIQUE(name, version)
 );
 
--- Edge devices
+CREATE INDEX IF NOT EXISTS idx_model_versions_name ON model_versions(name);
+CREATE INDEX IF NOT EXISTS idx_model_versions_status ON model_versions(status);
+
+-- ============================================
+-- 11. Edge & OTA
+-- ============================================
+
 CREATE TABLE IF NOT EXISTS edge_devices (
     device_id TEXT PRIMARY KEY,
     model_version UUID REFERENCES model_versions(version_id),
     last_seen TIMESTAMP DEFAULT NOW(),
-    status TEXT
+    status TEXT,
+    pending_update UUID REFERENCES model_versions(version_id),
+    capabilities JSONB DEFAULT '{}'
 );
 
--- Federated learning updates
+CREATE TABLE IF NOT EXISTS ota_updates (
+    update_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    device_id TEXT NOT NULL,
+    model_version UUID REFERENCES model_versions(version_id) NOT NULL,
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT NOW(),
+    dispatched_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    error_message TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_ota_device ON ota_updates(device_id, status);
+
 CREATE TABLE IF NOT EXISTS federated_updates (
-    update_id UUID PRIMARY KEY,
+    update_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     device_id TEXT,
     model_gradients JSONB,
     num_samples INTEGER,
     timestamp TIMESTAMP DEFAULT NOW()
 );
 
--- Public enrichment tables
+-- ============================================
+-- 12. Public Enrichment & Audits
+-- ============================================
+
 CREATE TABLE IF NOT EXISTS consents (
     consent_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     subject_id TEXT,
@@ -249,3 +335,94 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     metadata JSONB,
     created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- ============================================
+-- 13. System Config & Health
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS system_config (
+    key TEXT PRIMARY KEY,
+    value JSONB,
+    description TEXT,
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS system_health (
+    id SERIAL PRIMARY KEY,
+    service_name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    latency_ms FLOAT,
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_system_health_service ON system_health(service_name, created_at);
+
+-- Sessions table
+CREATE TABLE IF NOT EXISTS sessions (
+    session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE,
+    token_hash TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+
+-- ============================================
+-- 14. MFA (Multi-Factor Auth)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS mfa_secrets (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    secret TEXT NOT NULL,
+    backup_codes_hash JSONB NOT NULL,
+    backup_codes_used JSONB DEFAULT '[]',
+    enabled BOOLEAN DEFAULT FALSE,
+    enabled_at TIMESTAMP,
+    last_used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS mfa_attempts (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE,
+    attempt_type TEXT,
+    success BOOLEAN,
+    ip_address TEXT,
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_mfa_attempts_user ON mfa_attempts(user_id, created_at);
+
+-- ============================================
+-- 15. Bias & Fairness
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS bias_reports (
+    report_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id UUID REFERENCES organizations(org_id),
+    report_date DATE NOT NULL,
+    metrics JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_bias_reports_org ON bias_reports(org_id, report_date);
+
+-- ============================================
+-- 16. Consent Logs (GDPR)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS consent_logs (
+    consent_record_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    person_id UUID,
+    timestamp TIMESTAMP DEFAULT NOW(),
+    client_id TEXT,
+    consent_text_version TEXT,
+    captured_ip TEXT,
+    signed_token TEXT
+);
+
+-- END OF SCHEMA

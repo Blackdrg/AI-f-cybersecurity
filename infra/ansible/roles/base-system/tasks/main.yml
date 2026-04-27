@@ -1,0 +1,52 @@
+---
+# Base system dependencies
+- name: Install base packages
+  apt:
+    name:
+      - curl
+      - wget
+      - git
+      - gnupg
+      - lsb-release
+      - ca-certificates
+      - apt-transport-https
+      - software-properties-common
+    state: present
+
+- name: Add Docker apt repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+
+- name: Install Docker
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+    state: present
+  notify: restart docker
+
+- name: Install Docker Compose v2
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-linux-x86_64"
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+
+- name: Ensure deploy user exists
+  user:
+    name: "{{ deploy_user }}"
+    groups: docker
+    append: yes
+    shell: /bin/bash
+    create_home: yes
+    home: "/home/{{ deploy_user }}"
+
+- name: Add deploy user to sudoers (passwordless)
+  lineinfile:
+    path: /etc/sudoers.d/{{ deploy_user }}
+    line: "{{ deploy_user }} ALL=(ALL) NOPASSWD: ALL"
+    create: yes
+    mode: '0440'

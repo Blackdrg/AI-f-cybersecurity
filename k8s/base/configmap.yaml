@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: face-recognition
+data:
+  # Application config
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  DEBUG: "false"
+
+  # Database
+  DB_HOST: "postgres"
+  DB_PORT: "5432"
+  DB_NAME: "face_recognition"
+  DB_USER: "postgres"
+
+  # Redis
+  REDIS_URL: "redis://redis:6379/0"
+
+  # JWT & Security
+  JWT_EXPIRY_HOURS: "1"
+  CORS_ORIGINS: "https://example.com"
+
+  # Rate Limiting
+  RATE_LIMIT_ENABLED: "true"
+  RATE_LIMIT_DEFAULT: "100"
+  RATE_LIMIT_RECOGNIZE: "1000"
+
+  # ML Models
+  MODEL_PATH: "/app/models"
+  ONNX_PATH: "/app/models/onnx"
+
+  # Monitoring
+  PROMETHEUS_METRICS: "true"
+  SENTRY_DSN: ""
+
+  # Federated Learning
+  FEDERATED_ENABLED: "true"
+  FEDERATED_ROUND_INTERVAL_HOURS: "24"

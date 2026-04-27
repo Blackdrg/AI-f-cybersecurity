@@ -1,0 +1,79 @@
+---
+# Ansible Playbook: AI-f Infrastructure Provisioning
+# Provisions servers, databases, and dependencies for AI-f deployment
+#
+# Usage:
+#   ansible-playbook -i inventory/production provision-infrastructure.yml
+#   ansible-playbook -i inventory/staging provision-infrastructure.yml
+
+- name: Provision AI-f Infrastructure
+  hosts: all
+  become: true
+  vars:
+    app_name: ai-f
+    deploy_user: "deploy"
+    python_version: "3.12"
+    
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure Python3 is installed
+      apt:
+        name: python3
+        state: present
+      when: ansible_os_family == "Debian"
+
+  roles:
+    # 1. System dependencies & Docker
+    - role: base-system
+      tags: [base, system]
+
+    # 2. PostgreSQL with pgvector
+    - role: postgresql
+      tags: [database, postgres]
+
+    # 3. Redis
+    - role: redis
+      tags: [cache, redis]
+
+    # 4. GPU drivers (optional, for inference nodes)
+    - role: nvidia-drivers
+      when: enable_gpu | default(false)
+      tags: [gpu, drivers]
+
+    # 5. Application deployment
+    - role: app-deployment
+      tags: [app, deploy]
+
+    # 6. Monitoring stack
+    - role: monitoring
+      tags: [monitoring, prometheus, grafana]
+
+    # 7. Security hardening
+    - role: security
+      tags: [security, hardening]
+
+  post_tasks:
+    - name: Display deployment summary
+      debug:
+        msg: |
+          AI-f infrastructure provisioned successfully!
+          
+          URLs:
+          - API: http://{{ ansible_fqdn }}:8000
+          - Grafana: http://{{ ansible_fqdn }}:3001
+          - Prometheus: http://{{ ansible_fqdn }}:9090
+          
+          Services:
+          - PostgreSQL: {{ ansible_fqdn }}:5432
+          - Redis: {{ ansible_fqdn }}:6379
+          
+          Next steps:
+          1. Upload model files to /opt/ai-f/models/
+          2. Run database migrations: alembic upgrade head
+          3. Configure secrets in Vault
+          4. Deploy application: ./scripts/deploy.sh

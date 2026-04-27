@@ -3,9 +3,9 @@
 import grpc
 import warnings
 
-from app.grpc import face_recognition_pb2 as app_dot_grpc_dot_face__recognition__pb2
+import face_recognition_pb2 as face__recognition__pb2
 
-GRPC_GENERATED_VERSION = '1.76.0'
+GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in app/grpc/face_recognition_pb2_grpc.py depends on'
+        + ' but the generated code in face_recognition_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -36,28 +36,28 @@ class FaceRecognitionServiceStub(object):
         """
         self.Enroll = channel.unary_unary(
                 '/face_recognition.FaceRecognitionService/Enroll',
-                request_serializer=app_dot_grpc_dot_face__recognition__pb2.EnrollRequest.SerializeToString,
-                response_deserializer=app_dot_grpc_dot_face__recognition__pb2.EnrollResponse.FromString,
+                request_serializer=face__recognition__pb2.EnrollRequest.SerializeToString,
+                response_deserializer=face__recognition__pb2.EnrollResponse.FromString,
                 _registered_method=True)
         self.Recognize = channel.unary_unary(
                 '/face_recognition.FaceRecognitionService/Recognize',
-                request_serializer=app_dot_grpc_dot_face__recognition__pb2.RecognizeRequest.SerializeToString,
-                response_deserializer=app_dot_grpc_dot_face__recognition__pb2.RecognizeResponse.FromString,
+                request_serializer=face__recognition__pb2.RecognizeRequest.SerializeToString,
+                response_deserializer=face__recognition__pb2.RecognizeResponse.FromString,
                 _registered_method=True)
         self.GetPerson = channel.unary_unary(
                 '/face_recognition.FaceRecognitionService/GetPerson',
-                request_serializer=app_dot_grpc_dot_face__recognition__pb2.GetPersonRequest.SerializeToString,
-                response_deserializer=app_dot_grpc_dot_face__recognition__pb2.PersonResponse.FromString,
+                request_serializer=face__recognition__pb2.GetPersonRequest.SerializeToString,
+                response_deserializer=face__recognition__pb2.PersonResponse.FromString,
                 _registered_method=True)
         self.DeletePerson = channel.unary_unary(
                 '/face_recognition.FaceRecognitionService/DeletePerson',
-                request_serializer=app_dot_grpc_dot_face__recognition__pb2.DeletePersonRequest.SerializeToString,
-                response_deserializer=app_dot_grpc_dot_face__recognition__pb2.DeleteResponse.FromString,
+                request_serializer=face__recognition__pb2.DeletePersonRequest.SerializeToString,
+                response_deserializer=face__recognition__pb2.DeleteResponse.FromString,
                 _registered_method=True)
         self.GetAuditLogs = channel.unary_unary(
                 '/face_recognition.FaceRecognitionService/GetAuditLogs',
-                request_serializer=app_dot_grpc_dot_face__recognition__pb2.AuditLogsRequest.SerializeToString,
-                response_deserializer=app_dot_grpc_dot_face__recognition__pb2.AuditLogsResponse.FromString,
+                request_serializer=face__recognition__pb2.AuditLogsRequest.SerializeToString,
+                response_deserializer=face__recognition__pb2.AuditLogsResponse.FromString,
                 _registered_method=True)
 
 
@@ -99,28 +99,28 @@ def add_FaceRecognitionServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Enroll': grpc.unary_unary_rpc_method_handler(
                     servicer.Enroll,
-                    request_deserializer=app_dot_grpc_dot_face__recognition__pb2.EnrollRequest.FromString,
-                    response_serializer=app_dot_grpc_dot_face__recognition__pb2.EnrollResponse.SerializeToString,
+                    request_deserializer=face__recognition__pb2.EnrollRequest.FromString,
+                    response_serializer=face__recognition__pb2.EnrollResponse.SerializeToString,
             ),
             'Recognize': grpc.unary_unary_rpc_method_handler(
                     servicer.Recognize,
-                    request_deserializer=app_dot_grpc_dot_face__recognition__pb2.RecognizeRequest.FromString,
-                    response_serializer=app_dot_grpc_dot_face__recognition__pb2.RecognizeResponse.SerializeToString,
+                    request_deserializer=face__recognition__pb2.RecognizeRequest.FromString,
+                    response_serializer=face__recognition__pb2.RecognizeResponse.SerializeToString,
             ),
             'GetPerson': grpc.unary_unary_rpc_method_handler(
                     servicer.GetPerson,
-                    request_deserializer=app_dot_grpc_dot_face__recognition__pb2.GetPersonRequest.FromString,
-                    response_serializer=app_dot_grpc_dot_face__recognition__pb2.PersonResponse.SerializeToString,
+                    request_deserializer=face__recognition__pb2.GetPersonRequest.FromString,
+                    response_serializer=face__recognition__pb2.PersonResponse.SerializeToString,
             ),
             'DeletePerson': grpc.unary_unary_rpc_method_handler(
                     servicer.DeletePerson,
-                    request_deserializer=app_dot_grpc_dot_face__recognition__pb2.DeletePersonRequest.FromString,
-                    response_serializer=app_dot_grpc_dot_face__recognition__pb2.DeleteResponse.SerializeToString,
+                    request_deserializer=face__recognition__pb2.DeletePersonRequest.FromString,
+                    response_serializer=face__recognition__pb2.DeleteResponse.SerializeToString,
             ),
             'GetAuditLogs': grpc.unary_unary_rpc_method_handler(
                     servicer.GetAuditLogs,
-                    request_deserializer=app_dot_grpc_dot_face__recognition__pb2.AuditLogsRequest.FromString,
-                    response_serializer=app_dot_grpc_dot_face__recognition__pb2.AuditLogsResponse.SerializeToString,
+                    request_deserializer=face__recognition__pb2.AuditLogsRequest.FromString,
+                    response_serializer=face__recognition__pb2.AuditLogsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -148,8 +148,8 @@ class FaceRecognitionService(object):
             request,
             target,
             '/face_recognition.FaceRecognitionService/Enroll',
-            app_dot_grpc_dot_face__recognition__pb2.EnrollRequest.SerializeToString,
-            app_dot_grpc_dot_face__recognition__pb2.EnrollResponse.FromString,
+            face__recognition__pb2.EnrollRequest.SerializeToString,
+            face__recognition__pb2.EnrollResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -175,8 +175,8 @@ class FaceRecognitionService(object):
             request,
             target,
             '/face_recognition.FaceRecognitionService/Recognize',
-            app_dot_grpc_dot_face__recognition__pb2.RecognizeRequest.SerializeToString,
-            app_dot_grpc_dot_face__recognition__pb2.RecognizeResponse.FromString,
+            face__recognition__pb2.RecognizeRequest.SerializeToString,
+            face__recognition__pb2.RecognizeResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -202,8 +202,8 @@ class FaceRecognitionService(object):
             request,
             target,
             '/face_recognition.FaceRecognitionService/GetPerson',
-            app_dot_grpc_dot_face__recognition__pb2.GetPersonRequest.SerializeToString,
-            app_dot_grpc_dot_face__recognition__pb2.PersonResponse.FromString,
+            face__recognition__pb2.GetPersonRequest.SerializeToString,
+            face__recognition__pb2.PersonResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -229,8 +229,8 @@ class FaceRecognitionService(object):
             request,
             target,
             '/face_recognition.FaceRecognitionService/DeletePerson',
-            app_dot_grpc_dot_face__recognition__pb2.DeletePersonRequest.SerializeToString,
-            app_dot_grpc_dot_face__recognition__pb2.DeleteResponse.FromString,
+            face__recognition__pb2.DeletePersonRequest.SerializeToString,
+            face__recognition__pb2.DeleteResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -256,8 +256,8 @@ class FaceRecognitionService(object):
             request,
             target,
             '/face_recognition.FaceRecognitionService/GetAuditLogs',
-            app_dot_grpc_dot_face__recognition__pb2.AuditLogsRequest.SerializeToString,
-            app_dot_grpc_dot_face__recognition__pb2.AuditLogsResponse.FromString,
+            face__recognition__pb2.AuditLogsRequest.SerializeToString,
+            face__recognition__pb2.AuditLogsResponse.FromString,
             options,
             channel_credentials,
             insecure,

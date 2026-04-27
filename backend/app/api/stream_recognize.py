@@ -19,6 +19,8 @@ from typing import Any, Dict, List
 from ..schemas import RecognizeResponse, DetectedFace, FaceMatch, MultiCameraRequest
 # from ..security import require_auth_ws  # Placeholder for auth
 from ..metrics import recognition_count, recognition_latency
+from ..pubsub import publish_recognition_event, publish_spoof_alert
+from ..websocket_manager import connection_manager
 import asyncio
 
 router = APIRouter()
@@ -39,34 +41,37 @@ async def recognize_stream(
     threshold: float = 0.4,
     camera_id: str = None
 ):
-    await websocket.accept()
-
+    # Register connection
+    ws_id = await connection_manager.connect(websocket, user_id=None, org_id=None)
+    
+    if camera_id:
+        await connection_manager.subscribe_to_camera(ws_id, camera_id)
+    
     db = await get_db()
-
+    
     try:
         while True:
             data = await websocket.receive_text()
             message = json.loads(data)
-
+            
             if message['type'] == 'frame':
-                # Decode base64 image
                 img_data = base64.b64decode(message['data'])
                 nparr = np.frombuffer(img_data, np.uint8)
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
+                
                 start_time = time.time()
-
+                
                 faces = detector.detect_faces(img)
                 detected_faces = []
-
+                
                 for face in faces:
                     inference_start = time.time()
                     aligned = detector.align_face(img, face['landmarks'])
                     query_emb = embedder.get_embedding(aligned)
                     inference_ms = (time.time() - inference_start) * 1000
-
+                    
                     matches = await db.recognize_faces(query_emb, top_k=top_k, threshold=threshold, camera_id=camera_id)
-
+                    
                     face_matches = [
                         FaceMatch(
                             person_id=m['person_id'],
@@ -75,27 +80,23 @@ async def recognize_stream(
                             distance=m['distance']
                         ) for m in matches
                     ]
-
+                    
                     is_unknown = len(face_matches) == 0
-
-                    # Additional features for stream
-                    emotion = emotion_detector.detect_emotion(
-                        img, face['bbox'])
-                    age_gender = age_gender_estimator.estimate_age_gender(
-                        img, face['bbox'])
-                    behavior = behavioral_predictor.predict_behavior(
-                        emotion) if emotion else None
-
-                    # Spoof detection
-                    spoof_score = spoof_detector.detect_spoof(
-                        img, face['bbox'])
-
-                    # Face reconstruction (only if not likely spoof)
+                    
+                    emotion = emotion_detector.detect_emotion(img, face['bbox'])
+                    age_gender = age_gender_estimator.estimate_age_gender(img, face['bbox'])
+                    behavior = behavioral_predictor.predict_behavior(emotion) if emotion else None
+                    
+                    spoof_score = spoof_detector.detect_spoof(img, face['bbox'])
+                    
+                    # Publish spoof alert
+                    if spoof_score > 0.5:
+                        await publish_spoof_alert(camera_id or "unknown", spoof_score, {"bbox": face['bbox']})
+                    
                     reconstruction_confidence = None
                     if spoof_score < 0.5:
-                        reconstructed, reconstruction_confidence = face_reconstructor.reconstruct_face(
-                            img, face['bbox'])
-
+                        reconstructed, reconstruction_confidence = face_reconstructor.reconstruct_face(img, face['bbox'])
+                    
                     detected_faces.append(DetectedFace(
                         face_box=face['bbox'],
                         matches=face_matches,
@@ -108,22 +109,39 @@ async def recognize_stream(
                         gender=age_gender['gender'] if age_gender else None,
                         behavior=behavior
                     ))
-
+                
                 response = RecognizeResponse(faces=detected_faces)
-
+                
                 recognition_count.inc()
-                recognition_latency.observe(time.time() - start_time)
-
+                latency = time.time() - start_time
+                recognition_latency.observe(latency)
+                
+                # Publish to Redis for other consumers
+                await publish_recognition_event(
+                    camera_id=camera_id or "global",
+                    faces=[f.dict() for f in detected_faces],
+                    processing_latency_ms=latency * 1000
+                )
+                
                 await websocket.send_json(response.dict())
-
+            
             elif message['type'] == 'multi_camera':
-                # Handle multi-camera sync
                 request = MultiCameraRequest(**message['data'])
                 synced_faces = await process_multi_camera(request, db)
                 await websocket.send_json({"type": "multi_camera_result", "faces": synced_faces})
-
+            
+            elif message['type'] == 'subscribe':
+                # Handle dynamic subscription changes
+                new_camera = message.get('camera_id')
+                if new_camera and new_camera != camera_id:
+                    await connection_manager.subscribe_to_camera(ws_id, new_camera)
+                    camera_id = new_camera
+    
     except WebSocketDisconnect:
-        pass
+        connection_manager.disconnect(ws_id)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        connection_manager.disconnect(ws_id)
 
 
 async def process_multi_camera(request: MultiCameraRequest, db) -> List[Dict[str, Any]]:

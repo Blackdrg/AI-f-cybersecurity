@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: face-recognition-dev
+
+bases:
+  - ../../base
+
+patchesStrategicMerge:
+  - patches/deployment.yaml
+  - patches/service.yaml
+
+configMapGenerator:
+  - name: app-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+      - DB_SSL_MODE=disable
+      - CORS_ORIGINS=*
+      - RATE_LIMIT_ENABLED=false
+      - METRICS_ENABLED=false
+      - DEBUG=true
+
+secretGenerator:
+  - name: app-secrets
+    envs:
+      - secrets-dev.env
+    type: Opaque

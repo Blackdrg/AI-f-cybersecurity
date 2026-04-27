@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: face-recognition
+  labels:
+    name: face-recognition
+    environment: base
