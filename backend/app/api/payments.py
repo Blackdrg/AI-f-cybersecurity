@@ -29,32 +29,143 @@ async def create_payment_session(
 
 @router.post("/payments/webhook")
 async def stripe_webhook(request: Request):
-    """Handle Stripe webhooks for payment confirmation."""
+    """
+    Handle Stripe webhooks for payment events.
+    
+    Secured by verifying webhook signature (STRIPE_WEBHOOK_SECRET).
+    Handles multiple event types with idempotency.
+    """
+    body = await request.body()
+    signature = request.headers.get("Stripe-Signature")
+    
+    if not signature:
+        logger.warning("Webhook called without Stripe signature")
+        return {"status": "error", "detail": "Missing signature"}, 400
+    
+    # Verify webhook signature (CRITICAL for security)
     try:
-        body = await request.body()
-        # Verify webhook signature in production
-        event = request.state.stripe_event if hasattr(request.state, 'stripe_event') else {"type": "unknown", "data": {"object": {}}}
-        
-        # Simple parsing for demo
-        import json
-        try:
-            event = json.loads(body)
-        except:
-            event = {"type": "unknown"}
-
-        if event.get('type') == 'checkout.session.completed':
-            session = event.get('data', {}).get('object', {})
-            user_id = session.get('metadata', {}).get('user_id')
-            plan_id = session.get('metadata', {}).get('plan_id')
+        import stripe
+        event = stripe.Webhook.construct_event(
+            body, signature, os.getenv("STRIPE_WEBHOOK_SECRET")
+        )
+    except ValueError:
+        logger.error("Invalid webhook payload")
+        return {"status": "error", "detail": "Invalid payload"}, 400
+    except stripe.error.SignatureVerificationError:
+        logger.error("Invalid webhook signature")
+        return {"status": "error", "detail": "Invalid signature"}, 400
+    
+    db = await get_db()
+    event_type = event.get("type")
+    event_data = event.get("data", {}).get("object", {})
+    
+    logger.info(f"Processing Stripe webhook: {event_type}")
+    
+    try:
+        # Handle different event types
+        if event_type == "checkout.session.completed":
+            # Payment successful — activate subscription
+            session = event_data
+            user_id = session.get("metadata", {}).get("user_id")
+            plan_id = session.get("metadata", {}).get("plan_id")
+            subscription_id = session.get("subscription")
             
-            if user_id and plan_id:
-                db = await get_db()
-                subscription_id = str(uuid.uuid4())
-                await db.create_subscription(subscription_id, user_id, plan_id, "active")
-
-        return {"status": "success"}
+            if user_id and plan_id and subscription_id:
+                await db.create_subscription(
+                    subscription_id=subscription_id,
+                    user_id=user_id,
+                    plan_id=plan_id,
+                    status="active",
+                    starts_at=session.get("created"),
+                    ends_at=session.get("current_period_end")
+                )
+                
+                # Log successful payment
+                await db.log_payment(
+                    user_id=user_id,
+                    amount=session.get("amount_total", 0) / 100,  # cents to dollars
+                    currency=session.get("currency", "usd").upper(),
+                    status="succeeded",
+                    stripe_payment_id=session.get("payment_intent"),
+                    metadata={"event": "checkout.session.completed"}
+                )
+        
+        elif event_type == "invoice.payment_failed":
+            # Payment failed — downgrade user to free tier, notify
+            invoice = event_data
+            subscription_id = invoice.get("subscription")
+            customer_id = invoice.get("customer")
+            
+            # Look up user by Stripe customer ID
+            user = await db.get_user_by_stripe_customer(customer_id)
+            if user:
+                await db.downgrade_to_free_tier(user["user_id"])
+                
+                # Send notification email (async task)
+                from app.tasks.maintenance_tasks import send_payment_failed_email
+                send_payment_failed_email.delay(user["email"], invoice.get("amount_due", 0))
+                
+                logger.warning(f"Payment failed for user {user['user_id']} — downgraded to free")
+        
+        elif event_type == "customer.subscription.deleted":
+            # Subscription cancelled (by user or Stripe)
+            subscription = event_data
+            stripe_customer_id = subscription.get("customer")
+            
+            user = await db.get_user_by_stripe_customer(stripe_customer_id)
+            if user:
+                # Mark subscription inactive
+                await db.deactivate_subscription(user["user_id"])
+                logger.info(f"Subscription ended for user {user['user_id']}")
+        
+        elif event_type == "customer.subscription.updated":
+            # Subscription updated (plan change, renewal, etc.)
+            subscription = event_data
+            stripe_customer_id = subscription.get("customer")
+            new_plan = subscription.get("items", {}).get("data", [{}])[0].get("price", {}).get("lookup_key")
+            
+            user = await db.get_user_by_stripe_customer(stripe_customer_id)
+            if user and new_plan:
+                await db.update_subscription_plan(user["user_id"], new_plan)
+                logger.info(f"Subscription updated for user {user['user_id']}: {new_plan}")
+        
+        elif event_type == "charge.failed":
+            # Direct charge failure (one-time payment)
+            charge = event_data
+            payment_intent_id = charge.get("payment_intent")
+            
+            await db.mark_payment_failed(payment_intent_id)
+            logger.warning(f"Charge failed: {payment_intent_id}")
+        
+        elif event_type == "invoice.payment_succeeded":
+            # Subscription renewal successful
+            invoice = event_data
+            subscription_id = invoice.get("subscription")
+            
+            if subscription_id:
+                await db.extend_subscription(subscription_id, invoice.get("current_period_end"))
+                logger.info(f"Subscription renewed: {subscription_id}")
+        
+        elif event_type == "customer.created":
+            # New Stripe customer created — link to local user if not already
+            customer = event_data
+            email = customer.get("email")
+            if email:
+                user = await db.get_user_by_email(email)
+                if user:
+                    await db.link_stripe_customer(user["user_id"], customer["id"])
+        
+        else:
+            # Unhandled event type — log but don't error
+            logger.info(f"Unhandled Stripe webhook event: {event_type}")
+            return {"status": "ignored", "event_type": event_type}
+    
     except Exception as e:
-        return {"status": "error", "detail": str(e)}
+        logger.error(f"Webhook processing failed for {event_type}: {e}", exc_info=True)
+        # Return 500 to trigger retry
+        return {"status": "error", "detail": "Processing failed"}, 500
+    
+    return {"status": "success", "event_type": event_type}
 
 
 @router.get("/payments/history", response_model=List[PaymentResponse])

@@ -4,7 +4,57 @@ from datetime import datetime, timedelta
 from enum import Enum
 import hashlib
 import json
+import os
+from geoip2.database import Reader as GeoIPReader
+from geoip2.errors import AddressNotFoundError
 from .security.anomaly_detector import anomaly_detector
+
+
+def parse_user_agent(user_agent_string: str) -> str:
+    """
+    Parse User-Agent string to determine device type.
+    
+    Returns:
+        "desktop", "mobile", "tablet", or "unknown"
+    """
+    if not user_agent_string:
+        return "unknown"
+    
+    ua = user_agent_string.lower()
+    
+    # Mobile patterns
+    mobile_patterns = [
+        "android", "iphone", "ipod", "blackberry", "windows phone",
+        "opera mini", "mobile", "silk/"
+    ]
+    for pattern in mobile_patterns:
+        if pattern in ua:
+            return "mobile"
+    
+    # Tablet patterns
+    tablet_patterns = ["ipad", "tablet", "playbook"]
+    for pattern in tablet_patterns:
+        if pattern in ua:
+            return "tablet"
+    
+    # Desktop patterns (Windows, macOS, Linux)
+    desktop_patterns = ["windows", "macintosh", "linux x86_64", "x11"]
+    for pattern in desktop_patterns:
+        if pattern in ua:
+            return "desktop"
+    
+    return "unknown"
+
+# Optional: GeoIP support
+try:
+    GEOIP_ENABLED = True
+    GEOIP_PATH = os.getenv("GEOIP_DATABASE_PATH", "/app/data/GeoLite2-City.mmdb")
+    geoip_reader = GeoIPReader(GEOIP_PATH) if os.path.exists(GEOIP_PATH) else None
+except ImportError:
+    GEOIP_ENABLED = False
+    geoip_reader = None
+except Exception:
+    geoip_reader = None
 
 
 class PolicyEffect(Enum):
@@ -173,7 +223,46 @@ class PolicyEngine:
             description="Service accounts can participate in federated learning"
         ))
         
-        # Sort by priority
+        # Rule 6: Geo-restricted access (example: only US/CA allowed)
+        self.rules.append(PolicyRule(
+            rule_id="geo_restrict_north_america",
+            name="Geographic Access Control",
+            effect=PolicyEffect.ALLOW,
+            subject_types=[SubjectType.USER, SubjectType.OPERATOR, SubjectType.ADMIN],
+            resources=[ResourceType.RECOGNIZE, ResourceType.ENROLL],
+            conditions={"geo_country": ["US", "CA"]},
+            priority=90,
+            description="Recognition and enrollment restricted to US and Canada"
+        ))
+        
+        # Rule 7: Time-based access (business hours only for external APIs)
+        self.rules.append(PolicyRule(
+            rule_id="business_hours_only",
+            name="Business Hours Restriction",
+            effect=PolicyEffect.ALLOW,
+            subject_types=[SubjectType.USER],
+            resources=[ResourceType.RECOGNIZE],
+            conditions={"time_of_day": ("08:00", "18:00")},
+            priority=40,
+            description="Public recognition only during business hours (8am-6pm)"
+        ))
+        
+        # Rule 8: Device-type restriction (desktop only for admin functions)
+        self.rules.append(PolicyRule(
+            rule_id="admin_desktop_only",
+            name="Admin Desktop Only",
+            effect=PolicyEffect.ALLOW,
+            subject_types=[SubjectType.ADMIN],
+            resources=[ResourceType.ADMIN],
+            conditions={"device_type": ["desktop", "laptop"]},
+            priority=110,
+            description="Admin actions must originate from desktop/laptop (not mobile)"
+        ))
+        
+        # Rule 9: High-risk operations require MFA
+        # (enforced separately in middleware, but documented here)
+        
+        # Sort by priority (higher first)
         self.rules.sort(key=lambda r: r.priority, reverse=True)
     
     def add_rule(self, rule: PolicyRule) -> None:
@@ -303,6 +392,20 @@ class PolicyEngine:
                 else:
                     failed.append(cond_type)
             
+            elif cond_type == "device_type":
+                # actual: device type string (desktop/mobile/tablet)
+                if actual in expected:
+                    met.append(cond_type)
+                else:
+                    failed.append(cond_type)
+            
+            elif cond_type == "user_agent":
+                # expected: substring pattern (case-insensitive)
+                if actual and expected.lower() in actual.lower():
+                    met.append(cond_type)
+                else:
+                    failed.append(cond_type)
+            
             elif cond_type == "purpose":
                 if actual == expected:
                     met.append(cond_type)
@@ -314,6 +417,84 @@ class PolicyEngine:
                 met.append(cond_type)
         
         return met, failed
+    
+    def _check_ip_in_range(self, ip: str, spec: Dict) -> bool:
+        """Check if IP is within allowed range."""
+        try:
+            import ipaddress
+            
+            if "cidr" in spec:
+                network = ipaddress.ip_network(spec["cidr"], strict=False)
+                return ipaddress.ip_address(ip) in network
+            
+            elif "range" in spec:
+                start, end = spec["range"]
+                start_ip = ipaddress.ip_address(start)
+                end_ip = ipaddress.ip_address(end)
+                ip_val = ipaddress.ip_address(ip)
+                return start_ip <= ip_val <= end_ip
+            
+            return False
+        except Exception:
+            return False
+    
+    def _get_geo_from_ip(self, ip: str) -> Optional[Dict]:
+        """Get geo-location data from IP address."""
+        if not GEOIP_ENABLED or not geoip_reader:
+            return None
+        
+        try:
+            response = geoip_reader.city(ip)
+            return {
+                "country": response.country.iso_code,
+                "region": response.subdivisions.most_specific.iso_code if response.subdivisions else None,
+                "city": response.city.name,
+                "latitude": response.location.latitude,
+                "longitude": response.location.longitude
+            }
+        except AddressNotFoundError:
+            return None
+        except Exception:
+            return None
+    
+    def _check_geo_match(self, geo_data: Optional[Dict], expected: Dict) -> bool:
+        """Check if geo data matches expected constraints."""
+        if not geo_data:
+            return False
+        
+        # Country check
+        if "country" in expected:
+            if geo_data.get("country") != expected["country"]:
+                return False
+        
+        # Region/state check
+        if "region" in expected:
+            if geo_data.get("region") != expected["region"]:
+                return False
+        
+        # Radius check (bounding box or haversine)
+        if "radius_km" in expected and "lat" in expected and "lon" in expected:
+            # Haversine distance
+            import math
+            R = 6371  # Earth radius km
+            
+            lat1 = geo_data["latitude"]
+            lon1 = geo_data["longitude"]
+            lat2 = expected["lat"]
+            lon2 = expected["lon"]
+            
+            dlat = math.radians(lat2 - lat1)
+            dlon = math.radians(lon2 - lon1)
+            a = (math.sin(dlat/2)**2 +
+                 math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+                 math.sin(dlon/2)**2)
+            c = 2 * math.asin(math.sqrt(a))
+            distance = R * c
+            
+            if distance > expected["radius_km"]:
+                return False
+        
+        return True
     
     def _check_rate_limit(
         self,

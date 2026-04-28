@@ -1,405 +1,267 @@
-# Frontend State Management Architecture
+# Frontend State Management & Data Fetching
 
-## Store Structure (Redux Toolkit + RTK Query)
+## Architecture Overview
 
-AI-f uses **Redux Toolkit** for predictable state container with RTK Query for data fetching.
+AI-f frontend uses **React 18** with **Context API** for global state and **Axios** for data fetching. No Redux is used — the architecture favors simplicity and built-in React patterns.
 
-### Store Configuration
+---
 
-```javascript
-// ui/react-app/src/store/index.js
-import { configureStore } from '@reduxjs/toolkit';
-import { setupListeners } from '@reduxjs/toolkit/query';
-import authReducer from '../features/auth/authSlice';
-import recognitionReducer from '../features/recognition/recognitionSlice';
-import organizationsReducer from '../features/organizations/orgSlice';
-import camerasReducer from '../features/cameras/cameraSlice';
-import incidentsReducer from '../features/incidents/incidentSlice';
-import { apiSlice } from '../services/apiSlice';
+## State Management Strategy
 
-export const store = configureStore({
-  reducer: {
-    [apiSlice.reducerPath]: apiSlice.reducer,
-    auth: authReducer,
-    recognition: recognitionReducer,
-    organizations: organizationsReducer,
-    cameras: camerasReducer,
-    incidents: incidentsReducer,
-  },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: false, // RTK Query non-serializable values
-    }).concat(apiSlice.middleware),
-});
+### Global State: Context API
 
-setupListeners(store.dispatch);
+Global application state (auth, organization, user session) is managed via `AuthContext`:
 
-export const useAppDispatch = () => useDispatch();
-export const useAppSelector = useSelector;
+**File:** `ui/react-app/src/contexts/AuthContext.js`
+
+**Provides:**
+- `user`: Current authenticated user object
+- `organization`: Current active organization
+- `organizations`: List of organizations user belongs to
+- `hasPermission(permission)`: RBAC check
+- `canAccessRoute(permissions)`: Route guard helper
+- `login(userData, orgsData)`: Auth state update
+- `logout()`: Clear auth state
+
+**Usage:**
+```jsx
+import { useAuth } from '../contexts/AuthContext';
+
+function Dashboard() {
+  const { user, organization, hasPermission } = useAuth();
+  
+  if (hasPermission('VIEW_ANALYTICS')) {
+    return <AnalyticsDashboard />;
+  }
+}
 ```
 
-## Feature Slices
+**Why Context over Redux?**
+- Simpler mental model (no reducers, actions, dispatchers)
+- Only 3-4 global values (user, org, token, loading state)
+- No need for complex state normalization
+- Easier to test and maintain
 
-### 1. Authentication Slice
+---
 
-```javascript
-// features/auth/authSlice.js
-import { createSlice } from '@reduxjs/toolkit';
-import { login, logout, refreshToken, verifyMFA } from '../../services/authApi';
+## Data Fetching: Axios Interceptors
 
-const initialState = {
-  user: null,
-  token: localStorage.getItem('token'),
-  isAuthenticated: false,
-  isMFARequired: false,
-  mfaEnrolled: false,
-  loading: false,
-  error: null,
-  organizations: [],
-  currentOrg: null,
-};
+API calls made via **Axios** with interceptors for:
+- Automatic JWT token injection
+- Standardized response format handling
+- Error normalization
+- Request/response logging
 
-const authSlice = createSlice({
-  name: 'auth',
-  initialState,
-  reducers: {
-    setCredentials: (state, action) => {
-      const { user, token, mfaRequired } = action.payload;
-      state.user = user;
-      state.token = token;
-      state.isAuthenticated = true;
-      state.isMFARequired = mfaRequired || false;
-      localStorage.setItem('token', token);
-    },
-    clearCredentials: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
-      state.isMFARequired = false;
-      localStorage.removeItem('token');
-    },
-    setCurrentOrg: (state, action) => {
-      state.currentOrg = action.payload;
-    },
-    setOrgs: (state, action) => {
-      state.organizations = action.payload;
-    },
-  },
-  extraReducers: (builder) => {
-    builder
-      .addMatcher(
-        apiSlice.endpoints.login.matchPending,
-        (state) => {
-          state.loading = true;
-          state.error = null;
-        }
-      )
-      .addMatcher(
-        apiSlice.endpoints.login.matchFulfilled,
-        (state, action) => {
-          state.loading = false;
-          state.user = action.payload.user;
-          state.token = action.payload.token;
-          state.isAuthenticated = true;
-          state.isMFARequired = action.payload.mfa_required || false;
-        }
-      )
-      .addMatcher(
-        apiSlice.endpoints.login.matchRejected,
-        (state, action) => {
-          state.loading = false;
-          state.error = action.payload?.detail || 'Login failed';
-        }
-      );
-  },
-});
+**File:** `ui/react-app/src/services/api.js`
 
-export const { setCredentials, clearCredentials, setCurrentOrg, setOrgs } = authSlice.actions;
-export default authSlice.reducer;
+**Key exports:**
+- `login(email, password)`
+- `recognize(file, options)`
+- `enroll(files, name, consent, options)`
+- `getAnalytics(timeframe)`
+- `getBiasReport(params)`
+- `getDecisionExplanation(id)`
+- ... etc
+
+**Response envelope:** `{ success: boolean, data: any, error?: string }`
+
+**Error handling:**
+```js
+try {
+  const result = await recognize(imageFile, { top_k: 1 });
+  console.log(result.data.faces);
+} catch (error) {
+  alert(`Recognition failed: ${error.message}`);
+}
 ```
 
-### 2. Recognition Slice
+---
 
-```javascript
-// features/recognition/recognitionSlice.js
-import { createSlice } from '@reduxjs/toolkit';
-import { initializeWebSocket } from '../../services/websocketService';
+## Component State: React Hooks
 
-const initialState = {
-  latestResults: [],
-  streaming: false,
-  currentCamera: null,
-  selectedMode: 'single', // 'single' | 'multi' | 'video'
-  processingLatency: 0,
-  spoofDetected: false,
-  emotionStats: {},
-};
-
-const recognitionSlice = createSlice({
-  name: 'recognition',
-  initialState,
-  reducers: {
-    setStreaming: (state, action) => {
-      state.streaming = action.payload;
-      if (action.payload) {
-        initializeWebSocket();
-      }
-    },
-    addRecognitionResult: (state, action) => {
-      state.latestResults.unshift(action.payload);
-      if (state.latestResults.length > 100) {
-        state.latestResults.pop();
-      }
-    },
-    clearResults: (state) => {
-      state.latestResults = [];
-    },
-    setCurrentCamera: (state, action) => {
-      state.currentCamera = action.payload;
-    },
-    setSpoofDetected: (state, action) => {
-      state.spoofDetected = action.payload;
-    },
-  },
-});
-
-export const { setStreaming, addRecognitionResult, clearResults, setCurrentCamera, setSpoofDetected } = recognitionSlice.actions;
-export default recognitionSlice.reducer;
-```
-
-### 3. Organizations Slice
-
-```javascript
-// features/organizations/orgSlice.js
-import { createSlice } from '@reduxjs/toolkit';
-
-const initialState = {
-  list: [],
-  current: null,
-  members: [],
-  loading: false,
-};
-
-const orgSlice = createSlice({
-  name: 'organizations',
-  initialState,
-  reducers: {
-    setCurrentOrg: (state, action) => {
-      state.current = action.payload;
-    },
-    setOrgs: (state, action) => {
-      state.list = action.payload;
-    },
-  },
-});
-
-export const { setCurrentOrg, setOrgs } = orgSlice.actions;
-export default orgSlice.reducer;
-```
-
-## RTK Query API Layer
-
-```javascript
-// services/apiSlice.js
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-
-export const apiSlice = createApi({
-  reducerPath: 'api',
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.REACT_APP_API_URL || '/api',
-    prepareHeaders: (headers, { getState }) => {
-      const token = getState().auth.token;
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
-  tagTypes: [
-    'Person',
-    'Organization',
-    'Camera',
-    'Recognition',
-    'Incident',
-    'Model',
-  ],
-  endpoints: (builder) => ({
-    // Auth
-    login: builder.mutation({
-      query: (credentials) => ({
-        url: '/auth/login',
-        method: 'POST',
-        body: credentials,
-      }),
-      invalidatesTags: ['Auth'],
-    }),
-    logout: builder.mutation({
-      query: () => ({
-        url: '/auth/logout',
-        method: 'POST',
-      }),
-      invalidatesTags: ['Auth'],
-    }),
-    
-    // Persons (Identity)
-    getPersons: builder.query({
-      query: (params = {}) => ({
-        url: '/persons',
-        params,
-      }),
-      providesTags: ['Person'],
-    }),
-    enrollPerson: builder.mutation({
-      query: (formData) => ({
-        url: '/enroll',
-        method: 'POST',
-        body: formData,
-      }),
-      invalidatesTags: ['Person'],
-    }),
-    deletePerson: builder.mutation({
-      query: (personId) => ({
-        url: `/persons/${personId}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Person'],
-    }),
-    
-    // Organizations
-    getOrganizations: builder.query({
-      query: () => '/organizations',
-      providesTags: ['Organization'],
-    }),
-    
-    // Cameras
-    getCameras: builder.query({
-      query: (orgId) => ({
-        url: `/orgs/${orgId}/cameras`,
-      }),
-    }),
-    
-    // Recognition Events
-    getRecognitionEvents: builder.query({
-      query: (params) => ({
-        url: '/orgs/events',
-        params,
-      }),
-      keepUnusedDataFor: 30, // seconds
-    }),
-  }),
-});
-
-export const {
-  useLoginMutation,
-  useLogoutMutation,
-  useGetPersonsQuery,
-  useEnrollPersonMutation,
-  useDeletePersonMutation,
-  useGetOrganizationsQuery,
-  useGetCamerasQuery,
-  useGetRecognitionEventsQuery,
-} = apiSlice;
-```
-
-## Selector Hooks
-
-```javascript
-// features/auth/selectors.js
-import { createSelector } from '@reduxjs/toolkit';
-
-const selectAuthState = (state) => state.auth;
-
-export const selectCurrentUser = createSelector(
-  [selectAuthState],
-  (auth) => auth.user
-);
-
-export const selectIsAuthenticated = createSelector(
-  [selectAuthState],
-  (auth) => auth.isAuthenticated
-);
-
-export const selectIsMFARequired = createSelector(
-  [selectAuthState],
-  (auth) => auth.isMFARequired
-);
-```
-
-## Persistence with Redux Persist
-
-```javascript
-// store/persistConfig.js
-import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
-import { combineReducers } from '@reduxjs/toolkit';
-import authReducer from '../features/auth/authSlice';
-import orgReducer from '../features/organizations/orgSlice';
-
-const rootReducer = combineReducers({
-  auth: authReducer,
-  organizations: orgReducer,
-});
-
-const persistConfig = {
-  key: 'root',
-  storage,
-  whitelist: ['auth', 'organizations'], // Only persist these reducers
-};
-
-const persistedReducer = persistReducer(persistConfig, rootReducer);
-
-export const persistor = persistStore(persistedReducer);
-export { persistedReducer as rootReducer };
-```
-
-## Component Usage Example
+Component-local state uses standard React hooks:
 
 ```jsx
-// pages/Dashboard.jsx
-import { useGetPersonsQuery } from '../services/apiSlice';
-import { useRecognitionStream } from '../hooks/useRecognitionStream';
-import { useAppDispatch, useAppSelector } from '../store';
+import React, { useState, useEffect, useCallback } from 'react';
 
-export default function Dashboard() {
-  const dispatch = useAppDispatch();
-  const { user, organizations } = useAppSelector(selectCurrentUser);
-  const { data: persons, isLoading } = useGetPersonsQuery({
-    org_id: user?.org_id,
-    limit: 50,
-    page: 1,
-  });
+function EnrollPage() {
+  const [images, setImages] = useState([]);
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // multi-step form
   
-  // WebSocket stream hook
-  const { latestResults, setStreaming } = useRecognitionStream({
-    cameraId: 'cam_lobby',
-  });
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      await enroll(images, name, true);
+      setStep(2); // success
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* ... */}
+    </form>
+  );
+}
+```
+
+---
+
+## Authentication Flow
+
+1. User submits credentials → `/api/auth/login`
+2. Server returns `{ access_token, user, mfa_required? }`
+3. Token stored in `localStorage` (survives refresh)
+4. User object stored in `localStorage`
+5. `AuthContext` updates state
+6. Axios interceptor adds token to all subsequent requests
+
+**Token refresh:** Manual via `/api/auth/refresh` endpoint (stored refresh token)
+
+**Logout:** Clear localStorage + context state + redirect to `/login`
+
+---
+
+## RBAC (Role-Based Access Control)
+
+Permission checks via `hasPermission()` from `AuthContext`:
+
+```jsx
+import { useAuth } from '../contexts/AuthContext';
+
+function AdminPanel() {
+  const { hasPermission } = useAuth();
+  
+  if (!hasPermission('MANAGE_USERS')) {
+    return <div>Access denied</div>;
+  }
+  
+  return <UserManagement />;
+}
+```
+
+Alternatively, route-level guard via `RBACGuard` component:
+
+```jsx
+import RBACGuard from '../components/RBACGuard';
+
+<Route path="/admin" element={
+  <RBACGuard requiredPermission="MANAGE_USERS">
+    <AdminDashboard />
+  </RBACGuard>
+} />
+```
+
+---
+
+## WebSocket Connection Management
+
+Live recognition streams managed via `WebSocketContext` or `useRecognitionStream` hook:
+
+```jsx
+import { useRecognitionStream } from '../hooks/useRecognitionStream';
+
+function LiveFeed() {
+  const { connect, disconnect, latestResults, streaming } = useRecognitionStream();
+  
+  const start = () => connect({ camera_id: 'cam_01', top_k: 1 });
+  const stop = () => disconnect();
   
   return (
     <div>
-      <h1>Dashboard</h1>
-      <PersonList persons={persons?.data?.items || []} loading={isLoading} />
-      <LiveRecognitionFeed results={latestResults} />
+      <button onClick={startring}>Start</button>
+      <button onClick={stop}>Stop</button>
+      {latestResults.map(result => (
+        <FaceResult key={result.id} result={result} />
+      ))}
     </div>
   );
 }
 ```
 
-## Environment Variables
+---
 
-```bash
-# ui/react-app/.env
-REACT_APP_API_URL=http://localhost:8000/api
-REACT_APP_WS_URL=ws://localhost:8000/ws
-REACT_APP_ENV=development
-REACT_APP_SENTRY_DSN=
-REACT_APP_GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
-REACT_APP_AZURE_TENANT_ID=xxx
+## File Structure
+
 ```
+ui/react-app/src/
+├── components/          # Reusable presentational components (15)
+│   ├── Sidebar.js
+│   ├── UploadBox.js
+│   ├── WebcamCapture.js
+│   ├── ResultCard.js
+│   └── ...
+├── pages/              # Route-level pages (15 JS + 3 TSX)
+│   ├── Dashboard.js
+│   ├── Enroll.js
+│   ├── Recognize.js
+│   ├── AdminPanel.js
+│   └── ...
+├── contexts/           # React Context providers
+│   └── AuthContext.js
+├── services/           # API layer
+│   ├── api.js           # Standard axios wrapper
+│   └── apiEnhanced.js   # Enhanced with error classes
+├── hooks/              # Custom React hooks
+│   ├── useRecognitionStream.js
+│   └── useWebSocket.js
+└── utils/              # Utilities
+    └── formatters.js
+```
+
+**Total source files:** 41 JavaScript + 3 TypeScript (`.tsx`)
+**Total frontend LOC:** ~10,000
 
 ---
 
-**Files:**
-- Store: `ui/react-app/src/store/index.js`
-- Auth Slice: `ui/react-app/src/features/auth/authSlice.js`
-- API Slice: `ui/react-app/src/services/apiSlice.js`
-- Selectors: `ui/react-app/src/features/auth/selectors.js`
+## TypeScript Migration
+
+Partial migration in progress:
+- **JavaScript:** 97% of codebase (`.js` files)
+- **TypeScript:** 3% (`.tsx` files: `ConsentModal.tsx`, `EnrichResultsPage.tsx`, `index.tsx`)
+
+New components should be written in TypeScript. Existing JS components will be converted incrementally.
+
+---
+
+## State Persistence
+
+**Persisted to localStorage:**
+- `token` — JWT access token
+- `user` — Current user object
+- `organization` — Current org selection
+- `organizations` — List of user's orgs
+
+**Not persisted:**
+- Temporary UI state (form drafts, modals open/closed)
+- WebSocket connection state
+- Load spinner states
+
+---
+
+## Performance Optimizations
+
+1. **Memoization:** `useMemo` for computed values, `useCallback` for event handlers
+2. **List virtualization:** Planned for large tables (react-window)
+3. **Code splitting:** React.lazy for route-based splitting
+4. **Image optimization:** WebP format, lazy loading
+5. **API caching:** Not implemented (would benefit from React Query)
+
+---
+
+## Future Improvements
+
+- [ ] Move from Context → Redux Toolkit RTK Query for data fetching (optional)
+- [ ] Add React Query for server-state caching
+- [ ] Implement optimistic updates for enroll/delete
+- [ ] Add end-to-end TypeScript (convert all .js → .tsx)
+- [ ] Add state persistence library (redux-persist alternative)
+- [ ] Implement request cancellation on component unmount
+- [ ] Add offline queue for actions (retry on reconnect)
+
+---
+
+**Note:** The earlier Redux Toolkit architecture described in `state_management.md` was a planned design that was not implemented. The actual production frontend uses Context API + Axios as documented here.

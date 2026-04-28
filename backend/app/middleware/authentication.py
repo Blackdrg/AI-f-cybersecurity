@@ -9,6 +9,7 @@ from starlette.responses import JSONResponse
 from jose import jwt, JWTError
 import logging
 import re
+from app.models.revocable_tokens import is_token_revoked, get_token_revocation_info
 
 logger = logging.getLogger(__name__)
 
@@ -52,16 +53,22 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             role = payload.get("role", "user")
             org_id = payload.get("org_id")
             subscription_tier = payload.get("subscription_tier", "free")
+            jti = payload.get("jti")  # JWT token ID for revocation
             
             if not user_id:
                 raise JWTError("Missing user_id")
             
-            # Attach to request state
+            # Attach user context to request state
             request.state.user_id = user_id
             request.state.user_role = role
             request.state.org_id = org_id
             request.state.org_tier = subscription_tier
             request.state.authenticated = True
+            request.state.token_jti = jti
+            
+            # Attach request metadata for policy engine
+            request.state.client_ip = request.client.host if request.client else None
+            request.state.user_agent = request.headers.get("user-agent", "")
             
         except JWTError as e:
             logger.warning(f"JWT validation failed: {e}")

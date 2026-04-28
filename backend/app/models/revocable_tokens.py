@@ -745,3 +745,44 @@ def verify_revocable_token(token_id: str, manager: RevocableTokenManager) -> boo
     """
     Convenience function to verify token."""
     return manager.verify_token(token_id)
+
+
+def is_token_revoked(token_id: str, manager: RevocableTokenManager = None) -> bool:
+    """
+    Check if a token has been revoked.
+    
+    This function provides a simple interface for checking token revocation
+    status without needing to instantiate a manager if one is already available.
+    
+    Args:
+        token_id: The token identifier to check
+        manager: Optional RevocableTokenManager instance (creates temporary if None)
+        
+    Returns:
+        True if token is revoked, False otherwise
+        
+    Note:
+        This function is used by authentication middleware to reject
+        revoked tokens. Revocation entries are stored in-memory in the
+        TokenRevocationRegistry and are persisted to database for
+        cross-instance synchronization in production.
+    """
+    if manager is None:
+        # Create temporary manager for check
+        # In production, this would query shared Redis/database cache
+        manager = RevocableTokenManager()
+    
+    return manager.revocation_registry.is_revoked(token_id)
+
+
+def get_token_revocation_info(token_id: str, manager: RevocableTokenManager = None) -> Optional[Dict[str, Any]]:
+    """
+    Get detailed revocation information for a token.
+    
+    Returns:
+        Dict with revocation reason, timestamp, and details, or None if not revoked
+    """
+    if manager is None:
+        manager = RevocableTokenManager()
+    
+    return manager.revocation_registry.get_revocation_info(token_id)

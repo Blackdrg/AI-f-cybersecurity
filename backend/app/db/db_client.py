@@ -835,6 +835,52 @@ class DBClient:
                 SELECT * FROM consents WHERE token = $1 AND expires_at > now()
             """, token)
             return dict(row) if row else None
+    
+    async def get_consent(self, consent_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific consent record by ID."""
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("""
+                SELECT * FROM consents WHERE consent_id = $1
+            """, consent_id)
+            return dict(row) if row else None
+    
+    async def revoke_consent(self, consent_id: str, reason: str) -> bool:
+        """Mark consent as revoked."""
+        async with self.pool.acquire() as conn:
+            # Set expires_at to now (effectively revoking)
+            # In production, you might add a revoked_at column
+            result = await conn.execute("""
+                UPDATE consents 
+                SET expires_at = NOW()
+                WHERE consent_id = $1 AND expires_at > now()
+            """, consent_id)
+            return result == "UPDATE 1"
+    
+    async def get_consent_history(self, subject_id: str) -> List[Dict[str, Any]]:
+        """Get all consent records for a subject."""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT * FROM consents WHERE subject_id = $1
+                ORDER BY granted_at DESC
+            """, subject_id)
+            return [dict(row) for row in rows]
+    
+    async def get_active_consents(self, subject_id: str, purpose: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get currently valid (non-expired) consents for subject."""
+        async with self.pool.acquire() as conn:
+            if purpose:
+                rows = await conn.fetch("""
+                    SELECT * FROM consents 
+                    WHERE subject_id = $1 
+                      AND expires_at > now()
+                      AND purpose = $2
+                """, subject_id, purpose)
+            else:
+                rows = await conn.fetch("""
+                    SELECT * FROM consents 
+                    WHERE subject_id = $1 AND expires_at > now()
+                """, subject_id)
+            return [dict(row) for row in rows]
 
     async def save_enrichment_result(self, query: str, subject: str, summary: List[Dict[str, Any]], requested_by: str, purpose: str, ttl_days: int = 7) -> str:
         async with self.pool.acquire() as conn:
@@ -938,14 +984,112 @@ class DBClient:
             """, subscription_id, user_id, plan_id, status, expires_at)
         return True
 
-    async def get_subscription(self, user_id: str) -> Optional[Dict[str, Any]]:
+    async def get_user_by_stripe_customer(self, stripe_customer_id: str) -> Optional[Dict[str, Any]]:
+        """Look up user by their Stripe customer ID."""
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow("""
-                SELECT * FROM subscriptions 
-                WHERE user_id = $1 AND status = 'active' 
-                ORDER BY created_at DESC LIMIT 1
-            """, user_id)
+                SELECT u.* FROM users u
+                JOIN subscriptions s ON u.user_id = s.user_id
+                WHERE s.stripe_customer_id = $1
+                LIMIT 1
+            """, stripe_customer_id)
             return dict(row) if row else None
+    
+    async def link_stripe_customer(self, user_id: str, stripe_customer_id: str) -> bool:
+        """Link Stripe customer ID to user record."""
+        async with self.pool.acquire() as conn:
+            # Add stripe_customer_id column if not exists (migration required)
+            await conn.execute("""
+                UPDATE subscriptions 
+                SET stripe_customer_id = $1 
+                WHERE user_id = $2 AND status = 'active'
+            """, stripe_customer_id, user_id)
+            return True
+    
+    async def downgrade_to_free_tier(self, user_id: str) -> bool:
+        """Downgrade user to free tier after payment failure."""
+        async with self.pool.acquire() as conn:
+            # Cancel all active subscriptions
+            await conn.execute("""
+                UPDATE subscriptions 
+                SET status = 'cancelled' 
+                WHERE user_id = $1 AND status = 'active'
+            """, user_id)
+            # Set user tier to free
+            await conn.execute("""
+                UPDATE users 
+                SET subscription_tier = 'free' 
+                WHERE user_id = $1
+            """, user_id)
+            # Reset usage tracking
+            await conn.execute("""
+                DELETE FROM usage WHERE user_id = $1
+            """, user_id)
+            return True
+    
+    async def update_subscription_plan(self, user_id: str, new_plan_id: str) -> bool:
+        """Update user's subscription plan (upgrade/downgrade)."""
+        async with self.pool.acquire() as conn:
+            result = await conn.execute("""
+                UPDATE subscriptions 
+                SET plan_id = $1, updated_at = NOW()
+                WHERE user_id = $2 AND status = 'active'
+            """, new_plan_id, user_id)
+            # Also update user tier
+            await conn.execute("""
+                UPDATE users 
+                SET subscription_tier = $1 
+                WHERE user_id = $2
+            """, new_plan_id, user_id)
+            return result == "UPDATE 1"
+    
+    async def deactivate_subscription(self, user_id: str) -> bool:
+        """Deactivate subscription (cancellation)."""
+        async with self.pool.acquire() as conn:
+            result = await conn.execute("""
+                UPDATE subscriptions 
+                SET status = 'cancelled', cancelled_at = NOW()
+                WHERE user_id = $1 AND status = 'active'
+            """, user_id)
+            # Downgrade user to free
+            await conn.execute("""
+                UPDATE users 
+                SET subscription_tier = 'free' 
+                WHERE user_id = $1
+            """, user_id)
+            return result == "UPDATE 1"
+    
+    async def extend_subscription(self, subscription_id: str, new_end_date: datetime) -> bool:
+        """Extend subscription expiry after successful renewal."""
+        async with self.pool.acquire() as conn:
+            result = await conn.execute("""
+                UPDATE subscriptions 
+                SET expires_at = $1, status = 'active'
+                WHERE subscription_id = $2
+            """, new_end_date, subscription_id)
+            return result == "UPDATE 1"
+    
+    async def mark_payment_failed(self, payment_intent_id: str) -> bool:
+        """Mark a payment as failed."""
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                UPDATE payments 
+                SET status = 'failed', updated_at = NOW()
+                WHERE stripe_payment_id = $1
+            """, payment_intent_id)
+            return True
+    
+    async def log_payment(self, user_id: str, amount: float, currency: str, 
+                         status: str, stripe_payment_id: Optional[str] = None, 
+                         metadata: Optional[Dict] = None) -> bool:
+        """Log payment event."""
+        async with self.pool.acquire() as conn:
+            payment_id = str(uuid.uuid4())
+            await conn.execute("""
+                INSERT INTO payments (payment_id, user_id, amount, currency, status, stripe_payment_id, created_at, metadata)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
+            """, payment_id, user_id, amount, currency, status, stripe_payment_id, json.dumps(metadata or {}))
+            return True
 
     async def cancel_subscription(self, subscription_id: str) -> bool:
         async with self.pool.acquire() as conn:

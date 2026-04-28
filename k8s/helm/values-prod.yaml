@@ -1,0 +1,545 @@
+# AI-f Production Helm Values
+# This file contains all configuration for production deployment
+# Copy to values-prod.yaml and customize per environment
+
+# --------------------------------------------
+# 1. GLOBAL SETTINGS
+# --------------------------------------------
+global:
+  environment: production
+  region: us-east-1
+  cluster: face-recognition-prod
+  
+# --------------------------------------------
+# 2. NAMESPACE & RBAC
+# --------------------------------------------
+namespace: face-recognition
+serviceAccount:
+  create: true
+  annotations: {}
+
+# --------------------------------------------
+# 3. BACKEND DEPLOYMENT
+# --------------------------------------------
+backend:
+  replicaCount: 3
+  minReplicas: 3
+  maxReplicas: 50
+  
+  image:
+    repository: ghcr.io/owner/ai-f-backend
+    tag: v2.0.0
+    pullPolicy: IfNotPresent
+  
+  resources:
+    limits:
+      cpu: "2"
+      memory: 4Gi
+      nvidia.com/gpu: 1   # Set to 0 for CPU-only
+    requests:
+      cpu: "500m"
+      memory: 1Gi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 50
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+    
+    behavior:
+      scaleUp:
+        stabilizationWindowSeconds: 60
+        policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 30
+      scaleDown:
+        stabilizationWindowSeconds: 300
+        policies:
+          - type: Percent
+            value: 10
+            periodSeconds: 60
+  
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 3
+  
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  
+  nodeSelector:
+    # For GPU nodes
+    # cloud.google.com/gke-accelerator: nvidia-tesla-t4
+    role: worker
+  
+  tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Exists"
+      effect: "NoSchedule"
+  
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - ai-f-backend
+            topologyKey: kubernetes.io/hostname
+  
+  env:
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: ai-f-secrets
+          key: DATABASE_URL
+    - name: REDIS_URL
+      valueFrom:
+        secretKeyRef:
+          name: ai-f-secrets
+          key: REDIS_URL
+    - name: JWT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: ai-f-secrets
+          key: JWT_SECRET
+    - name: ENCRYPTION_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-f-secrets
+          key: ENCRYPTION_KEY
+    - name: STRIPE_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-f-secrets
+          key: STRIPE_SECRET_KEY
+    - name: OPENAI_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-f-secrets
+          key: OPENAI_API_KEY
+  
+  configMap:
+    name: ai-f-config
+    data:
+      JWT_EXPIRY_HOURS: "1"
+      RATE_LIMIT_DEFAULT: "5000"
+      FEATURE_ZKP_AUDIT: "true"
+      FEATURE_FEDERATED_LEARNING: "true"
+      GEOIP_DATABASE_PATH: "/app/data/GeoLite2-City.mmdb"
+      LOG_LEVEL: "INFO"
+      PROMETHEUS_ENABLED: "true"
+      DEBUG: "false"
+  
+  volumeMounts:
+    - name: model-storage
+      mountPath: /app/models
+    - name: geoip-db
+      mountPath: /app/data
+      readOnly: true
+  
+  volumes:
+    - name: model-storage
+      persistentVolumeClaim:
+        claimName: ai-f-models-pvc
+    - name: geoip-db
+      configMap:
+        name: geoip-db
+        items:
+          - key: GeoLite2-City.mmdb
+            path: GeoLite2-City.mmdb
+
+# --------------------------------------------
+# 4. FRONTEND DEPLOYMENT
+# --------------------------------------------
+frontend:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/owner/ai-f-frontend
+    tag: v2.0.0
+    pullPolicy: IfNotPresent
+  
+  resources:
+    limits:
+      cpu: "200m"
+      memory: 256Mi
+    requests:
+      cpu: "100m"
+      memory: 128Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+  
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+    hosts:
+      - host: api.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8000
+          - path: /docs
+          - path: /openapi.json
+      - host: app.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+    tls:
+      - secretName: ai-f-tls
+        hosts:
+          - api.example.com
+          - app.example.com
+
+# --------------------------------------------
+# 5. SERVICES
+# --------------------------------------------
+services:
+  backend:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8000"
+      prometheus.io/path: "/metrics"
+  
+  frontend:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+  
+  redis:
+    type: ClusterIP
+    port: 6379
+  
+  postgres:
+    type: ClusterIP
+    port: 5432
+
+# --------------------------------------------
+# 6. INGRESS
+# --------------------------------------------
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    
+  hosts:
+    - host: api.example.com
+      paths:
+        - path: /api(/|$)(.*)
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: backend-service
+              port:
+                number: 8000
+        - path: /ws(/|$)(.*)
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: backend-service
+              port:
+                number: 8000
+        - path: /docs(/|$)(.*)
+        - path: /openapi.json
+        - path: /metrics
+    - host: app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: frontend-service
+              port:
+                number: 80
+
+# --------------------------------------------
+# 7. PERSISTENT VOLUME CLAIMS
+# --------------------------------------------
+persistence:
+  postgres:
+    enabled: true
+    existingClaim: postgres-pvc
+    subPath: ""
+  
+  redis:
+    enabled: true
+    existingClaim: redis-pvc
+  
+  models:
+    enabled: true
+    existingClaim: ai-f-models-pvc
+    size: 50Gi
+  
+  logs:
+    enabled: true
+    existingClaim: ai-f-logs-pvc
+    size: 10Gi
+
+# --------------------------------------------
+# 8. MONITORING
+# --------------------------------------------
+monitoring:
+  prometheus:
+    enabled: true
+    scrapeInterval: 30s
+    
+  grafana:
+    enabled: true
+    adminUser: admin
+    adminPassword: "CHANGE_ME_IN_PROD"
+    persistence:
+      enabled: true
+      size: 10Gi
+    
+    dashboards:
+      - ai-f-system-overview
+      - ai-f-federated-learning
+      - ai-f-model-performance
+      - ai-f-celery-queues
+  
+  alertmanager:
+    enabled: true
+    slackWebhook: ""  # Set in secrets
+    
+  podMonitor:
+    enabled: true
+    interval: 30s
+
+# --------------------------------------------
+# 9. SECURITY
+# --------------------------------------------
+security:
+  networkPolicy:
+    enabled: true
+    defaultDeny: false
+    allowedNamespaces: []
+    
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+  
+  secrets:
+    create: true
+    useExisting: false
+    
+  # External secrets (Vault, AWS Secrets Manager)
+  externalSecrets:
+    enabled: false
+    provider: aws-secrets-manager  # or "vault"
+
+# --------------------------------------------
+# 10. CELERY WORKERS
+# --------------------------------------------
+celery:
+  worker:
+    replicaCount: 3
+    
+    recognition:
+      replicas: 3
+      concurrency: 4
+      queues: "recognition"
+    
+    training:
+      replicas: 2
+      concurrency: 2
+      queues: "training"
+    
+    maintenance:
+      replicas: 1
+      concurrency: 1
+      queues: "maintenance"
+    
+    federated:
+      replicas: 2
+      concurrency: 2
+      queues: "federated"
+  
+  beat:
+    enabled: true
+    replicaCount: 1
+  
+  flower:
+    enabled: true
+    port: 5555
+
+# --------------------------------------------
+# 11. DATABASE
+# --------------------------------------------
+postgresql:
+  enabled: false  # Use external RDS/Aurora
+  
+# If using Helm PostgreSQL (not recommended for prod):
+postgresql-ha:
+  enabled: false
+
+# External DB connection via secret DATABASE_URL
+
+# --------------------------------------------
+# 12. REDIS
+# --------------------------------------------
+redis:
+  enabled: false  # Use external ElastiCache
+  
+# External Redis via secret REDIS_URL
+
+# --------------------------------------------
+# 13. LOGGING
+# --------------------------------------------
+logging:
+  format: json
+  level: INFO
+  
+  sidecar:
+    enabled: false
+    image: fluent/fluentd
+    # Or use Loki/Promtail
+  
+  loki:
+    enabled: false
+
+# --------------------------------------------
+# 14. BACKUP & DISASTER RECOVERY
+# --------------------------------------------
+backup:
+  enabled: true
+  
+  # Daily RDS snapshots handled by cloud provider
+  # Additional logical backups to S3
+  s3:
+    enabled: true
+    bucket: backups.ai-f.example.com
+    schedule: "0 2 * * *"  # Daily 2am UTC
+  
+  pvBackup:
+    enabled: true
+    schedule: "0 3 * * *"  # Daily 3am UTC
+
+# --------------------------------------------
+# 15. SERVICE MESH (Optional)
+# --------------------------------------------
+serviceMesh:
+  istio:
+    enabled: false
+    revision: default
+
+# --------------------------------------------
+# 16. CANARY DEPLOYMENTS
+# --------------------------------------------
+canary:
+  enabled: false  # Enable for blue-green deployments
+  analysis:
+    threshold: 10  # % error rate
+    metrics:
+      - type: ResponseErrorRate
+        threshold: 0.01
+        interval: 1m
+      - type: ResponseLatency
+        threshold: 500ms
+        interval: 1m
+
+# --------------------------------------------
+# 17. NODE AFFINITY (Multi-AZ)
+# --------------------------------------------
+nodeAffinity:
+  preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      preference:
+        matchExpressions:
+          - key: topology.kubernetes.io/zone
+            operator: In
+            values:
+              - us-east-1a
+              - us-east-1b
+              - us-east-1c
+
+# --------------------------------------------
+# 18. DNS & EXTERNAL SERVICES
+# --------------------------------------------
+externalServices:
+  aws:
+    region: us-east-1
+    kmsKeyId: alias/face-recognition-key
+    s3:
+      modelsBucket: models.ai-f.example.com
+      backupsBucket: backups.ai-f.example.com
+  
+  stripe:
+    publishableKey: pk_live_...
+  
+  openai:
+    apiKey: ""  # Set in secret
+
+# --------------------------------------------
+# 19. HEALTH CHECKS
+# --------------------------------------------
+healthChecks:
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 8000
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# --------------------------------------------
+# 20. RESOURCE QUOTAS
+# --------------------------------------------
+resourceQuota:
+  enabled: true
+  hard:
+    cpu: "100"
+    memory: 200Gi
+    pods: "100"
+
+# --------------------------------------------
+# END OF VALUES
+# --------------------------------------------

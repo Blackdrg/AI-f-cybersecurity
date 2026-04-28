@@ -1,0 +1,1 @@
+[{}, ['verifiable'], {'purpose': 'authentication', 'consent_text_version': 'v1'}]

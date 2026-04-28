@@ -60,6 +60,30 @@ async def enforce_policy(
         "day_of_week": datetime.utcnow().strftime("%A").lower(),
         "time_of_day": datetime.utcnow().strftime("%H:%M"),
     }
+    
+    # Add geo-location from IP (if GeoIP enabled)
+    from app.policy_engine import geoip_reader, GEOIP_ENABLED
+    if GEOIP_ENABLED and geoip_reader:
+        try:
+            geo_response = geoip_reader.city(context.client_ip)
+            eval_context["geo_location"] = {
+                "country": geo_response.country.iso_code,
+                "region": geo_response.subdivisions.most_specific.iso_code if geo_response.subdivisions else None,
+                "city": geo_response.city.name,
+                "latitude": geo_response.location.latitude,
+                "longitude": geo_response.location.longitude
+            }
+            eval_context["geo_country"] = geo_response.country.iso_code
+        except Exception:
+            # IP not found in database
+            eval_context["geo_location"] = None
+            eval_context["geo_country"] = None
+    
+    # Add device type from user agent
+    from app.policy_engine import parse_user_agent
+    user_agent = context.request.headers.get("user-agent", "")
+    eval_context["device_type"] = parse_user_agent(user_agent)
+    eval_context["user_agent"] = user_agent
 
     # Evaluate policy
     decision = policy_engine.evaluate(

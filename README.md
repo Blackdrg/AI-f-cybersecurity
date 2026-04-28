@@ -23,8 +23,8 @@
 - **Compliance**: GDPR, CCPA, BIPA, SOC 2 Type II ready
 
 **Codebase Stats:**
-- **Backend**: 20,000+ LOC (Python 3.12, FastAPI, async/await)
-- **Frontend**: 8,000+ LOC (React 18, Redux Toolkit, TypeScript)
+- **Backend**: 28,000+ LOC (Python 3.12, FastAPI, async/await)
+- **Frontend**: 10,000+ LOC (React 18, Material-UI, Context API + Axios)
 - **Infrastructure**: Kubernetes (Helm/Kustomize), Docker, Ansible, Prometheus
 - **Total**: ~45,000 LOC across 125+ files
 
@@ -37,7 +37,7 @@
 ```mermaid
 graph TB
     LB[Load Balancer<br/>NGINX<br/>TLS 1.3 + Rate Limit]
-    API[API Gateway<br/>FastAPI 0.111<br/>Port: 8000]
+    API[API Gateway<br/>FastAPI 0.104.1<br/>Port: 8000]
     
     subgraph "Authentication & Policy"
         AUTH[Authentication<br/>Middleware]
@@ -67,10 +67,10 @@ graph TB
         end
     end
     
-    subgraph "Data Layer"
-        PG[(PostgreSQL 15<br/>pgvector + pgcrypto<br/>Audit chain)]
-        REDIS[(Redis 7.2<br/>Pub/Sub + Cache<br/>Celery broker)]
-    end
+     subgraph "Data Layer"
+         PG[(PostgreSQL 15<br/>pgvector + pgcrypto<br/>Audit chain)]
+         REDIS[(Redis 5.0<br/>Pub/Sub + Cache<br/>Celery broker)]
+     end
     
     subgraph "Observability"
         MET[Prometheus<br/>Metrics collector]
@@ -127,17 +127,30 @@ graph TB
 | Layer | Technology | Version | Purpose |
 |-------|------------|---------|---------|
 | **Language** | Python | 3.12 (stable) | Backend runtime |
-| **Framework** | FastAPI | 0.111.0 | Async API + WebSocket |
-| **ORM** | SQLAlchemy + asyncpg | 2.0 + 0.20 | Async PostgreSQL driver |
-| **Database** | PostgreSQL | 15.5 + pgvector | Identity vectors, audit |
-| **Cache/Queue** | Redis | 7.2.3-alpine | Rate limiting, pub/sub, Celery |
-| **Task Queue** | Celery | 5.3 + Redis | Async background jobs |
+| **Framework** | FastAPI | 0.104.1 | Async API + WebSocket |
+| **ORM** | SQLAlchemy + asyncpg | 2.0.23 + 0.29.0 | Async PostgreSQL driver |
+| **Database** | PostgreSQL | 15 + pgvector | Identity vectors, audit |
+| **Cache/Queue** | Redis | 5.0.1 | Rate limiting, pub/sub, Celery |
+| **Task Queue** | Celery | 5.3.4 | Async background jobs |
 | **ML Runtime** | ONNX Runtime (CPU/GPU) | 1.18.0 | Inference |
-| **ML Training** | PyTorch | 2.2.0 + torchvision | Model training |
-| **Auth** | JWT (pyjwt) + OAuth2 | - | Authentication |
-| **Monitoring** | Prometheus Client + Grafana | - | Metrics + dashboards |
+| **ML Training** | PyTorch | 2.9.0 + torchvision 0.24.0 | Model training |
+| **Auth** | JWT (python-jose) + OAuth2 | 3.3.0 | Authentication |
+| **Monitoring** | Prometheus Client + Grafana | 0.19.0 | Metrics + dashboards |
 | **Infrastructure** | Docker + Kubernetes | - | Container orchestration |
 | **CI/CD** | GitHub Actions | - | Automated testing + deployment |
+| **Frontend** | React | 18.2.0 | User interface |
+| **UI Library** | Material-UI (MUI) | 7.3.4 | Component library |
+| **Charts** | MUI X Charts | 7.0.0 | Data visualization |
+| **Stripe SDK** | stripe-python | 7.4.0 | Payment processing |
+| **OpenAI SDK** | openai-python | 1.3.0 | AI assistant |
+| **gRPC** | grpcio + grpcio-tools | 1.60.0 | High-performance RPC |
+| **Privacy** | fairlearn | 0.9.0 | Bias detection |
+| **HE Library** | tenseal | 0.3.16 | Homomorphic encryption |
+| **WebSocket** | websockets | 12.0 | Real-time streaming |
+| **HTTP Client** | httpx | 0.25.2 | Async HTTP |
+| **AWS SDK** | boto3 | 1.34.0 | Cloud services |
+| **GeoIP** | geoip2 | 4.7.0 | Geographic policy |
+| **Security** | cryptography + pycryptodome | 41.0.7 + 3.20.0 | Cryptographic primitives |
 
 ---
 
@@ -325,9 +338,43 @@ celery -A backend.celery worker -Q model_export
 
 ---
 
-### Technology Stack
+## 📊 Subscription Tiers & Feature Matrix
 
-### Service Definition
+**Free | Pro ($29/mo) | Enterprise ($199/mo)**
+
+| Feature | Free | Pro | Enterprise |
+|---------|------|-----|------------|
+| **Recognition API** | 100/mo | 10,000/mo | Unlimited |
+| **Enrollment** | 10 persons | 1,000 persons | Unlimited |
+| **Face Accuracy** | 99.83% LFW | 99.83% LFW | 99.83% LFK + priority GPU |
+| **Multi-Modal Fusion** | ❌ | ✅ Face+Voice | ✅ Face+Voice+Gait+Behavior |
+| **ZKP Audit Trail** | ❌ | ✅ | ✅ + external anchoring |
+| **Federated Learning** | ❌ | ❌ | ✅ Secure aggregation |
+| **Rate Limit (recognize/min)** | 50 | 500 | 2,000 |
+| **Camera Streams** | 1 concurrent | 10 concurrent | 50 concurrent |
+| **API Keys** | 1 | 5 | 25 |
+| **Support** | Community | Priority (48h) | 24/7 Dedicated |
+| **SLA Uptime** | Best effort | 99.5% | 99.95% |
+| **On-prem Deployment** | ❌ | ❌ | ✅ License + support |
+| **Custom Model Training** | ❌ | ❌ | ✅ (consulting) |
+| **Compliance Certifications** | Self-attest | SOC 2 Type I | SOC 2 Type II, ISO 27001 |
+| **GDPR DSAR Automation** | ✅ Basic | ✅ Full export | ✅ Full + API webhooks |
+| **BIPA Consent Vault** | ✅ | ✅ | ✅ + audit reports |
+| **XAI (Explainable AI)** | ❌ | ✅ | ✅ + custom SHAP |
+| **AI Assistant** | GPT-3.5 (50/mo) | GPT-3.5 (500/mo) | GPT-4 (unlimited) |
+| **Webhook Events** | ❌ | ✅ | ✅ + custom routes |
+| **White-label UI** | ❌ | ❌ | ✅ (re-brandable) |
+
+**Notes:**
+- All tiers include: Zero-knowledge proofs, audit chain, encrypted storage, multi-tenancy, RBAC
+- **Pro** adds: Public enrichment, priority support, higher limits, XAI, AI assistant
+- **Enterprise** adds: Federated learning, OTA updates, compliance automation, dedicated SLA, on-prem option
+- Volume discounts available for >100K recognitions/mo
+- GPU acceleration and higher rate limits available as add-ons for Enterprise
+
+---
+
+### gRPC Service Definition
 
 **File:** `backend/app/grpc/face_recognition.proto`
 
@@ -546,7 +593,7 @@ All endpoints except `POST /enroll`, `POST /recognize` require JWT:
 Authorization: Bearer <jwt_token>
 ```
 
-### Complete Endpoint List (26 endpoints)
+### Complete Endpoint List (30+ endpoints)
 
 **Identity Management:**
 | Method | Endpoint | RBAC | Description |
@@ -811,8 +858,14 @@ ansible-playbook -i inventory/production \
 | **CloudWatch Logs** | - | 50 GB ingested | $120 | Centralized logging |
 | **Prometheus + Grafana (managed)** | 1 | Amazon Managed Service | $150 | Metrics + dashboards |
 | **Total (Estimated)** | | | **~$2,552/month** | Per region, single AZ |
+| **Alternate Configuration (R6g.large + smaller cluster)** | | | **~$1,912/month** | See assumptions below |
 
 **High Availability (Multi-AZ) Multi-Region DR:** ~$3,800/month
+
+**Note: Conflicting Cost Tables:** Two different cost estimates appear in various docs ($2,552 vs $1,912). The difference stems from:
+- **$2,552/mo:** Assumes 25 backend pods average (auto-scaling 12-50), db.r6g.2xlarge RDS, full managed services
+- **$1,912/mo:** Assumes 10 backend pods avg, db.r6g.large RDS, self-hosted Prometheus/Grafana
+- Use your expected RPS and HA requirements to choose appropriate sizing.
 
 ### Capacity Planning Calculator
 
@@ -1394,7 +1447,7 @@ Uploaded to:
 | **Deployment Guide** | K8s + Docker + Ansible | `docs/deployment/` |
 | **Admin Guide** | Operations + troubleshooting | `docs/ADMIN_GUIDE.md` |
 | **SDK Reference** | Python/Node/Go client libraries | `backend/sdk/` |
-| **Frontend State** | Redux store structure | `docs/frontend/state_management.md` |
+| **Frontend Architecture** | React state + Context API | `docs/frontend/state_management.md` |
 | **Test Strategy** | Unit + integration + E2E | `docs/testing/` |
 
 ---
@@ -2512,7 +2565,7 @@ aws s3api get-object \
 | Term | Definition |
 |------|------------|
 | **ArcFace** | Additive Angular Margin Loss – state-of-the-art face recognition loss function |
-| **Biometric Template | Protected** | GDPR term for stored biometric data (transform不可逆) |
+| **Biometric Template (Protected)** | GDPR term for stored biometric data (transform不可逆) |
 | **Bonawitz Protocol** | Secure aggregation protocol for federated learning (prevents server from seeing individual updates) |
 | **CKKS** | Cheon-Kim-Kim-Song – homomorphic encryption scheme for approximate arithmetic |
 | **Differential Privacy (DP)** | Adding noise to protect individual data in aggregate statistics |
@@ -2529,7 +2582,7 @@ aws s3api get-object \
 
 ---
 
-## 📞 Contact & Support
+## 📞 Contact & Support 
 
 **Security Issues:** security@ai-f.security (PGP encrypted, key: `0xAI_F_SECURITY`)  
 **Technical Support:** support@ai-f.security  

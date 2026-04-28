@@ -6,6 +6,103 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================
+-- 0. Row Level Security (RLS) Policies
+-- ============================================
+-- Multi-tenant isolation: Every table with org_id or user_id must enforce row-level access
+-- RLS ensures that even if application logic fails, one org cannot see another's data
+
+-- Enable RLS on all tables with org_id
+ALTER TABLE persons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE embeddings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cameras ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recognition_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alert_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alerts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE org_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE usage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE model_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE edge_devices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ota_updates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE federated_updates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bias_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE enrichment_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy for persons: Users can only see persons in their org
+CREATE POLICY persons_org_isolation ON persons
+    FOR ALL
+    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+
+-- RLS Policy for embeddings: Restrict by org via person relationship
+CREATE POLICY embeddings_org_isolation ON embeddings
+    FOR ALL
+    USING (EXISTS (
+        SELECT 1 FROM persons p 
+        WHERE p.person_id = embeddings.person_id 
+        AND p.org_id = current_setting('app.current_org_id', true)::uuid
+    ));
+
+-- RLS Policy for cameras: Org isolation
+CREATE POLICY cameras_org_isolation ON cameras
+    FOR ALL
+    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+
+-- RLS Policy for recognition_events: Org isolation
+CREATE POLICY recognition_events_org_isolation ON recognition_events
+    FOR ALL
+    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+
+-- RLS Policy for users: Self-isolation (users see own record; admins see org members via separate endpoint)
+-- Note: users table is NOT org-scoped universally (global SaaS accounts)
+-- Row access controlled via middleware, not RLS
+
+-- RLS Policy for org_members: Member can see other members in same org
+CREATE POLICY org_members_org_isolation ON org_members
+    FOR ALL
+    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+
+-- RLS Policy for api_keys: Org isolation
+CREATE POLICY api_keys_org_isolation ON api_keys
+    FOR ALL
+    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+
+-- RLS Policy for subscriptions: User can only see own subscription (except admins)
+-- This is partially enforced via middleware + RLS for extra safety
+CREATE POLICY subscriptions_user_isolation ON subscriptions
+    FOR ALL
+    USING (user_id = current_setting('app.current_user_id', true));
+
+-- RLS Policy for usage: User can only see own usage
+CREATE POLICY usage_user_isolation ON usage
+    FOR ALL
+    USING (user_id = current_setting('app.current_user_id', true));
+
+-- RLS Policy for model_versions: Global read (all orgs can see production models), write admin-only
+CREATE POLICY model_versions_global_read ON model_versions
+    FOR SELECT
+    USING (status = 'production' OR current_setting('app.current_role', true) IN ('admin', 'super_admin'));
+
+-- RLS Policy for bias_reports: Org isolation
+CREATE POLICY bias_reports_org_isolation ON bias_reports
+    FOR ALL
+    USING (org_id = current_setting('app.current_org_id', true)::uuid);
+
+-- RLS Policy for audit_logs: Org isolation (audit logs tied to org via person or camera)
+CREATE POLICY audit_logs_org_isolation ON audit_logs
+    FOR ALL
+    USING (
+        person_id IS NULL OR 
+        EXISTS (
+            SELECT 1 FROM persons p 
+            WHERE p.person_id = audit_logs.person_id 
+            AND p.org_id = current_setting('app.current_org_id', true)::uuid
+        )
+    );
+
+-- ============================================
 -- 1. Core Identity Tables
 -- ============================================
 
@@ -198,9 +295,17 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     user_id TEXT REFERENCES users(user_id),
     plan_id TEXT REFERENCES plans(plan_id),
     status TEXT DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT NOW(),
-    expires_at TIMESTAMP
+    stripe_customer_id TEXT,              -- Stripe customer ID
+    stripe_subscription_id TEXT,          -- Stripe subscription ID
+    starts_at TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP,
+    cancelled_at TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_customer ON subscriptions(stripe_customer_id);
 
 CREATE TABLE IF NOT EXISTS payments (
     payment_id TEXT PRIMARY KEY,
@@ -209,6 +314,8 @@ CREATE TABLE IF NOT EXISTS payments (
     currency TEXT DEFAULT 'USD',
     status TEXT DEFAULT 'pending',
     stripe_payment_id TEXT,
+    stripe_invoice_id TEXT,
+    metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT NOW()
 );
 
