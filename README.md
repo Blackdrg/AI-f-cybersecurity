@@ -21,6 +21,7 @@
 - **Forensic Auditability**: Immutable hash-chained audit logs with ZKP anchoring for absolute non-repudiation.
 - **Enterprise-Grade Hardening**: Distributed JWT revocation, MFA/TOTP, and Tier-based rate limiting built on a resilient FastAPI/PostgreSQL/Redis stack.
 - **Privacy-First MLOps**: Federated learning with secure aggregation and differential privacy.
+- **SaaS Orchestration**: Integrated billing (Stripe), subscription lifecycle management, and usage-based quota enforcement.
 
 **Codebase Stats (v2.0.0 Engineering Baseline):**
 - **Backend**: ~28,000 lines across 134 Python modules (FastAPI 0.104.1)
@@ -40,6 +41,23 @@
 - **React** 18.2.0 with Material-UI (MUI) 7.3.4
 - **Celery** 5.3.4 with Redis broker
 - **Prometheus Client** 0.19.0 + Grafana for observability
+- **Stripe SDK** 7.4.0 for enterprise billing
+- **Sentry SDK** 1.35.0 for error tracking & tracing
+
+---
+
+## 💳 SaaS & Billing Orchestration
+
+LEVI-AI includes a complete SaaS management layer for organization-level subscription and usage tracking.
+
+- **Plan Management**: Configurable tiers (`free`, `pro`, `enterprise`) defined in `backend/app/api/plans.py`.
+- **Payment Provider (Stripe)**: Native integration for automated billing, checkout flows, and invoice generation.
+- **Webhook Handling**: Resilient webhook listener (`api/webhooks.py`) with signature verification for provisioning/deprovisioning on payment events.
+- **Usage-Based Quotas**: Real-time enforcement of subscription limits via Redis-backed `UsageLimiter` middleware.
+- **Outbound Webhooks**: Specialized listener (`/api/webhooks/biometric-event`) for integrating real-time match events with external security systems.
+- **Multi-Tenant Isolation**: RLS-enforced database schema ensures total data separation between billing organizations.
+
+---
 
 ---
 
@@ -323,7 +341,7 @@ GOOGLE_REDIRECT_URI=https://api.example.com/api/auth/oauth/callback/google
 
 ### Role-Based Access Control (RBAC)
 
-**6 Roles with 30+ Granular Permissions:**
+**8 Roles with 30+ Granular Permissions:**
 
 | Role | Description | Key Permissions |
 |------|-------------|----------------|
@@ -333,6 +351,18 @@ GOOGLE_REDIRECT_URI=https://api.example.com/api/auth/oauth/callback/google
 | `auditor` | Compliance/forensics | `VIEW_AUDIT_LOGS`, `VERIFY_CHAIN`, `EXPORT_DATA` (read-only), `VIEW_BIAS_REPORTS` |
 | `analyst` | Analytics/reporting | `VIEW_ANALYTICS`, `EXPORT_REPORTS`, `VIEW_BIAS_REPORTS`, `VIEW_EXPLANATIONS` |
 | `viewer` | Read-only access | `VIEW_IDENTITIES`, `VIEW_RECOGNITIONS` |
+| `security` | Threat monitoring | `VIEW_THREATS`, `MANAGE_INCIDENTS`, `ENFORCE_POLICIES` |
+| `hr` | Employee management | `VIEW_ATTENDANCE`, `MANAGE_EMPLOYEES` |
+
+### W3C Decentralized Identifiers (DID)
+The platform supports **Self-Sovereign Identity (SSI)** via W3C compliant Decentralized Identifiers.
+- **DID Methods**: Native support for `did:key` and `did:web` methods.
+- **Verification**: ZKP-based verification of identity claims without disclosing the underlying biometric vector.
+- **Mesh Synchronization**: DIDs are synchronized across the cognitive mesh, allowing for stateless identity verification at the edge.
+
+### FIPS 140-2 Compliance Mode
+- **Algorithm Enforcement**: Optional `FIPS_MODE` environment toggle to restrict cryptographic operations to FIPS-validated algorithms (AES-GCM, SHA-256).
+- **KMS Integration**: Native support for AWS KMS and Azure Key Vault for hardware-backed master key storage.
 
 **Enforcement:** FastAPI dependencies + React `AuthContext` + `RBACGuard` component
 
@@ -432,6 +462,15 @@ The LEVI-AI frontend is a high-performance SPA built with React 18 and Material-
 - **Frontend Resilience**: Global `ErrorBoundary` implementation prevents application-wide crashes and provides graceful error recovery UI.
 - **Resilient API Service**: Standardized `apiEnhanced.js` with circuit breakers and exponential backoff.
 
+### 🧙‍♂️ Enterprise Setup Wizard
+For new organizations, the platform provides a guided onboarding experience:
+- **Dependency Verification**: Real-time health check of all required providers (Stripe, OpenAI, Bing).
+- **Policy Baseline**: One-click deployment of recommended security and ethical policy presets.
+- **Model Warmup**: Automated validation of ML model loading and inference on the target hardware.
+- **Identity Initialization**: Guided creation of the first `super_admin` and organizational hierarchy.
+
+---
+
 ## 🖥️ Enterprise UI & Management
 
 The AI-f frontend is designed for high-concurrency enterprise operations.
@@ -441,15 +480,20 @@ The AI-f frontend is designed for high-concurrency enterprise operations.
 - **Resiliency**: Exponential backoff retry logic and circuit breaker pattern.
 - **Distributed Tracing**: `X-Request-ID` injection for backend correlation.
 
-### 👨‍💼 Enterprise Admin Panel
-A comprehensive dashboard for system administrators and compliance officers.
-1. **Organizations**: Manage multi-tenant API keys and user permissions.
-2. **Policy Engine**: Real-time management of geo, temporal, and device policies.
-3. **Compliance**: Live GDPR/SOC 2 monitoring with an 98% current readiness score.
-4. **Explainable AI**: Visualize SHAP/LIME attribution for recognition decisions.
-5. **Anti-Spoof**: Real-time threat detection and deepfake analysis metrics.
-6. **Identity Tokens**: Manage and revoke Decentralized Identifiers (DIDs).
-7. **Plugin Manager**: Dynamic control over the system's extensible feature set.
+### 🛡️ Enterprise Admin Console
+A unified, multi-tenant administrative interface for system oversight and regulatory management.
+
+1. **Organization Manager**: Multi-tenant API key lifecycle and member RBAC management.
+2. **Policy Engine Dashboard**: Real-time control over system-wide policies (geo, temporal, device) and system health monitoring.
+3. **Compliance Center**: Live visualization of GDPR/SOC 2 readiness scores and recent risk alerts.
+4. **Explainable AI (XAI) Portal**: Visual attribution (SHAP/LIME) for recognition decisions, essential for legal transparency.
+5. **Operator Workflow (HITL)**: Human-in-the-loop interface for manual retries, overrides, and forensic escalations.
+6. **Intelligence Analytics**: High-level trend analysis and anomaly detection with configurable timeframes.
+7. **Enrichment Portal**: One-click public profile enrichment (Bing/Wikipedia) to strengthen identity confidence.
+8. **Anti-Spoof Management**: Real-time deepfake analysis metrics and 3D mask detection sensitivity controls.
+9. **Identity Token (DID) Vault**: Management and revocation of Decentralized Identifiers across the cognitive mesh.
+10. **Forensic Verification**: One-click immutable chain integrity verification and compliance audit exportation.
+11. **Plugin Manager**: Dynamic control over the system's extensible feature set.
 
 ### 🛡️ Enterprise Authentication: MFA & SSO
 LEVI-AI enforces zero-trust security through advanced multi-factor and federated identity protocols.
@@ -473,9 +517,26 @@ The LEVI-AI kernel features a modular plugin system (`backend/app/plugins/`) all
 
 ### ⚖️ Legal Compliance & Ethical Governance
 Built-in frameworks for global regulatory alignment and ethical AI oversight.
+
 - **Legal Compliance Router**: Dedicated endpoints for BIPA, GDPR, and CCPA automation.
+- **BIPA Consent Vault (`api/consent.py`)**:
+    - **Informed Consent**: Automated capture of versioned biometric consent text (BIPA 15 U.S.C. § 6801 compliance).
+    - **ZK Proof of Consent**: Generates non-repudiable Schnorr NIZK proofs for consent enrollment, allowing auditors to verify compliance without accessing PII.
+    - **Right to Revoke**: Native support for immediate consent revocation with automated cleanup triggers.
 - **Ethical Governor**: Policy-as-code engine (19+ rules) enforcing bias mitigation and consent-aware processing.
-- **Forensic Audit**: Immutable evidence chain with ZKP verification for legal non-repudiation.
+- **Forensic Audit**: Immutable hash-chained evidence ledger with ZKP verification for legal non-repudiation.
+
+---
+
+## 🔍 Public Enrichment & OSINT Integration
+
+The LEVI-AI platform includes a secure intelligence aggregator for public profile enrichment, enabling high-confidence identity verification via OSINT (Open Source Intelligence).
+
+- **Intelligence Aggregator (`aggregator.py`)**: Unified retrieval from Bing, Wikipedia, and LinkedIn (simulated/API-based).
+- **Privacy Redactor (`redaction.py`)**: Automated PII scrubbing and anonymization of public search results before storage.
+- **Consent-Locked Enrichment**: Optional requirement for a valid `consent_token` to be presented before performing enrichment searches.
+- **Human-in-the-Loop Review**: Built-in "Flag for Review" mechanism for operators to mark ambiguous or incorrect intelligence results.
+- **Audit Ledger**: Every enrichment query is logged with provider call metadata for forensic traceability.
 
 ---
 
@@ -493,31 +554,44 @@ Built-in frameworks for global regulatory alignment and ethical AI oversight.
 | **Emotion Detector** | VGG-like (FER+) | 48×48 grayscale | 7 emotions | F1 0.71 | `models/emotion_detector.py` |
 | **Age/Gender** | MobileNetV2 | 112×112 RGB | Age (reg), Gender (cls) | MAE 3.2y | `models/age_gender_estimator.py` |
 | **Behavioral Predictor** | LSTM sequence model | temporal sequences | 256-d behavior vector | In development | `models/behavioral_predictor.py` |
+| **Face Reconstructor** | GAN-based (3DMM) | 2D image | 3D mesh + textures | <150ms latency | `models/face_reconstructor.py` |
 | **Bias Detector** | Fairlearn metrics + demographic parity | - | Fairness metrics | Real-time | `models/bias_detector.py` |
 
-### Production Engines
+### 🛡️ Synthetic Defense & Anti-Deepfake
 
-| Engine | Class | Purpose | File |
-|--------|-------|---------|------|
-| **Scoring Engine** | `IdentityScoringEngine` | Calibrated confidence scoring per environment | `scoring_engine.py` |
+- **XceptionNet Deepfake Detector (`enhanced_spoof.py`)**: 
+    - **Architecture**: Depthwise separable convolutions with Entry/Middle/Exit flows.
+    - **Detection**: Classifies input as `Real` or `Synthetic` using high-frequency artifact analysis and texture inconsistency.
+- **Challenge-Response Liveness (`ChallengeResponseVerifier`)**:
+    - **Active Verification**: Randomized challenges (Blink, Nod, Smile, Head Turn) to prevent pre-recorded video or photo injection.
+    - **Verification Logic**: Temporal analysis of facial landmarks sequence to ensure physical presence.
+- **AI Watermark Detector (`WatermarkDetector`)**:
+    - **Frequency Analysis (FFT)**: Detects invisible high-frequency grid patterns embedded by generative AI tools (DALL-E, Midjourney, Stable Diffusion).
+    - **Texture Analysis**: Identifies unnatural uniformity and frequency clustering typical of GAN-generated content.
+- **Synthetic Risk Model**: A weighted scoring engine that fuses face, voice, and behavioral signals into a unified `RiskScore`.
+
+### 🗄️ Model Engines & Orchestration
+| Engine | Module | Purpose | Source |
+|--------|--------|---------|--------|
+| **Identity Scorer** | `IdentityScoringEngine`| Calibrated confidence scoring per environment | `scoring_engine.py` |
 | **Decision Engine** | `DecisionEngine` | Final accept/reject after policy + ethical checks | `decision_engine.py` |
 | **Ethical Governor** | `EthicalGovernor` | Real-time policy-as-code compliance (19 rules) | `models/ethical_governor.py` |
-| **Policy Engine** | `PolicyEngine` | RBAC + rate limits + temporal/geo/device conditions | `policy_engine.py` |
-| **Continuous Evaluation** | `EvaluationPipeline` | Real-time drift detection + alerting | `continuous_evaluation.py` |
 | **Model Calibrator** | `ModelCalibrator` | Environment-specific threshold tuning | `models/model_calibrator.py` |
-| **ZK Proof Manager** | `ZKProofManager` | Schnorr NIZK generation + hash-chain | `models/zkp_proper.py` |
+| **Continuous Evaluation**| `EvaluationPipeline` | Real-time drift detection + performance monitoring | `models/model_calibrator.py` |
+| **ZK Proof Manager** | `ZKProofManager` | Schnorr NIZK generation + hash-chain verification | `models/zkp_proper.py` |
 | **Hybrid Search** | `HybridSearchEngine` | pgvector + FAISS HNSW sharding (10M+ scale) | `hybrid_search.py` |
-| **Vector Shard Manager** | `VectorShardManager` | Horizontal partitioning of embedding vectors | `scalability.py` |
+| **Vector Shard Manager**| `VectorShardManager` | Horizontal partitioning of embedding vectors | `scalability.py` |
 | **Usage Limiter** | `UsageLimiter` | Per-tenant quota enforcement by subscription tier | `middleware/usage_limiter.py` |
+| **Fusion Engine** | `EmotionBehaviorEngine`| Fuses emotional state with behavioral patterns | `models/emotion_behavior.py` |
 
 ## 📊 Subscription Tiers & Feature Matrix
 
-**Free | Pro ($29/mo) | Enterprise ($199/mo)**
+**Free | Pro ($29.99/mo) | Enterprise ($99.99/mo)**
 
 | Feature | Free | Pro | Enterprise |
 |---------|------|-----|------------|
-| **Recognition API** | 100/mo | 10,000/mo | Unlimited |
-| **Enrollment** | 10 persons | 1,000 persons | Unlimited |
+| **Recognition API** | 100/mo | **Unlimited** | **Unlimited** |
+| **Enrollment** | 10 persons | 1,000 persons | **Unlimited** |
 | **Face Accuracy** | 99.83% LFW | 99.83% LFW | 99.83% LFK + priority GPU |
 | **Multi-Modal Fusion** | ❌ | ✅ Face+Voice | ✅ Face+Voice+Gait+Behavior |
 | **ZKP Audit Trail** | ❌ | ✅ | ✅ + external anchoring |
@@ -666,97 +740,144 @@ current_hash = SHA256(current_content)
 LEVI-AI is architected for mission-critical security environments, moving beyond basic encryption to a forensically auditable security model.
 
 - **FIPS 140-2 Alignment**: The system features a `FIPS_MODE` kernel toggle to prefer FIPS-validated cryptographic algorithms, with native support for HSM and Cloud KMS integration.
+- **Security Supply Chain (SBOM)**: Automated generation of **Software Bill of Materials (SBOM)** via `generate_sbom.sh` for full dependency transparency and vulnerability tracking.
+- **Automated Security Fuzzing**: The `security_fuzzer.py` tool continuously probes the API surface for injection, overflow, and logic vulnerabilities.
 - **Differential Privacy (DP)**: The `PrivacyEngine` implements ε-δ differential privacy during biometric template generation, providing a mathematical guarantee against template inversion attacks.
 - **Forensic Non-Repudiation**: Beyond internal hash-chaining, hashes are anchored to external trusted timestamping services hourly via the `ExternalAnchorService`.
-- **mTLS & Transit Security**: Forced TLS 1.3 for all gRPC and HTTPS traffic, with optional mTLS for edge-to-cloud cognitive mesh synchronization.
-- **Secure Redis Persistence**: Production deployments enforce volume-level encryption for Redis AOF/RDB snapshots and the `rediss://` protocol for all cache traffic.
+- **Offline Mode Simulation**: The `offline_mode_simulator.py` verifies the platform's ability to operate in air-gapped environments with full functional parity.
+
+### 🛠️ Diagnostic Tools & Operations
+LEVI-AI includes a suite of specialized diagnostic tools (`scripts/`) for production observability and maintenance.
+- **Database Diagnostics**: `db_diagnostics.py` monitors pgvector HNSW health, index fragmentation, and partition balance.
+- **Celery Watchdog**: `celery_watchdog.py` ensures background cognitive tasks (enrollment, training) are executing within their assigned TTLs.
+- **Advanced Log Analysis**: `log_analyzer.py` provides semantic clustering of production logs to identify emerging threat patterns or performance bottlenecks.
+- **Tenant Isolation Verification**: `tenant_isolation_test.py` programmatically verifies RLS (Row-Level Security) policies to ensure absolute data separation.
+
+### ⚖️ Compliance & Data Protection
+The LEVI-AI Sovereign OS is built on a foundation of **Privacy-by-Design**, ensuring full alignment with global data protection mandates (GDPR, CCPA, BIPA).
+
+- **Data Protection Impact Assessment (DPIA)**: A comprehensive [DPIA](DPIA_DATA_PROTECTION_IMPACT_ASSESSMENT.md) has been performed, identifying all privacy risks and documenting their technical mitigations.
+- **SOC 2 Type II Readiness**: The system is currently undergoing a [SOC 2 Gap Assessment](SOC2_TYPE_II_GAP_ASSESSMENT.md) with a target audit date of Q3 2026.
+- **Data Minimization**: Raw biometric images are never stored permanently; only irreversible, encrypted embeddings (vectors) are retained.
+- **Automated Retention & Deletion**: Configurable TTL (Time-To-Live) policies enforce the automatic deletion of identity data after 3 years or upon consent withdrawal.
+- **Subject Access Request (SAR) Automation**: Dedicated endpoints and UI components facilitate the rapid export and deletion of personal data upon user request.
+
+### 🗄️ Data Governance & Retention
+LEVI-AI enforces strict retention policies aligned with GDPR Article 5(1)(e):
+
+| Category | Data Examples | Retention Period | Storage Protocol |
+|----------|---------------|------------------|------------------|
+| **Identifiers** | Name, Email, Org ID | 3 years post-closure | Encrypted (AES-256) |
+| **Biometric (Special)** | Face/Voice/Gait Embeddings | 3 years or consent withdrawal | Irreversible Vector Store |
+| **Technical Data** | Camera ID, Location | 1 year | RLS Partitioned |
+| **Audit Logs** | IP, Hash Chain, Event | 7 years | Immutable Ledger |
+| **Facial Images** | Raw capture (if enabled) | 30 days (cache) | Auto-deleted daily |
+### 🛡️ Risk Treatment & Mitigation
+Summary of the [DPIA](DPIA_DATA_PROTECTION_IMPACT_ASSESSMENT.md) risk management plan:
+
+- **RISK-001 (Unauthorized Access)**: Mitigated by **automated key rotation**, **HSM integration**, and **MFA**-enforced administration.
+- **RISK-002 (Function Creep)**: Mitigated by **technical purpose limitation** and **change control** triggers for DPIA updates.
+- **RISK-003 (Inaccuracy/Bias)**: Mitigated by **multi-modal fusion**, **demographic parity testing**, and **HITL** escalation.
+- **RISK-004 (Invalid Consent)**: Mitigated by **separate consent management** and **automated SAR fulfillment**.
 
 ---
 
-## 🗄️ Database Schema
+## 🗄️ Database Schema & Architecture
 
-### Core Tables
+The AI-f backend utilizes **PostgreSQL 15** with the **pgvector** extension for high-performance vector similarity search. Multi-tenancy is enforced at the database level using **Row-Level Security (RLS)**.
 
-**persons** - Identity records
-```sql
-CREATE TABLE persons (
-    person_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
-    name TEXT,
-    age INTEGER,
-    gender TEXT,
-    metadata JSONB,
-    consent_record_id UUID,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_persons_org ON persons(org_id);
+### Entity Relationship Diagram (ERD)
+
+```mermaid
+erDiagram
+    organizations ||--o{ persons : "owns"
+    organizations ||--o{ cameras : "manages"
+    organizations ||--o{ api_keys : "issues"
+    persons ||--o{ embeddings : "has"
+    persons ||--o{ recognition_events : "participates"
+    cameras ||--o{ recognition_events : "captures"
+    recognition_events ||--o{ alerts : "triggers"
+    users ||--o{ org_members : "belongs to"
+    organizations ||--o{ org_members : "includes"
+    users ||--o{ subscriptions : "pays for"
+    plans ||--o{ subscriptions : "defines"
+    model_versions ||--o{ edge_devices : "deployed on"
 ```
 
-**embeddings** - Biometric vectors (face/voice/gait)
+### Core Identity & Biometrics
+| Table | Description | Key Column | Isolation |
+|-------|-------------|------------|-----------|
+| **`persons`** | Master identity profiles | `person_id` | `org_id` (RLS) |
+| **`embeddings`** | Biometric vectors (Face/Voice/Gait) | `embedding_id` | `person_id` link (RLS) |
+| **`recognition_events`**| Historical match logs | `event_id` | `org_id` (RLS) |
+| **`cameras`** | NVR/Camera stream configuration | `camera_id` | `org_id` (RLS) |
+
+### SaaS & Enterprise Management
+| Table | Description | Key Column | Isolation |
+|-------|-------------|------------|-----------|
+| **`organizations`** | Tenant billing units | `org_id` | Global (Admin) |
+| **`users`** | Global user accounts | `user_id` | Self (RLS) |
+| **`org_members`** | User-Org mapping (RBAC) | `org_id`, `user_id`| `org_id` (RLS) |
+| **`api_keys`** | Scoped access tokens | `key_id` | `org_id` (RLS) |
+| **`subscriptions`** | Billing state (Stripe) | `subscription_id` | `user_id` (RLS) |
+| **`usage`** | Real-time quota tracking | `user_id` | `user_id` (RLS) |
+
+### MLOps & Edge Lifecycle
+| Table | Description | Key Column | Isolation |
+|-------|-------------|------------|-----------|
+| **`model_versions`** | Model Registry (Weights/Metrics) | `version_id` | Status-based (RLS) |
+| **`edge_devices`** | IoT/Edge node status | `device_id` | Global (Admin) |
+| **`ota_updates`** | Over-the-air deployment log | `update_id` | `device_id` link |
+| **`federated_updates`**| Secure gradient contributions | `update_id` | Anonymous/Encrypted |
+
+### Security & Compliance
+| Table | Description | Key Column | Isolation |
+|-------|-------------|------------|-----------|
+| **`audit_log`** | Immutable hash-chained ledger | `id` (serial) | `org_id` (RLS) |
+| **`consent_logs`** | GDPR proof of consent | `consent_id` | `person_id` link |
+| **`mfa_secrets`** | Multi-factor secrets (TOTP) | `user_id` | Self (RLS) |
+| **`bias_reports`** | Periodic fairness audit data | `report_id` | `org_id` (RLS) |
+
+---
+
+### Multi-Tenant Isolation (RLS)
+The platform enforces a "Zero-Trust" database architecture where one tenant can never access another's data, even if application-level authentication is bypassed.
+
+**Example Policy (Persons):**
 ```sql
-CREATE TABLE embeddings (
-    embedding_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    person_id UUID REFERENCES persons(person_id) ON DELETE CASCADE,
-    embedding VECTOR(512),        -- Face
-    voice_embedding VECTOR(192),  -- Voice
-    gait_embedding VECTOR(7),     -- Gait
-    camera_id TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
--- HNSW index for ANN search (~10ms top-10 @ 1M vectors)
-CREATE INDEX embedding_idx ON embeddings 
-USING hnsw (embedding vector_cosine_ops) 
-WITH (m=16, ef_construction=64);
+CREATE POLICY persons_org_isolation ON persons
+    FOR ALL
+    USING (org_id = current_setting('app.current_org_id', true)::uuid);
 ```
 
-**audit_log** - Hash-chained immutable ledger (see above)
-
-**organizations** - Multi-tenant isolation
+**Example Policy (Embeddings):**
 ```sql
-CREATE TABLE organizations (
-    org_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    subscription_tier TEXT DEFAULT 'free',
-    billing_email TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-CREATE TABLE org_members (
-    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
-    user_id TEXT REFERENCES users(user_id) ON DELETE CASCADE,
-    role TEXT DEFAULT 'viewer',
-    PRIMARY KEY (org_id, user_id)
-);
+CREATE POLICY embeddings_org_isolation ON embeddings
+    FOR ALL
+    USING (EXISTS (
+        SELECT 1 FROM persons p 
+        WHERE p.person_id = embeddings.person_id 
+        AND p.org_id = current_setting('app.current_org_id', true)::uuid
+    ));
 ```
 
-**users** - SaaS accounts
-```sql
-CREATE TABLE users (
-    user_id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    hashed_password TEXT,
-    subscription_tier TEXT DEFAULT 'free',
-    created_at TIMESTAMP DEFAULT NOW()
-);
-```
+---
 
-**recognition_events** - Timeline analytics
-```sql
-CREATE TABLE recognition_events (
-    event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    org_id UUID REFERENCES organizations(org_id),
-    camera_id UUID REFERENCES cameras(camera_id),
-    person_id UUID REFERENCES persons(person_id),
-    confidence_score FLOAT,
-    risk_score FLOAT,
-    metadata JSONB,
-    timestamp TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_recognition_org ON recognition_events(org_id, timestamp DESC);
-```
+### 🔔 Alerting & Notification Engine
+LEVI-AI features a highly configurable alerting system (`backend/app/api/alerts.py`) for real-time operational response.
+- **Multi-Channel Delivery**: Native support for **SMTP Email**, **WhatsApp (Twilio)**, and **Slack Webhooks**.
+- **Rule-Based Triggers**: Configure alerts based on confidence thresholds, policy violations, or specific identity detection.
+- **Escalation Workflows**: Automated escalation to security or management for critical threats (e.g., `SPOOF_DETECTED`).
+- **Notification Persistence**: All alerts are logged to the immutable audit ledger for forensic accountability.
 
-See `docs/database/er_diagram.md` for full ER diagram.
+### 🏪 Retail Intelligence & Behavioral Analytics (Beta)
+Expanding the Sovereign OS into business intelligence, AI-f now includes a suite of retail analytics tools.
+- **Footfall & Traffic Flow**: Automated counting of unique visitors and peak-hour traffic analysis.
+- **Repeat Customer Tracking**: Anonymous tracking of visitor frequency to identify VIP or returning customers.
+- **Dwell Time & Heatmaps**: Movement analysis (`models/behavioral_predictor.py`) to visualize high-engagement areas within a physical space.
+- **Demographic Insights**: Aggregated (PII-redacted) analytics for age, gender, and emotional engagement trends.
+
+---
 
 ### 🔄 Schema Management & Migrations (Alembic)
 
@@ -805,18 +926,29 @@ AI-f implements a unified error response system to ensure consistent client-side
 
 | Code | Type | Meaning |
 |------|------|---------|
-| **401** | Unauthorized | Invalid/Expired JWT or missing credentials. |
-| **403** | Forbidden | Role/Organization permission mismatch. |
+| **401** | Unauthorized | Invalid/Expired JWT, revoked token, or MFA required. |
+| **403** | Forbidden | Role/Organization permission mismatch or geographic restriction. |
+| **404** | Not Found | Resource (person, organization, model) does not exist. |
 | **409** | Conflict | Duplicate identity or resource collision. |
 | **422** | Validation | Semantic errors (e.g., invalid image format, missing fields). |
-| **429** | Rate Limit | Sliding window quota exceeded. |
-| **502/503**| Dependency | Backend model/DB service unavailable. |
+| **429** | Rate Limit | Sliding window quota exceeded or subscription limit reached. |
+| **500** | Server Error | Internal failure; check Sentry/Logs for trace ID. |
+| **502/503**| Dependency | Backend model service, Database, or Redis unavailable. |
 
-**Application-Specific Codes:**
-- `BIO_QUALITY_LOW`: Input image failed quality threshold.
-- `SPOOF_DETECTED`: multi-modal anti-spoofing rejection.
-- `CONSENT_MISSING`: Operation requires prior BIPA/GDPR consent.
-- `QUOTA_EXCEEDED`: Subscription tier daily limit reached.
+**Application-Specific Codes (ErrorCode Enum):**
+
+| Category | Code | Description |
+|----------|------|-------------|
+| **Auth** | `AUTH_REVOKED_TOKEN` | Token was manually revoked (session termination). |
+| **Auth** | `AUTH_MFA_REQUIRED` | Operation requires a valid MFA (TOTP) challenge. |
+| **Biometric** | `BIO_NO_FACE` | No face detected in the input image. |
+| **Biometric** | `BIO_MULTIPLE_FACES` | Multiple faces detected; ambiguous recognition. |
+| **Biometric** | `BIO_SPOOF_DETECTED`| Multi-modal anti-spoofing rejection. |
+| **Biometric** | `BIO_QUALITY_LOW` | Input image failed resolution or lighting threshold. |
+| **Compliance**| `BIO_CONSENT_MISSING`| Operation requires prior BIPA/GDPR consent. |
+| **Compliance**| `COMP_GEO_RESTRICT` | Service restricted in the requester's jurisdiction. |
+| **System** | `SYS_MODEL_LOAD_FAIL`| ML model failed to initialize or is warming up. |
+| **System** | `QUOTA_EXCEEDED` | Subscription tier monthly limit reached. |
 
 ---
 
@@ -5701,6 +5833,201 @@ class DBClient:
 async def fetch(self, query, *args):
     pool = self._get_read_replica()  # cycle through replicas
     async with pool.acquire() as conn:
+        # 3. Decode + verify signature (HS256)
+        try:
+            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+        except JWTError:
+            return JSONResponse({"error": "invalid_token"}, 401)
+        
+        # 4. Check expiry (already done by jwt.decode)
+        
+        # 5. Check revocation (distributed Redis store)
+        jti = payload.get("jti")
+        if jti and await revocation_store.is_revoked(jti):
+            return JSONResponse({"error": "token_revoked"}, 401)
+        
+        # 6. Attach user to request.state
+        request.state.user = payload
+        request.state.user_id = payload.get("sub") or payload.get("user_id")
+        
+        return await call_next(request)
+```
+
+**Public Paths:** `/health`, `/api/health`, `/api/version`, `/docs`, `/openapi.json`, `/redoc`, `/api/enroll`, `/api/recognize`
+
+---
+
+### Rate Limiting Middleware (`middleware/rate_limit.py`)
+
+**Redis Sorted Set Algorithm (Sliding Window):**
+```python
+async def is_rate_limited(self, key: str, limit: int, window: int = 60):
+    now = int(time.time())
+    pipe = self.client.pipeline()
+    # Add current request timestamp
+    pipe.zadd(key, {str(now): now})
+    # Remove expired requests (outside window)
+    pipe.zremrangebyscore(key, 0, now - window)
+    # Count remaining
+    pipe.zcard(key)
+    # Get earliest request for retry-after
+    pipe.zrange(key, 0, 0, withscores=True)
+    
+    results = await pipe.execute()
+    current = results[2]  # zcard result
+    remaining = max(0, limit - current)
+    is_limited = current > limit
+    
+    if is_limited:
+        earliest = results[3][0][1] if results[3] else now
+        retry_after = int(earliest + window - now)
+    else:
+        retry_after = 0
+    
+    return is_limited, remaining, retry_after
+```
+
+**Rate Limit Headers (returned on every response):**
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 87
+X-RateLimit-Reset: 1700000000
+Retry-After: 30  (only if 429)
+```
+
+**Tier-Based Limits:**
+| Tier | Recognize | Enroll | Stream |
+|------|-----------|--------|--------|
+| free | 100/min | 10/min | 5/min |
+| pro | 1000/min | 100/min | 50/min |
+| enterprise | 5000/min | 1000/min | 500/min |
+
+---
+
+### Policy Enforcement Middleware (`middleware/policy_enforcement.py`)
+
+**PolicyContext + enforce_policy()**
+
+**GeoIP Integration:**
+```python
+from app.policy_engine import geoip_reader, GEOIP_ENABLED
+if GEOIP_ENABLED and geoip_reader:
+    try:
+        geo_response = geoip_reader.city(client_ip)
+        eval_context["geo_location"] = {
+            "country": geo_response.country.iso_code,
+            "region": geo_response.subdivisions.most_specific.iso_code,
+            "city": geo_response.city.name,
+            "latitude": geo_response.location.latitude,
+            "longitude": geo_response.location.longitude
+        }
+        eval_context["geo_country"] = geo_response.country.iso_code
+    except Exception:
+        eval_context["geo_location"] = None
+```
+
+**User-Agent Parsing:**
+```python
+from app.policy_engine import parse_user_agent
+user_agent = request.headers.get("user-agent", "")
+eval_context["device_type"] = parse_user_agent(user_agent)  # "desktop", "mobile", "tablet"
+```
+
+**Full Enforcement Pipeline:**
+1. Build context (IP, geo, device, time, purpose)
+2. `policy_engine.evaluate(subject_type, resource, context)` → PolicyDecision
+3. If not allowed → 403 with `{error: "policy_denied", reason, matched_rule}`
+4. Check rate_limit_remaining from decision
+5. Ethical check (if require_consent or require_age_gate)
+6. Return True if all checks pass
+
+---
+
+### Usage Limiter Middleware (`middleware/usage_limiter.py`)
+
+**Tier Daily Quotas:**
+
+| Tier | Daily Limit | Weighted Endpoints |
+|------|-------------|-------------------|
+| free | 100 | /recognize=1, /enroll=5, /video=2 |
+| basic | 1,000 | /recognize=1, /enroll=5, /video=2 |
+| premium | 10,000 | /recognize=1, /enroll=5, /video=2 |
+| enterprise | 1,000,000 | effectively unlimited |
+
+**Implementation:**
+```python
+async def _check_quota(self, user_id, tier, weight):
+    key = f"usage:{user_id}:{datetime.utcnow().strftime('%Y-%m-%d')}"
+    current = await redis.incrby(key, weight)
+    if not await redis.exists(key):
+        await redis.expire(key, 86400 + 3600)  # 25h TTL (handle DST)
+    limit = TIER_DAILY_LIMITS[tier]
+    allowed = current < limit
+    return allowed, current, limit
+```
+
+**On 429:**
+```json
+{
+  "error": "rate_limit_exceeded",
+  "message": "Daily quota exceeded: 105/100 requests used",
+  "retry_after": 86400
+}
+```
+
+---
+
+## 🔑 Secrets Management & Security
+
+### SecretsVault (`security/secrets_vault.py`)
+
+**Unified interface supporting:**
+1. **Environment variables** (default, local dev)
+2. **AWS Secrets Manager** (production)
+3. **HashiCorp Vault** (stub, future)
+
+```python
+vault = SecretsVault()
+
+# Get secret
+db_password = vault.get_secret("DB_PASSWORD")
+
+# Get encryption key (biometric data)
+encryption_key = vault.get_encryption_key()  # 32-byte AES-GCM key
+```
+
+**Priority:** AWS > env fallback
+
+---
+
+## 🗄️ Database Client — Full API
+
+**File:** `backend/app/db/db_client.py` (1680 lines)
+
+### Connection Pool
+
+```python
+class DBClient:
+    async def init_db(self):
+        self.pool = await asyncpg.create_pool(
+            user=db_user,
+            password=db_password,
+            database=db_name,
+            host=db_host,
+            port=db_port,
+            min_size=10,    # persistent connections
+            max_size=100,   # max connections per pod
+        )
+```
+
+### Read Replicas
+
+```python
+# Configure via env: DB_READ_REPLICAS="replica1:5432,replica2:5432"
+# Round-robin load balancing for SELECT queries
+async def fetch(self, query, *args):
+    pool = self._get_read_replica()  # cycle through replicas
+    async with pool.acquire() as conn:
         return await conn.fetch(query, *args)
 ```
 
@@ -5715,6 +6042,29 @@ async def fetch(self, query, *args):
 | `get_person_full_data()` | GDPR export | `SELECT * FROM persons JOIN embeddings ...` |
 | `delete_person()` | GDPR erasure (soft/hard) | `UPDATE persons SET deleted_at=NOW() WHERE person_id=$1` |
 | `get_recognitions_since()` | Analytics query | `SELECT * FROM recognition_events WHERE timestamp > $1` |
+
+---
+
+### 🚀 Recently Implemented (v2.0.0 - Current)
+- ✅ **Cognitive Mesh Architecture** – Distributed identity orchestration.
+- ✅ **Explainable AI (XAI)** – Visual attribution (SHAP/LIME) for recognition transparency.
+- ✅ **Audit Trail (ZKP)** – Forensic-grade immutable ledger with Schnorr NIZK proofs.
+- ✅ **Differential Privacy (DP)** – ε-δ guarantees for biometric templates.
+- ✅ **Extensible Plugin System** – Modular kernel for rapid feature extension.
+- ✅ **Terraform IaC Baseline** – Automated AWS infrastructure provisioning.
+
+### 🎯 v2.2 (Q3 2026) – Planned
+- 📋 **Zero-Knowledge Machine Learning (zkML)** – Proving model inference integrity.
+- 📋 **Homomorphic Encryption (CKKS)** – Full vector arithmetic on encrypted data.
+- 📋 **Federated Learning v2** – Secure aggregation for heterogeneous edge devices.
+- 📋 **Edge SDKs** – iOS (Core ML), Android (TFLite), Rust (TFLite + WASM).
+
+### v3.0 (Q4 2026) – Planned
+- 📋 **Privacy-Preserving Cross-Match (PSI)** – Match across orgs without sharing raw vectors.
+- 📋 **Regulatory Submissions** – NIST FRVT, ISO/IEC 30107-3 (PAD), GDPR Article 35 DPIA approval.
+- 📋 **Hardware Security Module (HSM)** Integration – FIPS 140-2 Level 3 support.
+- 📋 **Quantum-Resistant Cryptography** – CRYSTALS-Kyber (post-quantum KEM) migration.
+- 📋 **Autonomous Self-Calibration** – Real-time auto-tuning of model thresholds.
 
 ---
 
@@ -5735,32 +6085,6 @@ async def fetch(self, query, *args):
 
 ---
 
-**END OF ADDITIONAL SECTIONS — README now 5000+ lines with complete technical documentation for AI-f v2.0 platform.**
-- ✅ Federated learning v1 (secure aggregation)
-- ✅ MFA enrollment + backup codes
-- ✅ OAuth2 SSO (Azure AD + Google)
-- ✅ Audit chain with ZKP proofs
-- ✅ pgvector HNSW index
-- ✅ ONNX export + optimization
-- ✅ K8s overlays + Helm chart
-- ✅ Ansible provisioning
-
-### v2.2 (Q3 2026) – In Development
-- 🔄 **Homomorphic Encryption** – Fully encrypted inference (CKKS scheme)
-- 🔄 **Zero-Knowledge Machine Learning (zkML)** – Verify model inference without revealing input
-- 🔄 **Multi-party Computation (MPC)** – Distributed biometric matching across orgs
-- 🔄 **W3C Decentralized Identifiers (DID)** – Self-sovereign identity support
-- 🔄 **Edge SDKs** – iOS (Core ML), Android (TFLite), Rust (TFLite + WASM)
-
-### v3.0 (Q4 2026) – Planned
-- 📋 **Privacy-Preserving Cross-Match** – Match across orgs without sharing raw vectors (PSI)
-- 📋 **Regulatory Submissions** – NIST FRVT, ISO/IEC 30107-3 (PAD), GDPR Article 35 DPIA approval
-- 📋 **Hardware Security Module (HSM)** Integration – FIPS 140-2 Level 3 support
-- 📋 **Quantum-Resistant Cryptography** – CRYSTALS-Kyber (post-quantum KEM) migration path
-- 📋 **Model Explainability (XAI)** – Integrated gradients, LIME for decision explanations
-
----
-
 ## 📖 Glossary
 
 | Term | Definition |
@@ -5777,11 +6101,17 @@ async def fetch(self, query, *args):
 | **MTCNN** | Multi-Task Cascaded Convolutional Networks – multi-scale face detector |
 | **ONNX** | Open Neural Network Exchange – portable model format for cross-platform deployment |
 | **pgvector** | PostgreSQL vector extension for similarity search (<=> operator for cosine distance) |
-| **RBAC** | Role-Based Access Control; 6 roles + 30+ granular permissions |
+| **RBAC** | Role-Based Access Control; 8 roles + 30+ granular permissions |
 | **Spoof / Presentation Attack** | Attack using fake biometric (photo, video, mask, prosthetic, deepfake) |
 | **ZKP** | Zero-Knowledge Proof – prove log integrity without revealing underlying data (Schnorr NIZK) |
 | **XAI** | Explainable AI – attribution methods (SHAP, LIME) for model decisions |
 | **RLS** | Row-Level Security – PostgreSQL multi-tenant data isolation |
+| **DID** | Decentralized Identifier – W3C compliant identity representation in the cognitive mesh |
+| **PSI** | Private Set Intersection – cryptographic protocol for cross-match without data disclosure |
+| **MPC** | Multi-Party Computation – privacy-preserving collaborative recognition |
+| **Sovereign Kernel** | The core LEVI-AI orchestration layer managing plugins, models, and security policies |
+| **DPIA** | Data Protection Impact Assessment – formal process to identify and minimize privacy risks (GDPR Art. 35) |
+| **HSM** | Hardware Security Module – physical device managing digital keys and performing cryptographic operations |
 | **HE** | Homomorphic Encryption – compute on encrypted data (CKKS, BFV, Paillier) |
 
 ---
@@ -5791,6 +6121,8 @@ async def fetch(self, query, *args):
 **Security Issues:** security@ai-f.security (PGP encrypted, key: `0xAI_F_SECURITY`)  
 **Technical Support:** support@ai-f.security  
 **Sales/Enterprise:** sales@ai-f.security  
+
+
 **Documentation:** https://docs.ai-f.security  
 **Community:** https://community.ai-f.security  
 

@@ -29,6 +29,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+import scipy.signal as sig
+
 class VoiceLivenessDetector:
     """Detects voice liveness to prevent replay attacks."""
     
@@ -43,27 +45,39 @@ class VoiceLivenessDetector:
         Returns:
             Dictionary with liveness detection results
         """
+        if not LIBROSA_AVAILABLE:
+            return {"liveness_score": 0.5, "is_live": True, "warning": "librosa not available"}
+
         try:
-            # Spectral analysis for replay detection
+            # 1. Spectral analysis for replay detection (artifacts from loudspeakers)
             replay_indicator = self._detect_replay_spectral(audio_signal, sample_rate)
+            
+            # 2. Analyze noise consistency (natural recordings have background noise variance)
             noise_score = self._analyze_noise_consistency(audio_signal, sample_rate)
+            
+            # 3. Detect micro-tremors (natural human speech has jitter/shimmer absent in replay)
             tremor_ratio = self._detect_tremor(audio_signal, sample_rate)
             
-            # Combine indicators
+            # Weighted combination
+            # Lower replay_indicator is better (1.0 - x)
+            # Higher noise_score is better (suggests non-static noise)
+            # Higher tremor_ratio is better (suggests human jitter)
             liveness_score = (
-                (1.0 - replay_indicator) * 0.5 +
+                (1.0 - replay_indicator) * 0.4 +
                 noise_score * 0.3 +
-                (1.0 - tremor_ratio) * 0.2
+                tremor_ratio * 0.3
             )
             liveness_score = max(0.0, min(1.0, liveness_score))
             
             return {
                 "liveness_score": float(liveness_score),
-                "is_live": liveness_score > 0.6,
-                "replay_indicator": float(replay_indicator),
-                "noise_consistency": float(noise_score),
-                "tremor_ratio": float(tremor_ratio),
-                "method": "spectral_analysis"
+                "is_live": liveness_score > 0.55,
+                "details": {
+                    "replay_indicator": float(replay_indicator),
+                    "noise_consistency": float(noise_score),
+                    "tremor_ratio": float(tremor_ratio)
+                },
+                "method": "advanced_spectral_analysis"
             }
         except Exception as e:
             logger.warning(f"Voice liveness detection failed: {e}")
@@ -74,49 +88,48 @@ class VoiceLivenessDetector:
             }
     
     def _detect_replay_spectral(self, signal: np.ndarray, sr: int) -> float:
-        """Detect spectral artifacts from replay devices."""
+        """Detect spectral artifacts from replay devices (e.g., high-freq roll-off)."""
         try:
-            from scipy import signal as sig
-            # Analyze frequency response for device-specific patterns
-            # Simplified: check for unusual spectral flatness
-            fft = np.fft.rfft(signal)
-            magnitude = np.abs(fft)
-            spectral_flatness = np.exp(np.mean(np.log(magnitude + 1e-10))) / (np.mean(magnitude) + 1e-10)
-            # Lower flatness suggests more tonal (potentially replayed) content
-            return min(1.0, max(0.0, 1.0 - spectral_flatness * 10))
-        except:
+            # Compute Power Spectral Density (PSD)
+            freqs, psd = sig.welch(signal, sr, nperseg=1024)
+            
+            # Replay devices often have a sharp cut-off above 15-18kHz
+            # or significant resonance peaks at specific device frequencies
+            high_freq_mask = freqs > 15000
+            if np.any(high_freq_mask):
+                high_freq_energy = np.mean(psd[high_freq_mask])
+                low_freq_energy = np.mean(psd[freqs < 5000])
+                ratio = high_freq_energy / (low_freq_energy + 1e-10)
+                # If ratio is extremely low, it might be a low-quality speaker replay
+                return 1.0 if ratio < 1e-6 else 0.0
+            return 0.0
+        except Exception:
             return 0.5
     
     def _analyze_noise_consistency(self, signal: np.ndarray, sr: int) -> float:
-        """Analyze noise patterns for consistency."""
-        # Real recordings have variable noise; replayed may have consistent noise
-        frames = np.array_split(signal, 10)
-        frame_energies = [np.var(f) for f in frames if len(f) > 0]
-        if len(frame_energies) < 2:
+        """Analyze noise floor for synthetic consistency."""
+        # Genuine speech has environmental noise with variance
+        # Divide into small segments
+        segments = np.array_split(signal, 8)
+        segment_vars = [np.var(seg) for seg in segments if len(seg) > 0]
+        if len(segment_vars) < 2:
             return 0.5
-        energy_variation = np.std(frame_energies) / (np.mean(frame_energies) + 1e-10)
-        # Low variation suggests replay
-        return min(1.0, energy_variation * 5)
+        
+        # Variation coefficient
+        var_coef = np.std(segment_vars) / (np.mean(segment_vars) + 1e-10)
+        # Higher variation suggests live recording; very low suggests static noise (replay)
+        return min(1.0, var_coef * 2)
     
     def _detect_tremor(self, signal: np.ndarray, sr: int) -> float:
-        """Detect tremor in audio (natural in speech, absent in replay)."""
+        """Detect micro-tremors in fundamental frequency (Pitch Jitter)."""
         try:
-            # Envelope analysis
-            analytic_signal = np.abs(sig.hilbert(signal))
-            env_fft = np.abs(np.fft.rfft(analytic_signal))
-            freqs = np.fft.rfftfreq(len(analytic_signal), 1/sr)
-            
-            # Look for tremor frequency band (4-8 Hz)
-            tremor_band = (freqs >= 4) & (freqs <= 8)
-            if np.any(tremor_band):
-                tremor_energy = np.sum(env_fft[1:][tremor_band[1:]])
-                total_energy = np.sum(env_fft[1:])
-                tremor_ratio = tremor_energy / (total_energy + 1e-10)
-            else:
-                tremor_ratio = 0.0
-        except:
-            tremor_ratio = 0.0
-        return tremor_ratio
+            # Simple zero-crossing rate variation as proxy for jitter
+            zcr = librosa.feature.zero_crossing_rate(signal)[0]
+            zcr_var = np.std(zcr) / (np.mean(zcr) + 1e-10)
+            # Live speech has natural jitter
+            return min(1.0, zcr_var * 3)
+        except Exception:
+            return 0.3
 
 
 class VoiceEmbedder:

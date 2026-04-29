@@ -315,6 +315,41 @@ const EnhancedAPI = {
         )
       };
     }
+  },
+
+  // Enterprise API Endpoints
+  mfa: {
+    enroll: () => API.post('/api/mfa/enroll'),
+    verify: (code) => API.post('/api/mfa/verify', { code }),
+    verifyLogin: (code) => API.post('/api/mfa/verify-totp', { code }),
+    status: () => API.get('/api/mfa/status'),
+    disable: (password) => API.post('/api/mfa/disable', { password })
+  },
+
+  alerts: {
+    getActive: () => API.get('/api/orgs/alerts/active'),
+    acknowledge: (id) => API.put(`/api/orgs/alerts/${id}/acknowledge`),
+    getHistory: (params) => API.get('/api/orgs/alerts/history', { params })
+  },
+
+  incidents: {
+    list: (params) => API.get('/api/orgs/incidents', { params }),
+    getDetails: (id) => API.get(`/api/orgs/incidents/${id}`),
+    updateStatus: (id, status) => API.put(`/api/orgs/incidents/${id}/status`, { status }),
+    create: (data) => API.post('/api/orgs/incidents', data)
+  },
+
+  audit: {
+    getLogs: (params) => API.get('/api/admin/logs', { params }),
+    getForensicTrace: (eventId) => API.get(`/api/audit/forensic/${eventId}`),
+    verifyChain: () => API.get('/api/audit/verify')
+  },
+
+  compliance: {
+    getDPIA: () => API.get('/api/compliance/dpia'),
+    getGapAssessment: () => API.get('/api/compliance/soc2-gap'),
+    triggerSAR: (personId) => API.post('/api/compliance/sar', { person_id: personId }),
+    getSARStatus: (requestId) => API.get(`/api/compliance/sar/${requestId}`)
   }
 };
 

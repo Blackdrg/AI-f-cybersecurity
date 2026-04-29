@@ -49,8 +49,56 @@ export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }) => {
   useEffect(() => {
     fetchAuditLogs();
     fetchChainVerification();
-    const interval = setInterval(fetchAuditLogs, 30000);
-    return () => clearInterval(interval);
+
+    // WebSocket implementation for real-time updates
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/audit`;
+    
+    let socket;
+    let reconnectTimeout;
+
+    const connect = () => {
+      socket = new WebSocket(wsUrl);
+
+      socket.onopen = () => {
+        console.log('[WebSocket] Connected to Audit Stream');
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'audit_log') {
+            setAuditLogs(prev => [data.log, ...prev].slice(0, 500));
+            // Trigger quick integrity check for the new log
+            setVerificationStatus(prev => ({
+              ...prev,
+              totalLogs: prev.totalLogs + 1
+            }));
+          } else if (data.type === 'integrity_alert') {
+            setVerificationStatus(prev => ({ ...prev, hashChainValid: false }));
+          }
+        } catch (err) {
+          console.error('[WebSocket] Failed to parse message', err);
+        }
+      };
+
+      socket.onclose = () => {
+        console.log('[WebSocket] Disconnected. Reconnecting...');
+        reconnectTimeout = setTimeout(connect, 3000);
+      };
+
+      socket.onerror = (err) => {
+        console.error('[WebSocket] Error:', err);
+        socket.close();
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (socket) socket.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
   }, [timeframe, filterSeverity, filterAction]);
 
   const fetchAuditLogs = async () => {

@@ -2,41 +2,73 @@ replicaCount: 3
 
 image:
   repository: blackdrg/levi-ai-core
-  pullPolicy: IfNotPresent
-  tag: "22.1.0"
+  pullPolicy: Always
+  tag: "2.0.0-prod"
 
 resources:
   limits:
     nvidia.com/gpu: 1
+    cpu: "8"
+    memory: "32Gi"
+  requests:
     cpu: "4"
     memory: "16Gi"
-  requests:
-    cpu: "2"
-    memory: "8Gi"
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
 
 autoscaling:
   enabled: true
   minReplicas: 3
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 80
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-min-ver: "TLSv1.3"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  tls:
+    - secretName: leviai-tls-prod
+      hosts:
+        - api.levi-ai.enterprise
+
+monitoring:
+  enabled: true
+  prometheus:
+    scrape: true
+    port: 8000
 
 redis:
   enabled: true
   architecture: replication
+  auth:
+    enabled: true
+    existingSecret: "redis-pass-prod"
 
 postgresql:
   enabled: true
+  persistence:
+    size: 100Gi
+  metrics:
+    enabled: true
 
 healthProbes:
   livenessProbe:
     httpGet:
       path: /health
       port: 8000
-    initialDelaySeconds: 30
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 20
   readinessProbe:
     httpGet:
       path: /ready
       port: 8000
-    initialDelaySeconds: 15
-    periodSeconds: 5
+    initialDelaySeconds: 30
+    periodSeconds: 10

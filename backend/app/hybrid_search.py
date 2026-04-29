@@ -4,6 +4,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import threading
 import time
+import os
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 try:
@@ -127,18 +132,63 @@ class HybridSearchEngine:
         total = sum(len(s["mapping"]) for s in self.hnsw_indexes)
         return IndexMetrics(total_vectors=total, index_type="hnsw" if FAISS_AVAILABLE else "pgvector_only")
 
+    def save_index(self, directory: str) -> bool:
+        """Saves all FAISS index shards and mappings to disk."""
+        if not FAISS_AVAILABLE:
+            return False
+        try:
+            os.makedirs(directory, exist_ok=True)
+            for i, shard in enumerate(self.hnsw_indexes):
+                index_path = os.path.join(directory, f"shard_{i}.index")
+                mapping_path = os.path.join(directory, f"shard_{i}.mapping.json")
+                faiss.write_index(shard["index"], index_path)
+                with open(mapping_path, 'w') as f:
+                    mapping_str_keys = {str(k): v for k, v in shard["mapping"].items()}
+                    json.dump(mapping_str_keys, f)
+            logger.info(f"Successfully saved {len(self.hnsw_indexes)} shards to {directory}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save FAISS index: {e}")
+            return False
+
+    def load_index(self, directory: str) -> bool:
+        """Loads FAISS index shards and mappings from disk."""
+        if not FAISS_AVAILABLE:
+            return False
+        try:
+            for i in range(self.num_shards):
+                index_path = os.path.join(directory, f"shard_{i}.index")
+                mapping_path = os.path.join(directory, f"shard_{i}.mapping.json")
+                if os.path.exists(index_path) and os.path.exists(mapping_path):
+                    self.hnsw_indexes[i]["index"] = faiss.read_index(index_path)
+                    with open(mapping_path, 'r') as f:
+                        mapping_str_keys = json.load(f)
+                        self.hnsw_indexes[i]["mapping"] = {int(k): v for k, v in mapping_str_keys.items()}
+            logger.info(f"Successfully loaded FAISS index from {directory}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to load FAISS index: {e}")
+            return False
+
 
 class VectorStoreManager:
     def __init__(self, db_pool=None):
         self.db_pool = db_pool
         self.hybrid_engine = HybridSearchEngine(db_pool)
         self.initialized = False
+        self.persistence_dir = os.getenv("VECTOR_INDEX_DIR", "indexes/vector")
 
     async def initialize(self, load_existing: bool = True):
+        if load_existing and os.path.exists(self.persistence_dir):
+            self.hybrid_engine.load_index(self.persistence_dir)
         self.initialized = True
 
     async def search(self, query_embedding: np.ndarray, k: int = 10, threshold: float = 0.4) -> List[HybridResult]:
         return self.hybrid_engine.search(query_embedding, k, threshold)
+
+    async def save(self):
+        """Saves current index state."""
+        return self.hybrid_engine.save_index(self.persistence_dir)
 
     def get_metrics(self) -> Dict:
         index_metrics = self.hybrid_engine.get_metrics()
