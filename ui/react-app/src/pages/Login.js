@@ -89,15 +89,17 @@ const LoginPage = ({ onLogin }) => {
           >
             {isLoggingIn ? 'Signing In...' : 'Sign In'}
           </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={handleDemoLogin}
-            sx={{ mb: 2 }}
-            disabled={isLoggingIn}
-          >
-            Demo Login
-          </Button>
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={handleDemoLogin}
+              sx={{ mb: 2 }}
+              disabled={isLoggingIn}
+            >
+              Demo Login
+            </Button>
+          )}
         </Box>
       </Box>
     </Container>

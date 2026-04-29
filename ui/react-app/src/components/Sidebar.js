@@ -41,10 +41,10 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
       label: 'Core System',
       icon: <Home />,
       items: [
-        { id: 'dashboard', text: 'Dashboard', icon: <Home />, roles: ['admin', 'security', 'hr', 'viewer'] },
-        { id: 'enroll', text: 'Identity Enrollment', icon: <PersonAdd />, roles: ['admin', 'hr'] },
-        { id: 'recognize', text: 'Real-time Recognize', icon: <CameraAlt />, roles: ['admin', 'security'] },
-        { id: 'cameras', text: 'Camera Management', icon: <Videocam />, roles: ['admin', 'security'] },
+        { id: 'dashboard', text: 'Dashboard', icon: <Home />, roles: ['super_admin', 'admin', 'operator', 'auditor', 'analyst', 'viewer'] },
+        { id: 'enroll', text: 'Identity Enrollment', icon: <PersonAdd />, roles: ['super_admin', 'admin', 'analyst'] },
+        { id: 'recognize', text: 'Real-time Recognize', icon: <CameraAlt />, roles: ['super_admin', 'admin', 'operator', 'security'] },
+        { id: 'cameras', text: 'Camera Management', icon: <Videocam />, roles: ['super_admin', 'admin', 'operator'] },
       ]
     },
     {
@@ -53,9 +53,9 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
       icon: <Monitor />,
       badge: 3,
       items: [
-        { id: 'sessions', text: 'Live Sessions', icon: <Monitor />, roles: ['admin', 'security'] },
-        { id: 'analytics', text: 'Behavior Analytics', icon: <Radar />, roles: ['admin', 'security', 'hr'] },
-        { id: 'tracking', text: 'Multi-Camera Track', icon: <NetworkCheck />, roles: ['admin', 'security'] },
+        { id: 'sessions', text: 'Live Sessions', icon: <Monitor />, roles: ['super_admin', 'admin', 'operator', 'security'] },
+        { id: 'analytics', text: 'Behavior Analytics', icon: <Radar />, roles: ['super_admin', 'admin', 'operator', 'auditor', 'analyst'] },
+        { id: 'tracking', text: 'Multi-Camera Track', icon: <NetworkCheck />, roles: ['super_admin', 'admin', 'operator', 'security'] },
         { id: 'drift', text: 'Behavior Drift', icon: <TrendingUp />, badge: 2, roles: ['admin'] },
       ]
     },
@@ -91,7 +91,7 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
       items: [
         { id: 'policies', text: 'Policy Engine', icon: <Policy />, roles: ['admin'] },
         { id: 'jurisdictions', text: 'Cross-Border Rules', icon: <Public />, roles: ['admin'] },
-        { id: 'consent', text: 'Consent Mgmt', icon: <VerifiedUser />, roles: ['admin', 'hr'] },
+        { id: 'consent', text: 'Consent Mgmt', icon: <VerifiedUser />, roles: ['super_admin', 'admin', 'analyst'] },
         { id: 'ethical-alerts', text: 'Ethical Alerts', icon: <AlertCircle />, badge: 1, roles: ['admin'] },
         { id: 'audit', text: 'Audit Trails', icon: <Key />, roles: ['admin'] },
       ]

@@ -20,6 +20,7 @@ from .api import enroll, recognize, video_recognize, stream_recognize, admin, fe
 from .api import users, plans, subscriptions, payments, usage, ai_assistant, support, public_enrich
 from .api import orgs, cameras, events, alerts, compliance, mfa, oauth
 from .api import plugins
+from .api import revocation
 from .grpc.server import serve_grpc
 from .security import setup_security
 from .metrics import setup_metrics
@@ -151,6 +152,7 @@ async def startup_event():
 
         # 6. Model Warmup
         logger.info("Warming up ML models...")
+        import numpy as np
         dummy_img = np.zeros((224, 224, 3), dtype=np.uint8)
         FaceDetector()
         FaceEmbedder()
@@ -164,9 +166,10 @@ async def startup_event():
 
         # 8. Initialize Federated Learning
         logger.info("Initializing Federated Learning server...")
+        from .federated_learning import client_orchestrator
         logger.info(f"Federated Learning ready: {len(client_orchestrator.registered_clients)} clients registered")
 
-        # 9. Discover and Load Plugins
+        # 9. Discovery and Load Plugins
         logger.info("Discovering plugins...")
         plugin_loader.discover_plugins()
         
@@ -206,6 +209,9 @@ app.include_router(video_recognize.router, prefix="/api/v1", tags=["video_recogn
 app.include_router(stream_recognize.router, prefix="/ws/v1", tags=["stream_recognize"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(federated_learning.router, prefix="/api/v1", tags=["federated_learning"])
+
+# Revocation API
+app.include_router(revocation.router, prefix="/api", tags=["auth"])
 
 # Frontend-compatible routes
 app.include_router(enroll.router, prefix="/api", tags=["enroll"])
@@ -319,7 +325,8 @@ async def get_version():
                 "differential_privacy": True,
                 "hybrid_search": True,
                 "usage_limiting": True,
-                "audit_chain": True
+                "audit_chain": True,
+                "jwt_revocation": True
             }
         },
         "error": None
@@ -332,4 +339,3 @@ if __name__ == "__main__":
         server = uvicorn.Server(config)
         await server.serve()
     asyncio.run(run_servers())
-
