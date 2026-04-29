@@ -5,14 +5,13 @@ import {
   Divider, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
   Chip, Table, TableBody, TableCell, TableHead, TableRow, Card, CardContent,
   Tabs, Tab, Alert, LinearProgress, IconButton, Tooltip, Switch,
-  FormControlLabel, Select, MenuItem, InputAdornment, CircularProgress
+  FormControlLabel, Select, MenuItem, CircularProgress
 } from '@mui/material';
 import { 
   VpnKey, Business, People, Receipt, Shield, Gavel, 
-  Security, TrendingUp, BugReport, Public, Key, 
-  Settings, Analytics, Timeline, Radar, Database,
-  Eye, Brain, AlertCircle, CheckCircle, Error as ErrorIcon,
-  PlayArrow, Pause, History, BarChart, Article, CompareArrows
+  Security, TrendingUp, BugReport, Key, 
+  Settings, Analytics, Timeline, Brain, History, Article,
+  Download
 } from '@mui/icons-material';
 import API from '../services/api';
 
@@ -29,14 +28,10 @@ const DashboardIntelligencePanel = React.lazy(() =>
 const EnrichmentPortalPanel = React.lazy(() => 
   import('../components/EnrichmentPortalPanel').catch(() => ({ default: () => <Box>Component unavailable</Box> }))
 );
-const RecognitionErrorRecovery = React.lazy(() => 
-  import('../components/RecognitionErrorRecovery').catch(() => ({ default: () => <Box>Component unavailable</Box> }))
-);
 
 const AdminPanel = () => {
   const [orgs, setOrgs] = useState([]);
   const [activeOrg, setActiveOrg] = useState(null);
-  const [apiKeys, setApiKeys] = useState([]);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [activeTab, setActiveTab] = useState(0);
@@ -47,7 +42,6 @@ const AdminPanel = () => {
   const [riskMetrics, setRiskMetrics] = useState({});
   const [darkMode, setDarkMode] = useState(true);
   const [intelligenceTimeframe, setIntelligenceTimeframe] = useState('24h');
-  const [selectedRecognition, setSelectedRecognition] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -228,7 +222,6 @@ const AdminPanel = () => {
                   key={i}
                   severity={t.severity === 'critical' ? 'error' : t.severity === 'high' ? 'warning' : 'info'}
                   sx={{ mb: 1, fontSize: '0.8rem' }}
-                  icon={t.severity === 'critical' ? <ErrorIcon /> : <AlertCircle />}
                 >
                   {t.type} - {new Date(t.timestamp).toLocaleDateString()}
                 </Alert>
@@ -324,7 +317,7 @@ const AdminPanel = () => {
                   <TableBody>
                     <TableRow>
                       <TableCell>Admin User</TableCell>
-                      <TableCell><Chip label="Admin" size="small" color="primary" /></TableCell>
+                      <TableCell><Chip label="Super Admin" size="small" color="primary" /></TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -419,123 +412,12 @@ const AdminPanel = () => {
 
       {/* Tab Content */}
       {activeTab === 0 && renderOriginalAdmin()}
-        {activeTab === 1 && (
-          <Box>
-            {renderSystemHealth()}
-            {renderPolicyManager()}
-          </Box>
-        )}
-        {activeTab === 2 && (
-          <Box>
-            {renderComplianceDashboard()}
-            {renderRiskAnalytics()}
-          </Box>
-        )}
-        {activeTab === 3 && (
-          <Box>
-            <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
-              <ExplainableAIPanel
-                explanation={{
-                  summary: 'Recognition based on multiple biometric modalities with 4 contributing factors',
-                  factors: [
-                    { name: 'Face Recognition', contribution: 52, confidence: 94 },
-                    { name: 'Spoof Detection', contribution: -8, confidence: 87 },
-                    { name: 'Emotion Analysis', contribution: 10, confidence: 87 },
-                    { name: 'Demographic Analysis', contribution: 8, confidence: 82 }
-                  ],
-                  metrics: {
-                    overallAccuracy: 94.2,
-                    biasScore: 0.96,
-                    confidenceVariance: 0.03
-                  }
-                }}
-              />
-            </React.Suspense>
-          </Box>
-        )}
-        {activeTab === 4 && (
-          <Box>
-            <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
-              <OperatorWorkflowPanel 
-                recognitionResult={selectedRecognition}
-                onRetry={(adjustments) => {
-                  console.log('Retry requested with:', adjustments);
-                }}
-                onOverride={(data) => {
-                  console.log('Override requested:', data);
-                }}
-                onEscalate={(data) => {
-                  console.log('Escalation requested:', data);
-                }}
-              />
-            </React.Suspense>
-          </Box>
-        )}
-        {activeTab === 5 && (
-          <Box>
-            <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
-              <DashboardIntelligencePanel
-                timeframe={intelligenceTimeframe}
-                onTimeframeChange={setIntelligenceTimeframe}
-                onAlertAction={(alert, action) => console.log('Alert action:', alert, action)}
-                onDrillDown={(metric, data) => console.log('Drill down:', metric, data)}
-              />
-            </React.Suspense>
-          </Box>
-        )}
-        {activeTab === 6 && (
-          <Box>
-            <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
-              <EnrichmentPortalPanel
-                personId={activeOrg?.org_id || null}
-                onEnrichmentComplete={(results) => console.log('Enrichment complete:', results)}
-                onAlertAction={(alert, action) => console.log('Alert action:', alert, action)}
-              />
-            </React.Suspense>
-          </Box>
-        )}
-        {activeTab === 7 && (
-          <Box>
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  <BugReport /> Deepfake Detection Settings
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 2, bgcolor: 'error.light' }}>
-                      <Typography variant="h6" sx={{ color: 'white' }}>
-                        {threats.length} Active Threats
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'white', opacity: 0.8 }}>
-                        Blocked in last 24h
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Detection Sensitivity</Typography>
-                      <Select fullWidth size="small" defaultValue="high">
-                        <MenuItem value="low">Low (Fewer false positives)</MenuItem>
-                        <MenuItem value="medium">Medium (Balanced)</MenuItem>
-                        <MenuItem value="high">High (Catch all threats)</MenuItem>
-                      </Select>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Auto-Block</Typography>
-                      <FormControlLabel
-                        control={<Switch defaultChecked />}
-                        label="Block high-risk attempts"
-                      />
-                    </Paper>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Box>
-        )}
+      {activeTab === 1 && (
+        <Box>
+          {renderSystemHealth()}
+          {renderPolicyManager()}
+        </Box>
+      )}
       {activeTab === 2 && (
         <Box>
           {renderComplianceDashboard()}
@@ -544,76 +426,89 @@ const AdminPanel = () => {
       )}
       {activeTab === 3 && (
         <Box>
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <Brain /> Explainable AI Configuration
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>Decision Breakdown</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Show feature contributions for each decision
-                    </Typography>
-                    <FormControlLabel
-                      control={<Switch defaultChecked />}
-                      label="Enable explanation panel"
-                    />
-                  </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>Bias Detection</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Monitor fairness across demographic groups
-                    </Typography>
-                    <FormControlLabel
-                      control={<Switch defaultChecked />}
-                      label="Enable bias monitoring"
-                    />
-                  </Paper>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+          <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
+            <ExplainableAIPanel
+              explanation={{
+                summary: 'Recognition based on multiple biometric modalities with 4 contributing factors',
+                factors: [
+                  { name: 'Face Recognition', contribution: 52, confidence: 94 },
+                  { name: 'Spoof Detection', contribution: -8, confidence: 87 },
+                  { name: 'Emotion Analysis', contribution: 10, confidence: 87 },
+                  { name: 'Demographic Analysis', contribution: 8, confidence: 82 }
+                ],
+                metrics: {
+                  overallAccuracy: 94.2,
+                  biasScore: 0.96,
+                  confidenceVariance: 0.03
+                }
+              }}
+            />
+          </React.Suspense>
         </Box>
       )}
       {activeTab === 4 && (
         <Box>
+          <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
+            <OperatorWorkflowPanel 
+              recognitionResult={null}
+              onRetry={(adjustments) => console.log('Retry requested:', adjustments)}
+              onOverride={(data) => console.log('Override requested:', data)}
+              onEscalate={(data) => console.log('Escalation requested:', data)}
+            />
+          </React.Suspense>
+        </Box>
+      )}
+      {activeTab === 5 && (
+        <Box>
+          <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
+            <DashboardIntelligencePanel
+              timeframe={intelligenceTimeframe}
+              onTimeframeChange={setIntelligenceTimeframe}
+              onAlertAction={(alert, action) => console.log('Alert action:', alert, action)}
+              onDrillDown={(metric, data) => console.log('Drill down:', metric, data)}
+            />
+          </React.Suspense>
+        </Box>
+      )}
+      {activeTab === 6 && (
+        <Box>
+          <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
+            <EnrichmentPortalPanel
+              personId={activeOrg?.org_id || null}
+              onEnrichmentComplete={(results) => console.log('Enrichment complete:', results)}
+              onAlertAction={(alert, action) => console.log('Alert action:', alert, action)}
+            />
+          </React.Suspense>
+        </Box>
+      )}
+      {activeTab === 7 && (
+        <Box>
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                <BugReport /> Deepfake Detection Settings
+                <BugReport /> Deepfake & Anti-Spoof
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={4}>
                   <Paper sx={{ p: 2, bgcolor: 'error.light' }}>
-                    <Typography variant="h6" sx={{ color: 'white' }}>
-                      {threats.length} Active Threats
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: 'white', opacity: 0.8 }}>
-                      Blocked in last 24h
-                    </Typography>
+                    <Typography variant="h6" sx={{ color: 'white' }}>{threats.length} Active Threats</Typography>
+                    <Typography variant="body2" sx={{ color: 'white', opacity: 0.8 }}>Blocked in last 24h</Typography>
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={4}>
                   <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>Detection Sensitivity</Typography>
                     <Select fullWidth size="small" defaultValue="high">
-                      <MenuItem value="low">Low (Fewer false positives)</MenuItem>
-                      <MenuItem value="medium">Medium (Balanced)</MenuItem>
-                      <MenuItem value="high">High (Catch all threats)</MenuItem>
+                      <MenuItem value="low">Low</MenuItem>
+                      <MenuItem value="medium">Medium</MenuItem>
+                      <MenuItem value="high">High</MenuItem>
                     </Select>
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={4}>
                   <Paper sx={{ p: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>Auto-Block</Typography>
-                    <FormControlLabel
-                      control={<Switch defaultChecked />}
-                      label="Block high-risk attempts"
-                    />
+                    <Typography variant="subtitle2" gutterBottom>3D Mask Detection</Typography>
+                    <FormControlLabel control={<Switch defaultChecked />} label="Enable geometric analysis" />
                   </Paper>
                 </Grid>
               </Grid>
@@ -621,16 +516,11 @@ const AdminPanel = () => {
           </Card>
         </Box>
       )}
-      {activeTab === 5 && (
+      {activeTab === 8 && (
         <Box>
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <Key /> Revocable Tokens & Identity
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Manage revocable biometric tokens and decentralized identifiers
-              </Typography>
+              <Typography variant="h6" gutterBottom><Key /> Identity Tokens</Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
                   <Paper sx={{ p: 2, textAlign: 'center' }}>
@@ -639,15 +529,15 @@ const AdminPanel = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light' }}>
-                    <Typography variant="h4" color="white">2,156</Typography>
-                    <Typography variant="body2" color="white">DIDs Created</Typography>
+                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'white' }}>
+                    <Typography variant="h4">2,156</Typography>
+                    <Typography variant="body2">DIDs Created</Typography>
                   </Paper>
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light' }}>
-                    <Typography variant="h4" color="white">48</Typography>
-                    <Typography variant="body2" color="white">Revoked Today</Typography>
+                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light', color: 'white' }}>
+                    <Typography variant="h4">48</Typography>
+                    <Typography variant="body2">Revoked Today</Typography>
                   </Paper>
                 </Grid>
               </Grid>
@@ -655,9 +545,41 @@ const AdminPanel = () => {
           </Card>
         </Box>
       )}
-      {activeTab === 6 && (
+      {activeTab === 9 && (
         <Box>
-          {renderOriginalAdmin()}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom><Settings /> Console Settings</Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>System Mode</Typography>
+                    <FormControlLabel
+                      control={<Switch checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)} />}
+                      label="Dark Mode (Enterprise Default)"
+                    />
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle2" gutterBottom>FIPS Compliance Mode</Typography>
+                    <FormControlLabel
+                      control={<Switch disabled defaultChecked />}
+                      label="Enforce FIPS 140-2 validated cryptography"
+                    />
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>Forensic Verification</Typography>
+                    <Button variant="contained" startIcon={<History />} fullWidth sx={{ mb: 2 }}>
+                      Verify Chain Integrity
+                    </Button>
+                    <Button variant="outlined" startIcon={<Download />} fullWidth>
+                      Export Compliance Audit
+                    </Button>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
         </Box>
       )}
     </Box>

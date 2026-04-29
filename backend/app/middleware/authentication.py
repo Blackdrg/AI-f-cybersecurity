@@ -11,7 +11,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-PUBLIC_PATHS = {"/health", "/api/health", "/api/version", "/docs", "/openapi.json", "/redoc", "/api/enroll", "/api/recognize"}
+PUBLIC_PATHS = {"/health", "/api/health", "/api/version", "/docs", "/openapi.json", "/redoc"}
 
 class DistributedJWTRevocationStore:
     def __init__(self, redis_url=None):

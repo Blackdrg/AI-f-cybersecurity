@@ -27,7 +27,12 @@ const LoginPage = ({ onLogin }) => {
     setIsLoggingIn(true);
     setError(null);
     try {
-      const res = await login('demo@example.com', 'password');
+      const email = process.env.REACT_APP_DEMO_EMAIL;
+      const password = process.env.REACT_APP_DEMO_PASSWORD;
+      if (!email || !password) {
+        throw new Error("Demo credentials not configured");
+      }
+      const res = await login(email, password);
       onLogin(res.user);
     } catch (err) {
       setError(err.message || "Demo login failed");
@@ -89,7 +94,7 @@ const LoginPage = ({ onLogin }) => {
           >
             {isLoggingIn ? 'Signing In...' : 'Sign In'}
           </Button>
-          {process.env.NODE_ENV === 'development' && (
+          {process.env.REACT_APP_ENABLE_DEMO === 'true' && (
             <Button
               fullWidth
               variant="outlined"

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Box } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 
 export const ProtectedRoute = ({ children, requiredPermissions = [] }) => {
@@ -10,11 +10,11 @@ export const ProtectedRoute = ({ children, requiredPermissions = [] }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Box sx={{ p: 3, textAlign: 'center' }}>Please login to continue.</Box>;
   }
 
   if (!canAccessRoute(requiredPermissions)) {
-    return <Navigate to="/unauthorized" replace />;
+    return <Box sx={{ p: 3, textAlign: 'center', color: 'error.main' }}>Unauthorized Access</Box>;
   }
 
   return children;
@@ -37,6 +37,8 @@ export const RoleBadge = ({ role }) => {
     operator: { bg: '#059669', color: 'white', label: 'Operator' },
     auditor: { bg: '#dc2626', color: 'white', label: 'Auditor' },
     analyst: { bg: '#ea580c', color: 'white', label: 'Analyst' },
+    security: { bg: '#1e293b', color: 'white', label: 'Security' },
+    hr: { bg: '#ec4899', color: 'white', label: 'HR' },
     viewer: { bg: '#64748b', color: 'white', label: 'Viewer' }
   };
 

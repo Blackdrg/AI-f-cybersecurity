@@ -88,9 +88,6 @@ _production_systems_ready = False
 # Global usage limiter instance
 _usage_limiter = None
 
-# Global usage limiter instance
-_usage_limiter = None
-
 # Startup event to initialize all production systems
 @app.on_event("startup")
 async def startup_event():
@@ -117,16 +114,16 @@ async def startup_event():
     try:
         # 0. Redis PubSub & WebSocket Manager
         logger.info("Initializing Redis PubSub...")
-        from app.pubsub import pubsub_manager
+        from .pubsub import pubsub_manager
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         await pubsub_manager.initialize(redis_url)
         
-        from app.websocket_manager import connection_manager
+        from .websocket_manager import connection_manager
         await connection_manager.initialize()
         logger.info("PubSub + WebSocket manager ready")
         
         # 0b. Initialize Rate Limiter (after Redis)
-        from app.middleware.rate_limit import rate_limiter_middleware
+        from .middleware.rate_limit import rate_limiter_middleware
         await rate_limiter_middleware.initialize()
         logger.info("Rate limiter initialized")
         
@@ -138,6 +135,7 @@ async def startup_event():
         logger.info("Initializing EthicalGovernor...")
 
         # 3. Usage Limiter (Redis-backed)
+        from .middleware.usage_limiter import init_usage_limiter
         await init_usage_limiter(redis_url)
         logger.info("UsageLimiter initialized")
 
@@ -147,11 +145,17 @@ async def startup_event():
         logger.info("Hybrid vector store initialized")
 
         # 5. FAISS Shard Manager
+        from .scalability import init_shard_manager
         init_shard_manager(num_shards=4)
         logger.info("Vector shard manager initialized")
 
         # 6. Model Warmup
         logger.info("Warming up ML models...")
+        from .models.face_detector import FaceDetector
+        from .models.face_embedder import FaceEmbedder
+        from .models.spoof_detector import SpoofDetector
+        from .models.emotion_detector import EmotionDetector
+        from .models.age_gender_estimator import AgeGenderEstimator
         import numpy as np
         dummy_img = np.zeros((224, 224, 3), dtype=np.uint8)
         FaceDetector()
@@ -162,6 +166,7 @@ async def startup_event():
 
         # 7. Initialize Emotion + Behavior Engine
         logger.info("Initializing Emotion + Behavior Engine...")
+        from .models.emotion_behavior import get_emotion_behavior_engine
         _emotion_behavior_engine = get_emotion_behavior_engine()
 
         # 8. Initialize Federated Learning
@@ -193,6 +198,24 @@ async def startup_event():
         logger.warning(f"Production systems partial init: {e}")
         _production_systems_ready = False
 
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "connect-src 'self' ws: wss:;"
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
 # CORS for UI
 app.add_middleware(
     CORSMiddleware,
@@ -216,6 +239,7 @@ app.include_router(revocation.router, prefix="/api", tags=["auth"])
 # Frontend-compatible routes
 app.include_router(enroll.router, prefix="/api", tags=["enroll"])
 app.include_router(recognize.router, prefix="/api", tags=["recognize"])
+app.include_router(admin.router, prefix="/api", tags=["admin"])
 
 # SaaS routers
 app.include_router(users.router, prefix="/api", tags=["users"])
@@ -233,6 +257,8 @@ app.include_router(alerts.router, prefix="/api/orgs", tags=["alerts"])
 app.include_router(compliance.router, prefix="/api", tags=["compliance"])
 app.include_router(mfa.router, prefix="/api", tags=["mfa"])
 app.include_router(oauth.router, prefix="/api", tags=["oauth"])
+from .api import webhooks
+app.include_router(webhooks.router, prefix="/api", tags=["webhooks"])
 
 # Legal compliance router
 from .api.legal import router as legal_router
@@ -279,9 +305,9 @@ async def health_check():
 @app.get("/api/dependencies")
 async def dependency_health():
     """Detailed health status of all external dependencies."""
-    from ..providers import get_payment_provider, get_llm_provider
-    from ..providers.bing_provider import BingProvider
-    from ..providers.wikipedia_provider import WikipediaProvider
+    from .providers import get_payment_provider, get_llm_provider
+    from .providers.bing_provider import BingProvider
+    from .providers.wikipedia_provider import WikipediaProvider
 
     payment_provider = get_payment_provider()
     llm_provider = get_llm_provider()

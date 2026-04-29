@@ -101,7 +101,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def initialize(self):
         """Initialize Redis connection (called from startup)"""
         self.limiter = RedisRateLimiter(self.redis_url)
-        await self.limiter.init()
+        await self.limiter.ensure_connected()
         logger.info("Rate limiter initialized with Redis")
     
     async def dispatch(self, request: Request, call_next):
@@ -193,3 +193,6 @@ def set_request_user_context(request: Request, user: dict):
     request.state.user_id = user.get('user_id')
     request.state.org_tier = user.get('subscription_tier', 'free')
     request.state.org_id = user.get('org_id')
+
+# Singleton instance for initialization
+rate_limiter_middleware = RateLimitMiddleware(None)

@@ -421,6 +421,16 @@ class AuditLogEntry(BaseModel):
     created_at: str
 
 
+class HashChainedAuditLog(BaseModel):
+    id: Optional[int] = None
+    action: str
+    person_id: Optional[UUID] = None
+    details: Dict[str, Any]
+    previous_hash: Optional[str] = None
+    hash: str
+    zkp_proof: Optional[Dict[str, Any]] = None
+    timestamp: Any
+
 class AuditLogsResponse(BaseModel):
     logs: List[AuditLogEntry]
     total: int

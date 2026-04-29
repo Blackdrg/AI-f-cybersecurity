@@ -20,12 +20,25 @@ class SecretsManager:
             self.backend = "env"
 
     def get_secret(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        # Strict mode for production: Do not allow defaults for sensitive keys
+        is_production = os.getenv("ENV", "development") == "production"
+        sensitive_keys = ["JWT_SECRET", "DB_PASSWORD", "STRIPE_SECRET", "AWS_SECRET_ACCESS_KEY"]
+        
+        val = None
         if self.backend == "vault":
-            return self._get_vault_secret(key, default)
+            val = self._get_vault_secret(key, None)
         elif self.backend == "aws":
-            return self._get_aws_secret(key, default)
+            val = self._get_aws_secret(key, None)
         else:
-            return os.getenv(key, default)
+            val = os.getenv(key)
+
+        if val is None:
+            if is_production and key in sensitive_keys:
+                logger.error(f"CRITICAL ERROR: Sensitive secret '{key}' missing in production environment!")
+                raise RuntimeError(f"Missing critical secret: {key}")
+            return default
+            
+        return val
 
     def _get_vault_secret(self, key: str, default: Optional[str]) -> Optional[str]:
         # Implementation for HashiCorp Vault

@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Toolbar, Typography, Container, Grid, Paper, Card, CardContent,
-  IconButton, Select, MenuItem, Button, AppBar, Tabs, Tab, Badge,
+  Box, Toolbar, Typography, Container, Paper,
+  IconButton, Button, AppBar, Tabs, Tab, Badge,
   Chip, LinearProgress, Snackbar, Alert, SpeedDial, SpeedDialAction,
-  SpeedDialIcon, Fab
+  SpeedDialIcon, Tooltip
 } from '@mui/material';
 import {
-  People, CameraAlt, History, Assessment,
-  Security, Timeline, ShowChart, Warning,
-  Refresh, PlayArrow, Settings,
-  AccountCircle, Lock, Key, BarChart, Radar, TimelineRounded, Shield, BugReport,
-  Insights, NetworkCheck, AccountTree, Notifications, Error as ErrorIcon,
-  CheckCircle, Flag, Target, AlertCircle, Menu as MenuIcon,
-  ExpandLess, ExpandMore
+  Security, Timeline, Refresh, Settings, Warning,
+  AccountCircle, Notifications, Error as ErrorIcon,
+  CheckCircle, Flag, Menu as MenuIcon,
+  ExpandMore
 } from '@mui/icons-material';
 import Sidebar from '../components/Sidebar';
 import DashboardHome from './DashboardHome';
@@ -33,7 +30,7 @@ import { RBACGuard, RoleBadge } from '../components/RBACGuard';
 import { PERMISSIONS } from '../contexts/AuthContext';
 import './Dashboard.css';
 
-const Dashboard = ({ onLogout, user: initialUser }) => {
+const Dashboard = () => {
   const [activePage, setActivePage] = useState('dashboard');
   const [loading, setLoading] = useState(true);
   const [systemHealth, setSystemHealth] = useState({ status: 'healthy' });
@@ -44,15 +41,11 @@ const Dashboard = ({ onLogout, user: initialUser }) => {
   const [fabOpen, setFabOpen] = useState(false);
   
   const { 
-    user: authUser, 
+    user: currentUser, 
     organization, 
     hasPermission, 
-    canAccessRoute,
-    switchOrganization 
+    logout 
   } = useAuth();
-
-  // Merge initial user with auth context
-  const currentUser = authUser || initialUser;
 
   useEffect(() => {
     fetchSystemHealth();
@@ -239,7 +232,7 @@ const Dashboard = ({ onLogout, user: initialUser }) => {
       <Sidebar
         activePage={activePage}
         setActivePage={handlePageChange}
-        onLogout={onLogout}
+        onLogout={logout}
         user={currentUser}
       />
       <Box
@@ -342,7 +335,7 @@ const Dashboard = ({ onLogout, user: initialUser }) => {
                     minWidth: 'auto',
                     px: 1
                   }}
-                  onClick={onLogout}
+                  onClick={logout}
                 >
                   <Box sx={{ textAlign: 'left', mr: 1 }}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>

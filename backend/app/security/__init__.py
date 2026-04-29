@@ -2,6 +2,12 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+# FIPS 140-2 Roadmap: Set to True when HSM/KMS is integrated
+FIPS_MODE = os.getenv("FIPS_MODE", "false").lower() == "true"
 import grpc
 from typing import Optional
 
@@ -33,16 +39,23 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
 
 
 def require_admin(user: dict = Depends(verify_token)):
-    if user.get('role') not in ['admin', 'operator']:
+    if user.get('role') not in ['admin', 'super_admin']:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Admin/Operator access required")
+                            detail="Admin/SuperAdmin access required")
     return user
 
 
 def require_operator(user: dict = Depends(verify_token)):
-    if user.get('role') not in ['admin', 'operator']:
+    if user.get('role') not in ['admin', 'super_admin', 'operator']:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Operator access required")
+                            detail="Operator/Admin access required")
+    return user
+
+
+def require_auditor(user: dict = Depends(verify_token)):
+    if user.get('role') not in ['admin', 'super_admin', 'auditor']:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Auditor access required")
     return user
 
 
@@ -96,10 +109,15 @@ def check_ethical(request_data: dict, user: dict = Depends(verify_token)):
 # Enhanced RBAC: roles - admin, operator, user
 
 
-def create_token(user_id: str, role: str = 'user') -> str:
+def create_token(user_id: str, role: str = 'viewer') -> str:
     import datetime
-    if role not in ['admin', 'operator', 'user']:
-        raise ValueError("Invalid role")
+    valid_roles = ['super_admin', 'admin', 'operator', 'auditor', 'analyst', 'viewer']
+    if role not in valid_roles:
+        raise ValueError(f"Invalid role: {role}. Must be one of {valid_roles}")
+    if FIPS_MODE:
+        # Note: In production with HSM, this would use a FIPS-validated provider
+        logger.warning("FIPS_MODE enabled: Token generation currently using software-only fallback.")
+    
     payload = {
         'user_id': user_id,
         'role': role,

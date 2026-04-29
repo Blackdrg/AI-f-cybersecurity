@@ -167,20 +167,32 @@ async def download_model(request: OTADownload, user: dict = Depends(require_admi
 
 
 @router.get("/analytics", response_model=AnalyticsResponse)
-async def get_analytics(user: dict = Depends(require_admin)):
+async def get_analytics(timeframe: str = Query('24h'), user: dict = Depends(require_admin)):
     db = await get_db()
-    # Time-series data: daily recognitions/enrollments
-    time_series = await db.fetch("""
-        SELECT DATE(timestamp) as date, action, COUNT(*) as count
+    
+    # Map timeframe to interval
+    intervals = {
+        '1h': "1 hour",
+        '24h': "24 hours",
+        '7d': "7 days",
+        '30d': "30 days"
+    }
+    interval_str = intervals.get(timeframe, "24 hours")
+    
+    # Time-series data: daily/hourly recognitions/enrollments
+    query = f"""
+        SELECT DATE_TRUNC('{ 'hour' if timeframe == '1h' else 'day' }', timestamp) as ts, 
+               action, COUNT(*) as count
         FROM audit_log
-        WHERE timestamp >= NOW() - INTERVAL '30 days'
-        GROUP BY DATE(timestamp), action
-        ORDER BY date
-    """)
+        WHERE timestamp >= NOW() - INTERVAL '{interval_str}'
+        GROUP BY ts, action
+        ORDER BY ts
+    """
+    time_series = await db.fetch(query)
     ts_data = []
     for row in time_series:
         ts_data.append({
-            'date': str(row['date']),
+            'date': str(row['ts']),
             'recognitions': row['count'] if row['action'] == 'recognize' else 0,
             'enrollments': row['count'] if row['action'] == 'enroll' else 0
         })

@@ -16,8 +16,7 @@ async def create_user(user: UserCreate):
     user_id = str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat()
 
-    # Special case: Make daredevil0101a@gmail.com have unlimited enterprise access
-    subscription_tier = "enterprise" if user.email == "daredevil0101a@gmail.com" else user.subscription_tier
+    subscription_tier = user.subscription_tier
 
     await db.create_user(user_id, user.email, user.name, subscription_tier)
 
@@ -78,13 +77,10 @@ async def login(email: str, password: str = ""):
     user = await db.get_user_by_email(email)
     
     if not user:
-        # Auto-create user on first login (simplified auth)
-        user_id = str(uuid.uuid4())
-        await db.create_user(user_id, email, email.split('@')[0], "free")
-        user = {"user_id": user_id, "email": email, "name": email.split('@')[0], "subscription_tier": "free"}
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    # Create JWT token (password check skipped for demo)
-    token = create_token(user["user_id"], user.get("role", "user"))
+    # Create JWT token
+    token = create_token(user["user_id"], user.get("role", "viewer"))
     
     return {
         "access_token": token,
