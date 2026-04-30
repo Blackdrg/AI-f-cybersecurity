@@ -115,20 +115,20 @@ const AnalyticsDashboard = () => {
             <Grid item xs={12} md={4}>
               <Paper sx={{ p: 3, height: '100%' }}>
                 <Typography variant="h6" gutterBottom>Top Active Cameras</Typography>
-                <List>
-                  <ListItem>
-                    <ListItemIcon, Tabs, Tab><CameraAlt /></ListItemIcon, Tabs, Tab>
-                    <ListItemText primary="Main Entrance" secondary="284 detections today" />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon, Tabs, Tab><CameraAlt /></ListItemIcon, Tabs, Tab>
-                    <ListItemText primary="Server Room" secondary="42 detections today" />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon, Tabs, Tab><CameraAlt /></ListItemIcon, Tabs, Tab>
-                    <ListItemText primary="Back Office" secondary="18 detections today" />
-                  </ListItem>
-                </List>
+                 <List>
+                   <ListItem>
+                     <ListItemIcon><CameraAlt /></ListItemIcon>
+                     <ListItemText primary="Main Entrance" secondary="284 detections today" />
+                   </ListItem>
+                   <ListItem>
+                     <ListItemIcon><CameraAlt /></ListItemIcon>
+                     <ListItemText primary="Server Room" secondary="42 detections today" />
+                   </ListItem>
+                   <ListItem>
+                     <ListItemIcon><CameraAlt /></ListItemIcon>
+                     <ListItemText primary="Back Office" secondary="18 detections today" />
+                   </ListItem>
+                 </List>
               </Paper>
             </Grid>
 
