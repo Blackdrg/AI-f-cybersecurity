@@ -90,7 +90,6 @@ async def enforce_policy(
         subject_id=context.user.get("user_id") or context.user.get("sub"),
         subject_type=subject_type,
         resource=context.resource,
-        action="use",
         context=eval_context
     )
 

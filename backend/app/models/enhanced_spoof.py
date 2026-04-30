@@ -1474,7 +1474,7 @@ class EnhancedSpoofDetector:
         self.temporal_analyzer = TemporalAnalyzer()
         self.liveness_threshold = 0.5
         
-def detect(
+    def detect(
         self,
         frame: np.ndarray,
         face_bbox: Optional[List[int]] = None,
@@ -1512,47 +1512,6 @@ def detect(
             landmarks = np.array([])
         
         signals = {}
-        
-        # 1. Single-frame analysis
-        signals["image_quality"] = self._analyze_image_quality(frame, face_bbox)
-        
-        # 2. Texture analysis (print detection)
-            frame: Input image frame (BGR numpy array)
-            face_bbox: Optional [x1, y1, x2, y2] face bounding box. If None, uses full frame.
-            landmarks: Optional facial landmarks array. If None, uses empty array.
-            require_challenge: Whether to require challenge-response (not used by default)
-            depth_frame: Optional depth frame
-            ir_frame: Optional IR frame
-            
-        Returns:
-            SpoofResult object with spoof detection results
-            
-        Note: Supports backward compatibility - can be called with:
-            - detect(frame)  # 1 arg - uses full frame
-            - detect(frame, face_bbox)  # 2 args - uses provided bbox
-            - detect(frame, face_bbox, landmarks)  # 3 args - full signature
-        """
-        # Backward compatibility: handle 1-arg, 2-arg, or 3-arg calls
-        if face_bbox is None:
-            # Either face_bbox was None (3+ args) or this is a 1-arg call
-            # Check if face_bbox is actually frame (1-arg call passed as first positional)
-            if isinstance(frame, np.ndarray) and frame.shape[0] > 0:
-                h, w = frame.shape[:2]
-                face_bbox = [0, 0, w, h]
-        if landmarks is None:
-            landmarks = np.array([])
-        
-        signals = {}
-        
-        # 0. Integrate deepfake/XceptionNet analysis if available and no bbox (single frame mode)
-        deepfake_score = 0.0
-        # If we have a proper face crop, try deepfake detection
-        try:
-            from .enhanced_spoof import DeepfakeDetector as DFDetector
-            # Avoid circular import - check if we can use the existing detector
-            pass
-        except:
-            pass
         
         # 1. Single-frame analysis
         signals["image_quality"] = self._analyze_image_quality(frame, face_bbox)
@@ -1623,19 +1582,6 @@ def detect(
         result['scores']['temporal_variance'] = float(temporal_var)
         
         return result
-        
-        # Determine spoof type
-        spoof_type = self._classify_spoof_type(signals)
-        
-        is_spoof = spoof_score > self.liveness_threshold
-        
-        return SpoofResult(
-            is_spoof=is_spoof,
-            spoof_score=spoof_score,
-            spoof_type=spoof_type,
-            confidence=abs(spoof_score - 0.5) * 2,  # Higher confidence when further from threshold
-            liveness_score=1.0 - spoof_score
-        )
     
     def _analyze_image_quality(self, frame, bbox) -> Dict:
         """Analyze image quality artifacts (BRISQUE-inspired)."""

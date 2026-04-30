@@ -100,7 +100,7 @@ async def submit_client_update(
     user: dict = Depends(require_admin)
 ):
     """Submit federated learning update from a client."""
-    from ...federated_learning import ClientUpdate
+    from ..federated_learning import ClientUpdate
     
     # Convert gradient lists to numpy arrays for internal processing
     raw_gradients = update.get("gradients", {})

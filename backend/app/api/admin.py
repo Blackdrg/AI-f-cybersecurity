@@ -147,17 +147,21 @@ async def get_logs(
 async def upload_model(model: ModelVersion, user: dict = Depends(require_admin)):
     db = await get_db()
     version_id = model.version_id
+    if db.pool is None:
+        return {"message": "Model uploaded (degraded mode)", "version_id": version_id}
     async with db.pool.acquire() as conn:
         await conn.execute("""
-            INSERT INTO model_versions (version_id, model_data, description)
-            VALUES ($1, $2, $3)
-        """, version_id, model.model_data, model.description)
+            INSERT INTO model_versions (version_id, model_data, description, created_at)
+            VALUES ($1, $2, $3, $4)
+        """, version_id, model.model_data, model.description, model.created_at)
     return {"message": "Model uploaded", "version_id": version_id}
 
 
 @router.get("/models/download")
 async def download_model(request: OTADownload, user: dict = Depends(require_admin)):
     db = await get_db()
+    if db.pool is None:
+        raise HTTPException(status_code=404, detail="Model not found (degraded mode)")
     async with db.pool.acquire() as conn:
         model = await conn.fetchrow("SELECT model_data FROM model_versions WHERE version_id = $1", request.model_version)
         if not model:

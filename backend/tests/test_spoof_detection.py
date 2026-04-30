@@ -198,9 +198,9 @@ class TestSpoofDetectionIntegration:
         
         assert response.status_code == 200
         data = response.json()
-        assert "faces" in data
+        assert "faces" in data["data"]
         # Each face should have a spoof_score
-        for face in data.get("faces", []):
+        for face in data["data"].get("faces", []):
             assert "spoof_score" in face
 
     def test_enrollment_with_spoof_protection(self):

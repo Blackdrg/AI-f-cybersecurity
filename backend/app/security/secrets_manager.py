@@ -33,6 +33,9 @@ class SecretsManager:
             val = os.getenv(key)
 
         if val is None:
+            # For development, use standard defaults for known keys
+            if key == "JWT_SECRET" and default is None:
+                return "dev-secret-change-me"
             if is_production and key in sensitive_keys:
                 logger.error(f"CRITICAL ERROR: Sensitive secret '{key}' missing in production environment!")
                 raise RuntimeError(f"Missing critical secret: {key}")

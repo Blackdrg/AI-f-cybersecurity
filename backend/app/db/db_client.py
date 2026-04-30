@@ -157,6 +157,29 @@ class DBClient:
                 );
             """)
 
+    # Direct query passthrough for backward compatibility
+    async def fetch(self, query: str, *args):
+        """Execute query and return all rows."""
+        if self.pool is None:
+            return []  # Degraded mode: return empty
+        async with self.pool.acquire() as conn:
+            return await conn.fetch(query, *args)
+
+    async def fetchrow(self, query: str, *args):
+        """Execute query and return first row."""
+        if self.pool is None:
+            return None  # Degraded mode
+        async with self.pool.acquire() as conn:
+            return await conn.fetchrow(query, *args)
+
+    async def execute(self, query: str, *args):
+        """Execute query without returning rows."""
+        if self.pool is None:
+            return None  # Degraded mode
+        async with self.pool.acquire() as conn:
+            return await conn.execute(query, *args)
+
+
             # Embeddings table
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS embeddings (

@@ -19,7 +19,8 @@ from .voice_embedder import VoiceEmbedder
 from .enhanced_spoof import (
     SpoofResult,
     ChallengeResponseVerifier,
-    TemporalAnalyzer
+    TemporalAnalyzer,
+    EnhancedSpoofDetector
 )
 from .model_calibrator import ModelCalibrator
 from .bias_detector import BiasDetector

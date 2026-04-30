@@ -28,7 +28,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
     token = credentials.credentials
     try:
         payload = jwt.decode(token, secrets_manager.get_secret(
-            'JWT_SECRET', 'secret'), algorithms=['HS256'])
+            'JWT_SECRET', 'dev-secret-change-me'), algorithms=['HS256'])
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(
@@ -123,7 +123,7 @@ def create_token(user_id: str, role: str = 'viewer') -> str:
         'role': role,
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
     }
-    return jwt.encode(payload, secrets_manager.get_secret('JWT_SECRET', 'secret'), algorithm='HS256')
+    return jwt.encode(payload, secrets_manager.get_secret('JWT_SECRET'), algorithm='HS256')
 
 
 def require_auth_grpc(func):
@@ -141,7 +141,7 @@ def require_auth_grpc(func):
 
         try:
             payload = jwt.decode(token, secrets_manager.get_secret(
-                'JWT_SECRET', 'secret'), algorithms=['HS256'])
+                'JWT_SECRET'), algorithms=['HS256'])
             context.user = payload
             context.client_host = metadata.get('x-forwarded-for', 'unknown')
         except jwt.ExpiredSignatureError:
