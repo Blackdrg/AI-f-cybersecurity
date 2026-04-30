@@ -17,10 +17,10 @@ def create_test_image():
     return io.BytesIO(buffer.tobytes())
 
 
-@pytest.mark.asyncio
+@ pytest.mark.asyncio
 async def test_enroll_success():
     # Create a test token for authentication
-    token = create_token("test_user", "user")
+    token = create_token("test_user", "viewer")
 
     img_data = create_test_image()
     response = client.post(
@@ -35,10 +35,10 @@ async def test_enroll_success():
     assert data["num_embeddings"] > 0
 
 
-@pytest.mark.asyncio
+@ pytest.mark.asyncio
 async def test_enroll_no_consent():
     # Create a test token for authentication
-    token = create_token("test_user", "user")
+    token = create_token("test_user", "viewer")
 
     img_data = create_test_image()
     response = client.post(

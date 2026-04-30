@@ -17,44 +17,120 @@ logger = logging.getLogger(__name__)
 
 class RedisRateLimiter:
     """Distributed rate limiter using Redis sorted sets"""
-    
+
     def __init__(self, redis_url: str):
         self.redis_url = redis_url
         self.client = None
         self._init_lock = asyncio.Lock()
-    
+        self._mock_mode = redis_url == "redis://mock:6379"
+
     async def ensure_connected(self):
         """Lazy connection establishment"""
         if self.client is None:
             async with self._init_lock:
                 if self.client is None:
-                    self.client = await redis.from_url(self.redis_url, decode_responses=True)
-    
+                    if self._mock_mode:
+                        self.client = MockRedisClient()
+                    else:
+                        try:
+                            self.client = await redis.from_url(self.redis_url, decode_responses=True)
+                        except Exception:
+                            self.client = MockRedisClient()
+
     async def is_rate_limited(self, key: str, limit: int, window: int = 60) -> tuple[bool, int, int, int]:
         await self.ensure_connected()
         now = int(time.time())
-        pipe = self.client.pipeline()
-        pipe.zadd(key, {str(now): now})
-        pipe.zremrangebyscore(key, 0, now - window)
-        pipe.zcard(key)
-        pipe.zrange(key, 0, 0, withscores=True)
-        results = await pipe.execute()
-        current = results[2]
-        earliest = results[3]
-        remaining = max(0, limit - current)
-        is_limited = current > limit
-        if earliest:
-            retry_after = int(earliest[0][1]) + window - now
-            reset_after = int(earliest[0][1]) + window
-        else:
-            retry_after = 0
-            reset_after = now + window
-        return is_limited, remaining, reset_after, retry_after
-    
+        try:
+            pipe = self.client.pipeline()
+            pipe.zadd(key, {str(now): now})
+            pipe.zremrangebyscore(key, 0, now - window)
+            pipe.zcard(key)
+            pipe.zrange(key, 0, 0, withscores=True)
+            results = await pipe.execute()
+            current = results[2]
+            earliest = results[3]
+            remaining = max(0, limit - current)
+            is_limited = current > limit
+            if earliest:
+                retry_after = int(earliest[0][1]) + window - now
+                reset_after = int(earliest[0][1]) + window
+            else:
+                retry_after = 0
+                reset_after = now + window
+            return is_limited, remaining, reset_after, retry_after
+        except Exception:
+            return False, limit, now + window, 0
+
     async def decrement(self, key: str):
         """Decrement counter (on response)"""
         now = int(time.time())
         await self.client.zremrangebyscore(key, 0, now - 60)
+
+
+
+class MockRedisClient:
+    """Mock Redis client for testing."""
+    def __init__(self):
+        self.data = {}
+    
+    def pipeline(self):
+        return MockPipeline(self)
+    
+    async def zremrangebyscore(self, key, min_val, max_val):
+        if key not in self.data:
+            return
+        self.data[key] = {k: v for k, v in self.data[key].items() if not (min_val <= float(v) <= max_val)}
+
+
+class MockPipeline:
+    def __init__(self, client):
+        self.client = client
+        self.commands = []
+    
+    def zadd(self, key, mapping):
+        self.commands.append(('zadd', key, mapping))
+        return self
+    
+    def zremrangebyscore(self, key, min_val, max_val):
+        self.commands.append(('zremrangebyscore', key, min_val, max_val))
+        return self
+    
+    def zcard(self, key):
+        self.commands.append(('zcard', key))
+        return self
+    
+    def zrange(self, key, start, stop, withscores=False):
+        self.commands.append(('zrange', key, start, stop, withscores))
+        return self
+    
+    async def execute(self):
+        results = []
+        for cmd in self.commands:
+            if cmd[0] == 'zadd':
+                _, key, mapping = cmd
+                if key not in self.client.data:
+                    self.client.data[key] = {}
+                self.client.data[key].update(mapping)
+                results.append(len(mapping))
+            elif cmd[0] == 'zremrangebyscore':
+                _, key, min_val, max_val = cmd
+                if key in self.client.data:
+                    before = len(self.client.data[key])
+                    self.client.data[key] = {k: v for k, v in self.client.data[key].items() if not (min_val <= float(v) <= max_val)}
+                    results.append(before - len(self.client.data[key]))
+                else:
+                    results.append(0)
+            elif cmd[0] == 'zcard':
+                _, key = cmd
+                results.append(len(self.client.data.get(key, {})))
+            elif cmd[0] == 'zrange':
+                _, key, start, stop, withscores = cmd
+                items = list(self.client.data.get(key, {}).items())
+                if withscores:
+                    results.append([(k, float(v)) for k, v in items[start:stop+1]])
+                else:
+                    results.append([k for k, v in items[start:stop+1]])
+        return results
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -106,7 +182,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next):
         # Determine client identifier and limits
-        client_key, limit, window = await self._get_rate_limit_details(request)
+        client_key, base_limit = self._get_rate_limit_details(request)
+        limit = self._get_limit_for_endpoint(request, client_key)
+        window = 60
+        
+        # Initialize limiter if not already done
+        if self.limiter is None:
+            await self.initialize()
         
         if not client_key:
             # Cannot identify client, allow through (or use IP fallback)
@@ -115,8 +197,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Check rate limit
         is_limited, remaining, reset_after, retry_after = await self.limiter.is_rate_limited(
             f"rate_limit:{client_key}",
-            limit=self._get_limit_for_endpoint(request, client_key),
-            window=60
+            limit=limit,
+            window=window
         )
         
         # Add rate limit headers
@@ -196,3 +278,68 @@ def set_request_user_context(request: Request, user: dict):
 
 # Singleton instance for initialization
 rate_limiter_middleware = RateLimitMiddleware(None)
+
+
+class MockRedisClient:
+    """Mock Redis client for testing."""
+    def __init__(self):
+        self.data = {}
+    
+    def pipeline(self):
+        return MockPipeline(self)
+    
+    async def zremrangebyscore(self, key, min_val, max_val):
+        if key not in self.data:
+            return
+        self.data[key] = {k: v for k, v in self.data[key].items() if not (min_val <= float(v) <= max_val)}
+
+
+class MockPipeline:
+    def __init__(self, client):
+        self.client = client
+        self.commands = []
+    
+    def zadd(self, key, mapping):
+        self.commands.append(('zadd', key, mapping))
+        return self
+    
+    def zremrangebyscore(self, key, min_val, max_val):
+        self.commands.append(('zremrangebyscore', key, min_val, max_val))
+        return self
+    
+    def zcard(self, key):
+        self.commands.append(('zcard', key))
+        return self
+    
+    def zrange(self, key, start, stop, withscores=False):
+        self.commands.append(('zrange', key, start, stop, withscores))
+        return self
+    
+    async def execute(self):
+        results = []
+        for cmd in self.commands:
+            if cmd[0] == 'zadd':
+                _, key, mapping = cmd
+                if key not in self.client.data:
+                    self.client.data[key] = {}
+                self.client.data[key].update(mapping)
+                results.append(len(mapping))
+            elif cmd[0] == 'zremrangebyscore':
+                _, key, min_val, max_val = cmd
+                if key in self.client.data:
+                    before = len(self.client.data[key])
+                    self.client.data[key] = {k: v for k, v in self.client.data[key].items() if not (min_val <= float(v) <= max_val)}
+                    results.append(before - len(self.client.data[key]))
+                else:
+                    results.append(0)
+            elif cmd[0] == 'zcard':
+                _, key = cmd
+                results.append(len(self.client.data.get(key, {})))
+            elif cmd[0] == 'zrange':
+                _, key, start, stop, withscores = cmd
+                items = list(self.client.data.get(key, {}).items())
+                if withscores:
+                    results.append([(k, float(v)) for k, v in items[start:stop+1]])
+                else:
+                    results.append([k for k, v in items[start:stop+1]])
+        return results

@@ -30,7 +30,7 @@ test_plan = {
 
 @pytest.fixture
 def auth_headers():
-    token = create_token("test_user_id", "user")
+    token = create_token("test_user_id", "viewer")
     return {"Authorization": f"Bearer {token}"}
 
 

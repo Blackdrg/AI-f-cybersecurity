@@ -61,8 +61,10 @@ class TestEnhancedSpoofDetector:
     def test_detect_real_face(self):
         """Test detection on a real face image."""
         face_img = np.random.randn(112, 112, 3).astype(np.float32)
+        face_bbox = [20, 20, 90, 90]  # [x1, y1, x2, y2]
+        landmarks = np.random.randn(68, 2).astype(np.float32)  # 68-point landmarks
         
-        result = self.detector.detect(face_img)
+        result = self.detector.detect(face_img, face_bbox, landmarks)
         
         assert isinstance(result, dict)
         assert 'is_spoof' in result
@@ -77,9 +79,11 @@ class TestEnhancedSpoofDetector:
         face_img = np.full((112, 112, 3), 150, dtype=np.float32)
         # Add some pattern but low variation
         face_img += np.random.randn(112, 112, 3).astype(np.float32) * 5
+        face_bbox = [20, 20, 90, 90]  # [x1, y1, x2, y2]
+        landmarks = np.random.randn(68, 2).astype(np.float32)  # 68-point landmarks
         
-        result = self.detector.detect(face_img)
-        
+        result = self.detector.detect(face_img, face_bbox, landmarks)
+         
         assert isinstance(result, dict)
         assert 'lbp_score' in result['scores']
         # High LBP score indicates potential print attack
@@ -101,18 +105,22 @@ class TestEnhancedSpoofDetector:
         face_img = np.random.randn(112, 112, 3).astype(np.float32)
         # Simulate mask/glasses occlusion
         face_img[50:70, 40:80] = 0
+        face_bbox = [20, 20, 90, 90]  # [x1, y1, x2, y2]
+        landmarks = np.random.randn(68, 2).astype(np.float32)  # 68-point landmarks
         
-        result = self.detector.detect(face_img)
-        
+        result = self.detector.detect(face_img, face_bbox, landmarks)
+         
         assert isinstance(result, dict)
         assert 'occlusion_detected' in result or True  # May or may not detect
 
     def test_confidence_thresholds(self):
         """Test that confidence scores are properly bounded."""
         face_img = np.random.randn(112, 112, 3).astype(np.float32)
+        face_bbox = [20, 20, 90, 90]  # [x1, y1, x2, y2]
+        landmarks = np.random.randn(68, 2).astype(np.float32)  # 68-point landmarks
         
-        result = self.detector.detect(face_img)
-        
+        result = self.detector.detect(face_img, face_bbox, landmarks)
+         
         assert 0 <= result['confidence'] <= 1
         for key, score in result['scores'].items():
             if isinstance(score, (int, float)):
@@ -121,10 +129,12 @@ class TestEnhancedSpoofDetector:
     def test_multiple_detections_consistent(self):
         """Test that multiple detections on same image are consistent."""
         face_img = np.random.randn(112, 112, 3).astype(np.float32)
-        
-        result1 = self.detector.detect(face_img)
-        result2 = self.detector.detect(face_img)
-        
+        face_bbox = [20, 20, 90, 90]  # [x1, y1, x2, y2]
+        landmarks = np.random.randn(68, 2).astype(np.float32)  # 68-point landmarks
+         
+        result1 = self.detector.detect(face_img, face_bbox, landmarks)
+        result2 = self.detector.detect(face_img, face_bbox, landmarks)
+         
         assert result1['is_spoof'] == result2['is_spoof']
         # Confidence should be very similar
         assert abs(result1['confidence'] - result2['confidence']) < 0.01
@@ -132,9 +142,11 @@ class TestEnhancedSpoofDetector:
     def test_detect_returns_required_keys(self):
         """Test that detect returns all required keys."""
         face_img = np.random.randn(112, 112, 3).astype(np.float32)
+        face_bbox = [20, 20, 90, 90]  # [x1, y1, x2, y2]
+        landmarks = np.random.randn(68, 2).astype(np.float32)  # 68-point landmarks
         
-        result = self.detector.detect(face_img)
-        
+        result = self.detector.detect(face_img, face_bbox, landmarks)
+         
         required_keys = ['is_spoof', 'confidence', 'method', 'scores']
         for key in required_keys:
             assert key in result, f"Missing required key: {key}"
@@ -171,14 +183,17 @@ class TestSpoofDetectionIntegration:
         """Test that recognition can be configured with spoof checking."""
         from app.main import app
         from fastapi.testclient import TestClient
+        from app.security import create_token
         
         client = TestClient(app)
+        token = create_token("test_user", "viewer")
         img_data = create_realistic_face_image()
         
         response = client.post(
             "/api/recognize",
             files={"image": ("test.jpg", img_data, "image/jpeg")},
-            data={"top_k": 3, "threshold": 0.6, "enable_spoof_check": True}
+            data={"top_k": 3, "threshold": 0.6, "enable_spoof_check": True},
+            headers={"Authorization": f"Bearer {token}"}
         )
         
         assert response.status_code == 200
@@ -192,8 +207,10 @@ class TestSpoofDetectionIntegration:
         """Test that enrollment checks for spoofing."""
         from fastapi.testclient import TestClient
         from app.main import app
-        
+        from app.security import create_token
+
         client = TestClient(app)
+        token = create_token("test_user", "viewer")
         img_data = create_realistic_face_image()
         
         response = client.post(
@@ -203,7 +220,8 @@ class TestSpoofDetectionIntegration:
                 "name": "Test User",
                 "consent": "true",
                 "check_spoof": "true"
-            }
+            },
+            headers={"Authorization": f"Bearer {token}"}
         )
         
         # Should succeed (real-looking image)
