@@ -1474,11 +1474,11 @@ class EnhancedSpoofDetector:
         self.temporal_analyzer = TemporalAnalyzer()
         self.liveness_threshold = 0.5
         
-    def detect(
+def detect(
         self,
         frame: np.ndarray,
-        face_bbox: List[int] = None,
-        landmarks: np.ndarray = None,
+        face_bbox: Optional[List[int]] = None,
+        landmarks: Optional[np.ndarray] = None,
         require_challenge: bool = False,
         depth_frame: Optional[np.ndarray] = None,
         ir_frame: Optional[np.ndarray] = None
@@ -1494,11 +1494,51 @@ class EnhancedSpoofDetector:
             ir_frame: Optional IR frame
             
         Returns:
-            SpoofResult object with spoof detection results
+            SpoofResult object with spoof detection results including 'method' key
+            
+        Note: Supports backward compatibility - can be called with:
+            - detect(frame)  # 1 arg - uses full frame
+            - detect(frame, face_bbox)  # 2 args - uses provided bbox
+            - detect(frame, face_bbox, landmarks)  # 3 args - full signature
         """
+        # Backward compatibility: handle 1-arg, 2-arg, or 3-arg calls
         if face_bbox is None:
-            h, w = frame.shape[:2]
-            face_bbox = [0, 0, w, h]
+            # Either face_bbox was None (3+ args) or this is a 1-arg call
+            # Check if face_bbox is actually frame (1-arg call passed as first positional)
+            if isinstance(frame, np.ndarray) and frame.shape[0] > 0:
+                h, w = frame.shape[:2]
+                face_bbox = [0, 0, w, h]
+        if landmarks is None:
+            landmarks = np.array([])
+        
+        signals = {}
+        
+        # 1. Single-frame analysis
+        signals["image_quality"] = self._analyze_image_quality(frame, face_bbox)
+        
+        # 2. Texture analysis (print detection)
+            frame: Input image frame (BGR numpy array)
+            face_bbox: Optional [x1, y1, x2, y2] face bounding box. If None, uses full frame.
+            landmarks: Optional facial landmarks array. If None, uses empty array.
+            require_challenge: Whether to require challenge-response (not used by default)
+            depth_frame: Optional depth frame
+            ir_frame: Optional IR frame
+            
+        Returns:
+            SpoofResult object with spoof detection results
+            
+        Note: Supports backward compatibility - can be called with:
+            - detect(frame)  # 1 arg - uses full frame
+            - detect(frame, face_bbox)  # 2 args - uses provided bbox
+            - detect(frame, face_bbox, landmarks)  # 3 args - full signature
+        """
+        # Backward compatibility: handle 1-arg, 2-arg, or 3-arg calls
+        if face_bbox is None:
+            # Either face_bbox was None (3+ args) or this is a 1-arg call
+            # Check if face_bbox is actually frame (1-arg call passed as first positional)
+            if isinstance(frame, np.ndarray) and frame.shape[0] > 0:
+                h, w = frame.shape[:2]
+                face_bbox = [0, 0, w, h]
         if landmarks is None:
             landmarks = np.array([])
         

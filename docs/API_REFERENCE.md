@@ -12,15 +12,24 @@ Verifies a TOTP/SMS MFA code.
 - **Parameters**: `code`
 
 ## 2. Biometrics & Identity
-### `POST /api/enroll` (Protected)
+
+> **⚠️ IMPORTANT:** All biometric endpoints (`/api/enroll`, `/api/recognize`) now require authentication.
+> This change was made to prevent biometric inference attacks. 
+> Include `Authorization: Bearer <token>` header in all requests to these endpoints.
+
+### `POST /api/enroll` (Authentication Required)
 Enrolls a new multi-modal identity.
+- **Authentication**: Required (JWT Bearer token)
 - **Body**: `multipart/form-data` (image, audio, metadata)
 - **Permissions**: `enroll_identity`
+- **Error if unauthenticated**: 401 Unauthorized
 
-### `POST /api/recognize` (Protected)
+### `POST /api/recognize` (Authentication Required)
 Recognizes an identity from an image.
+- **Authentication**: Required (JWT Bearer token)
 - **Body**: `multipart/form-data` (image, options)
 - **Permissions**: `view_recognitions`
+- **Error if unauthenticated**: 401 Unauthorized
 
 ### `GET /api/v2/recognize/stream` (WebSocket)
 Real-time biometric streaming.

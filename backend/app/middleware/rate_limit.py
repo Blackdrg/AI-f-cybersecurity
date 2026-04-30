@@ -3,12 +3,13 @@ Production Rate Limiting Middleware
 Redis-backended sliding window with per-user limits and headers
 """
 import time
+import uuid
 import asyncio
 import redis.asyncio as redis
 from fastapi import Request, HTTPException, Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from typing import Optional, Callable
+from typing import Optional, Callable, Tuple
 import logging
 import json
 
@@ -37,7 +38,8 @@ class RedisRateLimiter:
                         except Exception:
                             self.client = MockRedisClient()
 
-    async def is_rate_limited(self, key: str, limit: int, window: int = 60) -> tuple[bool, int, int, int]:
+    async def is_rate_limited(self, key: str, limit: int, window: int = 60) -> Tuple[bool, int, int, int]:
+        """Check if rate limited. Returns (is_limited, remaining, reset_after, retry_after)"""
         await self.ensure_connected()
         now = int(time.time())
         try:
@@ -67,11 +69,11 @@ class RedisRateLimiter:
             return is_limited, remaining, reset_after, retry_after
         except Exception:
             return False, limit, now + window, 0
+
     async def decrement(self, key: str):
         """Decrement counter (on response)"""
         now = int(time.time())
         await self.client.zremrangebyscore(key, 0, now - 60)
-
 
 
 class MockRedisClient:
@@ -109,6 +111,10 @@ class MockPipeline:
         self.commands.append(('zrange', key, start, stop, withscores))
         return self
     
+    def expire(self, key, seconds):
+        self.commands.append(('expire', key, seconds))
+        return self
+    
     async def execute(self):
         results = []
         for cmd in self.commands:
@@ -136,6 +142,10 @@ class MockPipeline:
                     results.append([(k, float(v)) for k, v in items[start:stop+1]])
                 else:
                     results.append([k for k, v in items[start:stop+1]])
+            elif cmd[0] == 'expire':
+                results.append(True)
+            else:
+                results.append(None)
         return results
 
 
@@ -188,6 +198,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next):
         # Determine client identifier and limits
+        # Note: _get_rate_limit_details is synchronous (returns tuple, not awaited)
         client_key, base_limit = self._get_rate_limit_details(request)
         limit = self._get_limit_for_endpoint(request, client_key)
         window = 60
@@ -234,10 +245,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         return response
     
-    def _get_rate_limit_details(self, request: Request) -> tuple[Optional[str], int]:
+    def _get_rate_limit_details(self, request: Request) -> Tuple[Optional[str], int]:
         """
         Extract client identifier and base limit from request.
-        Returns (client_key, base_limit)
+        Returns (client_key, base_limit) - SYNCHRONOUS (not async)
         """
         # Try to get user_id from JWT (set by auth middleware)
         user_id = getattr(request.state, 'user_id', None)
@@ -282,70 +293,6 @@ def set_request_user_context(request: Request, user: dict):
     request.state.org_tier = user.get('subscription_tier', 'free')
     request.state.org_id = user.get('org_id')
 
+
 # Singleton instance for initialization
 rate_limiter_middleware = RateLimitMiddleware(None)
-
-
-class MockRedisClient:
-    """Mock Redis client for testing."""
-    def __init__(self):
-        self.data = {}
-    
-    def pipeline(self):
-        return MockPipeline(self)
-    
-    async def zremrangebyscore(self, key, min_val, max_val):
-        if key not in self.data:
-            return
-        self.data[key] = {k: v for k, v in self.data[key].items() if not (min_val <= float(v) <= max_val)}
-
-
-class MockPipeline:
-    def __init__(self, client):
-        self.client = client
-        self.commands = []
-    
-    def zadd(self, key, mapping):
-        self.commands.append(('zadd', key, mapping))
-        return self
-    
-    def zremrangebyscore(self, key, min_val, max_val):
-        self.commands.append(('zremrangebyscore', key, min_val, max_val))
-        return self
-    
-    def zcard(self, key):
-        self.commands.append(('zcard', key))
-        return self
-    
-    def zrange(self, key, start, stop, withscores=False):
-        self.commands.append(('zrange', key, start, stop, withscores))
-        return self
-    
-    async def execute(self):
-        results = []
-        for cmd in self.commands:
-            if cmd[0] == 'zadd':
-                _, key, mapping = cmd
-                if key not in self.client.data:
-                    self.client.data[key] = {}
-                self.client.data[key].update(mapping)
-                results.append(len(mapping))
-            elif cmd[0] == 'zremrangebyscore':
-                _, key, min_val, max_val = cmd
-                if key in self.client.data:
-                    before = len(self.client.data[key])
-                    self.client.data[key] = {k: v for k, v in self.client.data[key].items() if not (min_val <= float(v) <= max_val)}
-                    results.append(before - len(self.client.data[key]))
-                else:
-                    results.append(0)
-            elif cmd[0] == 'zcard':
-                _, key = cmd
-                results.append(len(self.client.data.get(key, {})))
-            elif cmd[0] == 'zrange':
-                _, key, start, stop, withscores = cmd
-                items = list(self.client.data.get(key, {}).items())
-                if withscores:
-                    results.append([(k, float(v)) for k, v in items[start:stop+1]])
-                else:
-                    results.append([k for k, v in items[start:stop+1]])
-        return results

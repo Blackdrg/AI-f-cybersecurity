@@ -13,8 +13,12 @@ The core anti-spoofing mechanisms (Liveness Detection) have been evaluated again
 *   **APCER (Attack Presentation Classification Error Rate):** < 1%
 
 ## 3. SOC 2 Type II
-For managed or hybrid cloud deployments, LEVI-AI maintains SOC 2 Type II compliance, verifying the operational effectiveness of our security, availability, and processing integrity controls over a 12-month observation period.
-*   **Audit Reports:** Available under NDA for enterprise procurement.
+**Status: In Progress** - Audit scheduled for Q3 2026
+
+For managed or hybrid cloud deployments, LEVI-AI is preparing for SOC 2 Type II compliance, which will verify the operational effectiveness of our security, availability, and processing integrity controls over a 12-month observation period.
+*   **Current Status:** Controls documentation and self-assessment in progress
+*   **Audit Scheduled:** Q3 2026 (third quarter 2026)
+*   **Audit Reports:** Will be available under NDA for enterprise procurement upon completion
 
 ## 4. GDPR / CCPA & Data Protection Impact Assessment (DPIA)
 LEVI-AI is built on a "Privacy by Design" foundation. We provide a pre-filled DPIA template for enterprises to rapidly clear legal and risk reviews.

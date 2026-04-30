@@ -15,7 +15,8 @@ const API: AxiosInstance = axios.create({
 // Interceptor to add auth token
 API.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("token");
+    // Check sessionStorage first (preferred), fallback to localStorage for transition
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -41,10 +42,23 @@ API.interceptors.response.use(
 export const login = async (email: string, password: string): Promise<any> => {
   const res = await API.post(`/api/auth/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
   if (res.data.access_token) {
-    localStorage.setItem("token", res.data.access_token);
+    // Security fix: Use sessionStorage instead of localStorage for JWT token
+    // This mitigates XSS attacks from exfiltrating tokens
+    // For production, implement httpOnly cookies for true XSS protection
+    sessionStorage.setItem("token", res.data.access_token);
+    sessionStorage.setItem("user", JSON.stringify(res.data.user));
+
+    // Also store in localStorage for backwards compatibility during transition
     localStorage.setItem("user", JSON.stringify(res.data.user));
   }
   return res.data;
+};
+
+// Logout function to clear tokens
+export const logout = () => {
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("user");
+  localStorage.removeItem("user");
 };
 
 export const recognize = async (file: File, options: Record<string, any> = {}): Promise<any> => {

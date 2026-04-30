@@ -15,8 +15,12 @@ Tests:
 
 import asyncio
 import sys
+import os
 import numpy as np
 from datetime import datetime
+
+# Add backend to path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
 class TestResult:
