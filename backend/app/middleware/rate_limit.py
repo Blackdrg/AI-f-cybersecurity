@@ -42,25 +42,31 @@ class RedisRateLimiter:
         now = int(time.time())
         try:
             pipe = self.client.pipeline()
-            pipe.zadd(key, {str(now): now})
             pipe.zremrangebyscore(key, 0, now - window)
+            unique_val = str(now) + str(uuid.uuid4())
+            pipe.zadd(key, {unique_val: now})
+            pipe.expire(key, window + 60)
             pipe.zcard(key)
             pipe.zrange(key, 0, 0, withscores=True)
             results = await pipe.execute()
             current = results[2]
             earliest = results[3]
-            remaining = max(0, limit - current)
             is_limited = current > limit
+            remaining = max(0, limit - current)
             if earliest:
                 retry_after = int(earliest[0][1]) + window - now
                 reset_after = int(earliest[0][1]) + window
             else:
                 retry_after = 0
                 reset_after = now + window
+            if is_limited:
+                pipe2 = self.client.pipeline()
+                pipe2.zrem(key, unique_val)
+                await pipe2.execute()
+                remaining = 0
             return is_limited, remaining, reset_after, retry_after
         except Exception:
             return False, limit, now + window, 0
-
     async def decrement(self, key: str):
         """Decrement counter (on response)"""
         now = int(time.time())
