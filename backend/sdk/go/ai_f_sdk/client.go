@@ -381,6 +381,227 @@ func (c *Client) HealthCheck() (map[string]interface{}, error) {
 	return result, nil
 }
 
+// PersonUpdate represents person update request
+type PersonUpdate struct {
+	Name   *string `json:"name,omitempty"`
+	Age    *int    `json:"age,omitempty"`
+	Gender *string `json:"gender,omitempty"`
+}
+
+// MetricsResponse represents system metrics
+type MetricsResponse struct {
+	NumPersons       int     `json:"num_persons"`
+	NumEmbeddings    int     `json:"num_embeddings"`
+	RecognitionCount int    `json:"recognition_count"`
+	EnrollCount     int     `json:"enroll_count"`
+	AvgLatencyMs    float64 `json:"avg_latency_ms"`
+}
+
+// AuditLogEntry represents an audit log entry
+type AuditLogEntry struct {
+	AuditID   string                 `json:"audit_id"`
+	Action    string                 `json:"action"`
+	UserID    string                 `json:"user_id"`
+	PersonID  *string                `json:"person_id,omitempty"`
+	Details   map[string]interface{} `json:"details"`
+	Timestamp string                 `json:"timestamp"`
+}
+
+// AuditLogsResponse represents audit logs response
+type AuditLogsResponse struct {
+	Logs  []AuditLogEntry `json:"logs"`
+	Total int             `json:"total"`
+}
+
+// SearchResult represents search results
+type SearchResult struct {
+	Persons []Person `json:"persons"`
+	Total   int       `json:"total"`
+}
+
+// UpdatePerson updates person details
+func (c *Client) UpdatePerson(personID string, updates *PersonUpdate) (*Person, error) {
+	url := fmt.Sprintf("%s/api/persons/%s", c.baseURL, personID)
+
+	bodyBytes, err := json.Marshal(updates)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal updates: %w", err)
+	}
+
+	req, err := http.NewRequest("PUT", url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		respBody, _ := io.ReadAll(resp.Body)
+		var errResp ErrorResponse
+		if err := json.Unmarshal(respBody, &errResp); err == nil {
+			return nil, &AIFClientError{
+				Message:    errResp.Detail,
+				StatusCode: resp.StatusCode,
+				Response:   respBody,
+			}
+		}
+		return nil, &AIFClientError{
+			Message:    http.StatusText(resp.StatusCode),
+			StatusCode: resp.StatusCode,
+			Response:   respBody,
+		}
+	}
+
+	var person Person
+	if err := json.NewDecoder(resp.Body).Decode(&person); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &person, nil
+}
+
+// SearchPersons searches for persons by name or metadata
+func (c *Client) SearchPersons(query string, limit int) (*SearchResult, error) {
+	url := fmt.Sprintf("%s/api/persons/search?query=%s&limit=%d", c.baseURL, query, limit)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		respBody, _ := io.ReadAll(resp.Body)
+		var errResp ErrorResponse
+		if err := json.Unmarshal(respBody, &errResp); err == nil {
+			return nil, &AIFClientError{
+				Message:    errResp.Detail,
+				StatusCode: resp.StatusCode,
+				Response:   respBody,
+			}
+		}
+		return nil, &AIFClientError{
+			Message:    http.StatusText(resp.StatusCode),
+			StatusCode: resp.StatusCode,
+			Response:   respBody,
+		}
+	}
+
+	var result SearchResult
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
+
+// GetMetrics retrieves system metrics
+func (c *Client) GetMetrics() (*MetricsResponse, error) {
+	url := fmt.Sprintf("%s/api/metrics", c.baseURL)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		respBody, _ := io.ReadAll(resp.Body)
+		var errResp ErrorResponse
+		if err := json.Unmarshal(respBody, &errResp); err == nil {
+			return nil, &AIFClientError{
+				Message:    errResp.Detail,
+				StatusCode: resp.StatusCode,
+				Response:   respBody,
+			}
+		}
+		return nil, &AIFClientError{
+			Message:    http.StatusText(resp.StatusCode),
+			StatusCode: resp.StatusCode,
+			Response:   respBody,
+		}
+	}
+
+	var metrics MetricsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&metrics); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &metrics, nil
+}
+
+// GetAuditLogs retrieves audit logs
+func (c *Client) GetAuditLogs(limit int, startDate, endDate, action string) (*AuditLogsResponse, error) {
+	url := fmt.Sprintf("%s/api/audit?limit=%d", c.baseURL, limit)
+	if startDate != "" {
+		url += "&start_date=" + startDate
+	}
+	if endDate != "" {
+		url += "&end_date=" + endDate
+	}
+	if action != "" {
+		url += "&action=" + action
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		respBody, _ := io.ReadAll(resp.Body)
+		var errResp ErrorResponse
+		if err := json.Unmarshal(respBody, &errResp); err == nil {
+			return nil, &AIFClientError{
+				Message:    errResp.Detail,
+				StatusCode: resp.StatusCode,
+				Response:   respBody,
+			}
+		}
+		return nil, &AIFClientError{
+			Message:    http.StatusText(resp.StatusCode),
+			StatusCode: resp.StatusCode,
+			Response:   respBody,
+		}
+	}
+
+	var logs AuditLogsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&logs); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &logs, nil
+}
+
 // Close closes the HTTP client
 func (c *Client) Close() error {
 	if c.httpClient != nil {

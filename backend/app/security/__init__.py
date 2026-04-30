@@ -1,10 +1,14 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 import os
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Production flag: Use httpOnly cookies for JWT (true XSS protection)
+# Must match the value in ../api/users.py
+USE_HTTP_ONLY_COOKIE = os.getenv("USE_HTTP_ONLY_COOKIE", "false").lower() == "true"
 
 # FIPS 140-2 Roadmap: Set to True when HSM/KMS is integrated
 FIPS_MODE = os.getenv("FIPS_MODE", "false").lower() == "true"
@@ -25,7 +29,45 @@ ethical_governor = EthicalGovernor() if ETHICAL_GOVERNOR_AVAILABLE else None
 from .secrets_manager import secrets_manager
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Verify JWT token from Authorization header.
+    
+    Production mode (USE_HTTP_ONLY_COOKIE=true):
+        - Primarily expects token from httpOnly cookie
+        - Falls back to Authorization header for API clients
+    """
     token = credentials.credentials
+    try:
+        payload = jwt.decode(token, secrets_manager.get_secret(
+            'JWT_SECRET', 'dev-secret-change-me'), algorithms=['HS256'])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+
+async def verify_token_from_cookie(request: Request) -> dict:
+    """Verify JWT token from httpOnly cookie (production mode).
+    
+    This function is used when USE_HTTP_ONLY_COOKIE=true to read the token
+    directly from the secure cookie instead of the Authorization header.
+    """
+    if not USE_HTTP_ONLY_COOKIE:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Cookie auth not enabled"
+        )
+    
+    # Read token from cookie
+    token = request.cookies.get("auth_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Authentication cookie not found"
+        )
+    
     try:
         payload = jwt.decode(token, secrets_manager.get_secret(
             'JWT_SECRET', 'dev-secret-change-me'), algorithms=['HS256'])

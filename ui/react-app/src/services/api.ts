@@ -7,15 +7,27 @@ export interface APIResponse<T = any> {
   error: string | null;
 }
 
+// User type for auth context
+export interface User {
+  user_id: string;
+  email: string;
+  name: string;
+  role: string;
+  subscription_tier: string;
+  created_at: string;
+}
+
 const API: AxiosInstance = axios.create({
   baseURL: "http://localhost:8000",
   timeout: 30000,
+  withCredentials: true,  // Important: Send cookies with requests for httpOnly auth
 });
 
 // Interceptor to add auth token
 API.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Check sessionStorage first (preferred), fallback to localStorage for transition
+    // In production with httpOnly cookie, the browser automatically sends the cookie
+    // We only need to handle the Authorization header fallback for legacy/API clients
     const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -41,10 +53,18 @@ API.interceptors.response.use(
 
 export const login = async (email: string, password: string): Promise<any> => {
   const res = await API.post(`/api/auth/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
-  if (res.data.access_token) {
-    // Security fix: Use sessionStorage instead of localStorage for JWT token
-    // This mitigates XSS attacks from exfiltrating tokens
-    // For production, implement httpOnly cookies for true XSS protection
+
+  // Check if server sets httpOnly cookie (production mode)
+  const useHttpOnlyCookie = res.headers['http-only-cookie'] === 'true' ||
+    res.data.use_http_only_cookie === true;
+
+  if (useHttpOnlyCookie) {
+    // Production: Token is in httpOnly cookie, not accessible to JavaScript
+    // No token storage needed - browser handles cookie automatically
+    console.info('Using httpOnly cookie for auth (production mode)');
+  } else if (res.data.access_token) {
+  // Development/legacy: Store token in sessionStorage (XSS resistant)
+  // sessionStorage is cleared on tab close, unlike localStorage
     sessionStorage.setItem("token", res.data.access_token);
     sessionStorage.setItem("user", JSON.stringify(res.data.user));
 

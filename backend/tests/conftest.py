@@ -1,24 +1,65 @@
 """
 Pytest configuration and fixtures for AI-F backend tests.
 Provides shared fixtures for authentication, database mocking, and test data.
+
+CI/CD Support:
+    - Set CI=true environment variable for offline test runs
+    - Uses mock fixtures when external dependencies unavailable
 """
 
 import pytest
+import os
 import numpy as np
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
+
+# CI mode flag - enables offline/mocked test runs
+CI_MODE = os.getenv("CI", "false").lower() == "true"
 
 
 # Mock database for tests
 @pytest.fixture
 def mock_db():
     """Provide a mock database connection."""
-    with patch('app.db.db_client.get_db') as mock:
+    if CI_MODE:
+        # CI mode: Use fully mocked database
         db_mock = MagicMock()
         db_mock.execute = MagicMock(return_value=MagicMock())
         db_mock.fetch = MagicMock(return_value=[])
-        mock.return_value = db_mock
+        db_mock.get_user_by_email = MagicMock(return_value=None)
+        db_mock.get_user_by_id = MagicMock(return_value=None)
+        db_mock.create_user = MagicMock(return_value=True)
         yield db_mock
+    else:
+        with patch('app.db.db_client.get_db') as mock:
+            db_mock = MagicMock()
+            db_mock.execute = MagicMock(return_value=MagicMock())
+            db_mock.fetch = MagicMock(return_value=[])
+            mock.return_value = db_mock
+            yield db_mock
+
+
+# Mock Redis for caching tests
+@pytest.fixture
+def mock_redis():
+    """Provide a mock Redis client."""
+    if CI_MODE:
+        # CI mode: Use mock Redis without external connection
+        redis_mock = MagicMock()
+        redis_mock.get = MagicMock(return_value=None)
+        redis_mock.set = MagicMock(return_value=True)
+        redis_mock.delete = MagicMock(return_value=True)
+        redis_mock.exists = MagicMock(return_value=False)
+        redis_mock.expire = MagicMock(return_value=True)
+        yield redis_mock
+    else:
+        with patch('app.services.cache_manager.get_redis') as mock:
+            redis_mock = MagicMock()
+            redis_mock.get = MagicMock(return_value=None)
+            redis_mock.set = MagicMock(return_value=True)
+            redis_mock.delete = MagicMock(return_value=True)
+            mock.return_value = redis_mock
+            yield redis_mock
 
 
 # Test authentication token
@@ -87,24 +128,19 @@ def test_client():
     return TestClient(app)
 
 
-# Mock Redis for caching tests
-@pytest.fixture
-def mock_redis():
-    """Provide a mock Redis client."""
-    with patch('app.services.cache_manager.get_redis') as mock:
-        redis_mock = MagicMock()
-        redis_mock.get = MagicMock(return_value=None)
-        redis_mock.set = MagicMock(return_value=True)
-        redis_mock.delete = MagicMock(return_value=True)
-        mock.return_value = redis_mock
-        yield redis_mock
-
-
 # Mock GPU availability
 @pytest.fixture
 def mock_no_gpu():
     """Mock GPU as unavailable for CPU-only tests."""
     with patch('torch.cuda.is_available', return_value=False):
+        yield
+
+
+# Mock httpOnly cookie mode for tests
+@pytest.fixture
+def mock_http_only_cookie():
+    """Mock httpOnly cookie mode for testing."""
+    with patch.dict(os.environ, {"USE_HTTP_ONLY_COOKIE": "true"}):
         yield
 
 
