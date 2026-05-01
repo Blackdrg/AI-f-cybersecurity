@@ -1,33 +1,39 @@
 from app.schemas import MultiCameraRequest
-from app.api.stream_recognize import process_multi_camera  # type: ignore
-from app.main import app
 import pytest
 import numpy as np
-from fastapi.testclient import TestClient
-
-client = TestClient(app)
 
 def test_process_multi_camera():
     """Process multi-camera request with mocked dependencies."""
+    from app.api.stream_recognize import process_multi_camera
+    from unittest.mock import MagicMock, AsyncMock, patch
+
     request = MultiCameraRequest(
         camera_ids=["cam1", "cam2"],
-        sync_timestamps=["2023-01-01T00:00:00Z", "2023-01-01T00:00:01Z"],
-        streams=["fake_base64_image1", "fake_base64_image2"]
+        sync_timestamps=["2023-01-01T00:00:00", "2023-01-01T00:00:01"],  # ISO format strings
+        streams=["ZmFrZV9iYXNlNjRfaW1hZ2Ux", "ZmFrZV9iYXNlNjRfaW1hZ2Uy"]
     )
 
-    # Mock detector and embedder
-    from app.api import stream_recognize
-    stream_recognize.detector = type(
-        'MockDetector', (), {'detect_faces': lambda self, img: [{'bbox': [10, 10, 50, 50], 'landmarks': np.array([[15,15],[35,15],[25,35]])}]})()
-    stream_recognize.embedder = type(
-        'MockEmbedder', (), {'get_embedding': lambda self, img: np.array([0.1, 0.2] * 256)})()
+    # Create mock detector/embedder as regular mocks
+    mock_detector = MagicMock()
+    mock_detector.detect_faces.return_value = [
+        {'bbox': [10, 10, 50, 50], 'landmarks': np.array([[15, 15], [35, 15], [25, 35]])}
+    ]
+    mock_detector.align_face.return_value = np.zeros((112, 112, 3), dtype=np.uint8)
+    
+    mock_embedder = MagicMock()
+    mock_embedder.get_embedding.return_value = np.array([0.1] * 512, dtype=np.float32)
 
     # Mock DB
-    mock_db = type(
-        'MockDB', (), {'recognize_faces': lambda self, emb, **kwargs: []})()
+    mock_db = MagicMock()
+    mock_db.recognize_faces = AsyncMock(return_value=[])
 
-    result = process_multi_camera(request, mock_db)
-    assert isinstance(result, list)
+    # Patch the module-level globals
+    with patch('app.api.stream_recognize.detector', mock_detector):
+        with patch('app.api.stream_recognize.embedder', mock_embedder):
+            # Run async function
+            import asyncio
+            result = asyncio.run(process_multi_camera(request, mock_db))
+            assert isinstance(result, list)
 
 def test_websocket_multi_camera_message():
     """Test WebSocket multi-camera message handling."""

@@ -43,7 +43,7 @@ class ErrorBoundary extends React.Component {
             <Button
               variant="contained"
               startIcon={<Refresh />}
-              onClick={handleReset}
+              onClick={this.handleReset}
             >
               Reload Application
             </Button>

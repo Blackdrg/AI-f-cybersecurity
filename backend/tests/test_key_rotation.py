@@ -130,7 +130,7 @@ class TestKeyRotation:
         This tests the batch processing and transaction handling.
         """
         from cryptography.fernet import Fernet
-        from unittest.mock import MagicMock, AsyncMock
+        from unittest.mock import MagicMock, AsyncMock, patch
         
         # Generate keys
         old_key = Fernet.generate_key()
@@ -148,12 +148,16 @@ class TestKeyRotation:
         batch_size = 1000
         num_batches = total_embeddings // batch_size
         
-        # Mock fetch to return batch data - use simple mock rows
+        # Create test data that can be encrypted/decrypted
+        test_embedding = np.random.randn(512).astype(np.float32).tobytes()
+        
+        # Mock fetch to return batch data - use simple mock objects
         mock_rows = []
         for i in range(batch_size):
             mock_row = MagicMock()
             mock_row.embedding_id = str(uuid.uuid4())
-            mock_row.embedding = Fernet.generate_key()
+            # Use Fernet to encrypt test data so it's valid
+            mock_row.embedding = Fernet(old_key).encrypt(test_embedding)
             mock_row.voice_embedding = None
             mock_row.gait_embedding = None
             mock_rows.append(mock_row)
@@ -164,12 +168,12 @@ class TestKeyRotation:
         
         mock_conn.fetch = AsyncMock(side_effect=mock_fetch)
         mock_conn.execute = AsyncMock()
-        # Mock transaction as async context manager
+        
+        # Mock transaction as async context manager properly
         mock_transaction = AsyncMock()
-        mock_transaction.__aenter__ = AsyncMock(return_value=mock_conn)
-        mock_transaction.__aexit__ = AsyncMock(return_value=None)
         mock_conn.transaction = MagicMock(return_value=mock_transaction)
         
+        # Mock acquire
         async def mock_acquire():
             return mock_conn
         
@@ -188,14 +192,14 @@ class TestKeyRotation:
                 rows_processed = 0
                 
                 for batch_num in range(test_batches):
-                    # Simulate batch processing
-                    encrypted_data = Fernet.generate_key()
-                    decrypted = Fernet(old_key).decrypt(encrypted_data)
+                    # Simulate batch processing: encrypt with old, decrypt, reencrypt with new
+                    encrypted_with_old = Fernet(old_key).encrypt(test_embedding)
+                    decrypted = Fernet(old_key).decrypt(encrypted_with_old)
                     reencrypted = Fernet(new_key).encrypt(decrypted)
                     
-                    # Verify round-trip
+                    # Verify round-trip with new key
                     final = Fernet(new_key).decrypt(reencrypted)
-                    assert Fernet(old_key).decrypt(encrypted_data) == final
+                    assert final == test_embedding, "Decrypted data should match original"
                     
                     rows_processed += batch_size
                 

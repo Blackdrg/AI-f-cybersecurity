@@ -302,6 +302,18 @@ class SubscriptionResponse(BaseModel):
     expires_at: str
 
 
+class PlanCreate(BaseModel):
+    plan_id: str
+    name: str
+    price: float
+    features: List[str]
+    limits: Dict[str, Any]
+
+
+class SubscriptionCreate(BaseModel):
+    plan_id: str
+
+
 class PaymentCreate(BaseModel):
     plan_id: str
     amount: float
@@ -341,6 +353,16 @@ class SupportTicketCreate(BaseModel):
     subject: str
     description: str
     priority: str = "medium"
+
+
+class SupportTicketResponse(BaseModel):
+    ticket_id: str
+    user_id: str
+    subject: str
+    description: str
+    priority: str
+    status: str
+    created_at: str
 
 
 class SupportTicketUpdate(BaseModel):

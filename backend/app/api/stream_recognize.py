@@ -146,14 +146,23 @@ async def recognize_stream(
 
 async def process_multi_camera(request: MultiCameraRequest, db) -> List[Dict[str, Any]]:
     """Process synchronized multi-camera streams"""
+    from datetime import datetime
     all_faces = []
-    base_timestamp = min(request.sync_timestamps)
+    # Parse timestamps to datetime objects
+    try:
+        base_timestamp = min([datetime.fromisoformat(ts.replace('Z', '+00:00')) for ts in request.sync_timestamps])
+    except (ValueError, AttributeError):
+        # Fallback for invalid timestamps
+        base_timestamp = 0
 
     for i, stream in enumerate(request.streams):
         # Decode and process each stream
-        img_data = base64.b64decode(stream)
-        nparr = np.frombuffer(img_data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        try:
+            img_data = base64.b64decode(stream)
+            nparr = np.frombuffer(img_data, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        except Exception:
+            continue
 
         faces = detector.detect_faces(img)
         for face in faces:
@@ -161,11 +170,22 @@ async def process_multi_camera(request: MultiCameraRequest, db) -> List[Dict[str
             query_emb = embedder.get_embedding(aligned)
 
             matches = await db.recognize_faces(query_emb, camera_id=request.camera_ids[i])
+            
+            # Calculate timestamp offset
+            try:
+                ts = datetime.fromisoformat(request.sync_timestamps[i].replace('Z', '+00:00'))
+                if isinstance(base_timestamp, datetime):
+                    timestamp_offset = (ts - base_timestamp).total_seconds()
+                else:
+                    timestamp_offset = 0.0
+            except (ValueError, AttributeError):
+                timestamp_offset = 0.0
+            
             all_faces.append({
                 'camera_id': request.camera_ids[i],
                 'face_box': face['bbox'],
                 'matches': matches,
-                'timestamp_offset': request.sync_timestamps[i] - base_timestamp
+                'timestamp_offset': timestamp_offset
             })
 
     # Fuse detections from multiple cameras (simple: combine matches)

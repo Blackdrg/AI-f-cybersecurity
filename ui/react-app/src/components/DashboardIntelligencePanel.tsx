@@ -440,7 +440,7 @@ const DashboardIntelligencePanel = ({
           </TableBody>
         </Table>
 
-        {drilldownData && (
+                    {drilldownData && (
           <Accordion
             expanded={expandedAccordion === 'drilldown'}
             onChange={() => setExpandedAccordion(expandedAccordion === 'drilldown' ? null : 'drilldown')}

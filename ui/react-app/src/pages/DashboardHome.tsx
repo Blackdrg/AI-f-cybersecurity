@@ -155,9 +155,9 @@ const DashboardHome = () => {
               <MenuItem value="7d">Last 7 Days</MenuItem>
             </Select>
           </div>
-          <IconButton, CircularProgress onClick={fetchDashboardData} className="refresh-btn">
-            <Refresh />
-          </IconButton, CircularProgress>
+<IconButton onClick={fetchDashboardData} className="refresh-btn">
+              <Refresh />
+            </IconButton>
           <Button, CircularProgress variant="contained" startIcon={<Settings />} className="settings-btn">
             System Config
           </Button, CircularProgress>
@@ -168,40 +168,40 @@ const DashboardHome = () => {
 
       {/* Intelligence Overview Tabs */}
       <div className="intelligence-tabs" style={{ marginBottom: '20px' }}>
-        <Button, CircularProgress
-          variant={activeIntelligenceTab === 'overview' ? 'contained' : 'outlined'}
-          onClick={() => setActiveIntelligenceTab('overview')}
-          size="small"
-          sx={{ mr: 1 }}
-        >
-          Overview
-        </Button, CircularProgress>
-        <Button, CircularProgress
-          variant={activeIntelligenceTab === 'intelligence' ? 'contained' : 'outlined'}
-          onClick={() => setActiveIntelligenceTab('intelligence')}
-          size="small"
-          sx={{ mr: 1 }}
-          startIcon={<Radar />}
-        >
-          Intelligence Hub
-        </Button, CircularProgress>
-        <Button, CircularProgress
-          variant={activeIntelligenceTab === 'enrichment' ? 'contained' : 'outlined'}
-          onClick={() => setActiveIntelligenceTab('enrichment')}
-          size="small"
-          sx={{ mr: 1 }}
-          startIcon={<Article />}
-        >
-          Data Enrichment
-        </Button, CircularProgress>
-        <Button, CircularProgress
-          variant={activeIntelligenceTab === 'workflow' ? 'contained' : 'outlined'}
-          onClick={() => setActiveIntelligenceTab('workflow')}
-          size="small"
-          startIcon={<Timeline />}
-        >
-          Workflow & Recovery
-        </Button, CircularProgress>
+<Button
+            variant={activeIntelligenceTab === 'overview' ? 'contained' : 'outlined'}
+            onClick={() => setActiveIntelligenceTab('overview')}
+            size="small"
+            sx={{ mr: 1 }}
+          >
+            Overview
+          </Button>
+<Button
+            variant={activeIntelligenceTab === 'intelligence' ? 'contained' : 'outlined'}
+            onClick={() => setActiveIntelligenceTab('intelligence')}
+            size="small"
+            sx={{ mr: 1 }}
+            startIcon={<Radar />}
+          >
+            Intelligence Hub
+          </Button>
+<Button
+            variant={activeIntelligenceTab === 'enrichment' ? 'contained' : 'outlined'}
+            onClick={() => setActiveIntelligenceTab('enrichment')}
+            size="small"
+            sx={{ mr: 1 }}
+            startIcon={<Article />}
+          >
+            Data Enrichment
+          </Button>
+<Button
+            variant={activeIntelligenceTab === 'workflow' ? 'contained' : 'outlined'}
+            onClick={() => setActiveIntelligenceTab('workflow')}
+            size="small"
+            startIcon={<Timeline />}
+          >
+            Workflow & Recovery
+          </Button>
       </div>
 
       {/* Dynamic Content Based on Active Tab */}
