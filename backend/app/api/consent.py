@@ -272,7 +272,7 @@ async def get_consent_history(
     - Admins can view any user's consent history
     """
     user_id = current_user.get("user_id")
-    role = current_user.get("role", "user")
+    role = current_user.get("role", "viewer")
     
     # Determine whose consent to fetch
     target_subject = subject_id or user_id

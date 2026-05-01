@@ -115,7 +115,7 @@ async def verify_totp_for_login(request: MFVerifyRequest, user: dict = Depends(r
     # Generate new JWT with mfa_verified claim
     token = create_token(
         user_id=user_id,
-        role=user.get('role', 'user'),
+        role=user.get('role', 'viewer'),
         # Add mfa_verified to ensure high-privilege routes can require it
     )
     # The actual claim addition happens inside create_token if it supports it, 
@@ -138,7 +138,7 @@ async def verify_backup_code(request: MFVerifyRequest, user: dict = Depends(requ
     # Generate token with mfa_verified
     token = create_token(
         user_id=user_id,
-        role=user.get('role', 'user')
+        role=user.get('role', 'viewer')
     )
     
     # Log

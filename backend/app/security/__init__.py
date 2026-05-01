@@ -139,7 +139,7 @@ def get_current_user(user: dict = Depends(verify_token)):
 
 
 def check_ethical(request_data: dict, user: dict = Depends(verify_token)):
-    role = user.get('role', 'user')
+    role = user.get('role', 'viewer')
     check = ethical_governor.check_request(request_data, role)
     if not check['approved']:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,

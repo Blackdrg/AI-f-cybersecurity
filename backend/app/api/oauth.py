@@ -106,7 +106,7 @@ async def oauth_callback(provider: str, request: Request):
         user_id = user['user_id']
     
     # Issue our platform's JWT token
-    token = create_token(user_id=user_id, role='user')
+    token = create_token(user_id=user_id, role='viewer')
     
     # Redirect to frontend with token
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")

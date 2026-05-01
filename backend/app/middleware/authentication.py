@@ -144,7 +144,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             if not user_id:
                 raise JWTError("Missing user_id")
             request.state.user_id = user_id
-            request.state.user_role = payload.get("role", "user")
+            request.state.user_role = payload.get("role", "viewer")
             request.state.org_id = payload.get("org_id")
             request.state.org_tier = payload.get("subscription_tier", "free")
             request.state.authenticated = True

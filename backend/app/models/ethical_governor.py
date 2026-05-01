@@ -145,7 +145,7 @@ class EthicalGovernor:
                 effect=PolicyEffect.DENY,
                 conditions={
                     "field": "consent",
-                    "operator": "equals",
+                    "operator": "not_equals",
                     "value": True
                 },
                 priority=90,
@@ -539,12 +539,12 @@ class EthicalGovernor:
     
     def _check_role_restrictions(self, user_role: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Check role-based restrictions."""
-        if user_role not in ["admin", "operator", "user"]:
+        if user_role not in ["admin", "operator", "user", "viewer"]:
             return {
                 "rule_id": "invalid_role",
                 "rule_name": "Invalid Role",
                 "effect": PolicyEffect.DENY.value,
-                "conditions": {"valid_roles": ["admin", "operator", "user"]},
+                "conditions": {"valid_roles": ["admin", "operator", "user", "viewer"]},
                 "priority": 100
             }
         

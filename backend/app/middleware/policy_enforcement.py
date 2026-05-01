@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 from fastapi import Depends, HTTPException, Request
 from ..policy_engine import get_policy_engine, SubjectType, ResourceType, PolicyEffect
 from ..models.ethical_governor import check_ethical_compliance, EthicalDecision
-from ..security import get_current_user
+from ..security import get_current_user, require_auth
 import logging
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ async def enforce_policy(
     policy_engine = get_policy_engine()
 
     # Determine subject type from user role
-    role = context.user.get("role", "user")
+    role = context.user.get("role", "viewer")
     subject_type_map = {
         "admin": SubjectType.ADMIN,
         "operator": SubjectType.OPERATOR,
@@ -142,10 +142,12 @@ async def enforce_policy(
     return True
 
 
-# Convenience dependencies for common resources
+    # Convenience dependencies for common resources
+
+
 async def require_enroll_policy(
     request: Request,
-    user: Dict = Depends(get_current_user)
+    user: Dict = Depends(require_auth)
 ) -> bool:
     context = PolicyContext(
         user=user,
@@ -161,7 +163,7 @@ async def require_enroll_policy(
         "operator": SubjectType.OPERATOR,
         "service": SubjectType.SERVICE,
     }
-    subject_type = subject_type_map.get(user.get("role", "user"), SubjectType.USER)
+    subject_type = subject_type_map.get(user.get("role", "viewer"), SubjectType.USER)
     decision = policy_engine.evaluate(
         subject_id=user.get("user_id") or user.get("sub"),
         subject_type=subject_type,

@@ -64,7 +64,7 @@ def test_get_current_user(auth_headers):
     user_id = create_response.json()["user_id"]
 
     # Mock the token to return the created user_id
-    token = create_token(user_id, "user")
+    token = create_token(user_id, "viewer")
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.get("/api/users/me", headers=headers)
@@ -102,7 +102,7 @@ def test_create_subscription(auth_headers):
     subscription_data = {"plan_id": plan_id}
 
     # Mock token for the created user
-    token = create_token(user_id, "user")
+    token = create_token(user_id, "viewer")
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.post("/api/subscriptions",
@@ -125,7 +125,7 @@ def test_create_payment(auth_headers):
     }
 
     # Mock token for the created user
-    token = create_token(user_id, "user")
+    token = create_token(user_id, "viewer")
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.post("/api/payments", json=payment_data, headers=headers)
@@ -142,7 +142,7 @@ def test_get_usage(auth_headers):
     user_id = user_response.json()["user_id"]
 
     # Mock token for the created user
-    token = create_token(user_id, "user")
+    token = create_token(user_id, "viewer")
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.get("/api/usage", headers=headers)
@@ -176,7 +176,7 @@ def test_create_support_ticket(auth_headers):
     }
 
     # Mock token for the created user
-    token = create_token(user_id, "user")
+    token = create_token(user_id, "viewer")
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.post("/api/support", json=ticket_data, headers=headers)
@@ -193,7 +193,7 @@ def test_get_support_tickets(auth_headers):
     user_id = user_response.json()["user_id"]
 
     # Mock token for the created user
-    token = create_token(user_id, "user")
+    token = create_token(user_id, "viewer")
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.get("/api/support", headers=headers)

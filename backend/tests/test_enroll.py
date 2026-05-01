@@ -31,8 +31,8 @@ async def test_enroll_success():
     )
     assert response.status_code == 200
     data = response.json()
-    assert "person_id" in data
-    assert data["num_embeddings"] > 0
+    assert "person_id" in data["data"]
+    assert data["data"]["num_embeddings"] > 0
 
 
 @ pytest.mark.asyncio

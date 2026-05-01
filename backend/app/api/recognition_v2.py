@@ -36,7 +36,7 @@ async def recognize_v2(
     # Policy check
     policy = policy_engine.can_recognize(
         user["user_id"],
-        SubjectType.USER if user.get("role") == "user" else SubjectType.OPERATOR,
+        SubjectType.USER if user.get("role") == "viewer" else SubjectType.OPERATOR,
         context={"purpose": "authentication"}
     )
     

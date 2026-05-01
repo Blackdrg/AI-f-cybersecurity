@@ -73,7 +73,7 @@ async def enroll_person(
     images: List[UploadFile] = File(...),
     name: str = Form(None),
     metadata: str = Form("{}"),
-    consent: bool = Form(...),
+    consent: str = Form(...),
     camera_id: str = Form(None),
     voice_files: List[UploadFile] = File(None),
     gait_video: UploadFile = File(None),
@@ -81,11 +81,13 @@ async def enroll_person(
     user: dict = Depends(require_auth),
     _policy_ok: bool = Depends(require_enroll_policy)
 ):
+    # Parse consent (FastAPI form bool conversion is unreliable for "true"/"false" strings)
+    consent_bool = consent.lower() in ("true", "1", "yes", "y")
+    if not consent_bool:
+        raise HTTPException(status_code=400, detail="Consent required for enrollment")
+
     try:
         start_time = time.time()
-
-        if not consent:
-            return StandardResponse(success=False, error="Consent required for enrollment")
 
         try:
             metadata_dict = json.loads(metadata)
@@ -136,13 +138,13 @@ async def enroll_person(
         ethical_decision = ethical_governor.check_request(
             request_data={
                 "age": age,
-                "consent": consent,
+                "consent": consent_bool,
                 "person_id": None,  # Not yet created
                 "user_id": user.get("user_id") or user.get("sub"),
                 "jurisdiction": jurisdiction,
                 "purpose": "enrollment"
             },
-            user_role=user.get("role", "user"),
+            user_role=user.get("role", "viewer"),
             jurisdiction=jurisdiction
         )
         

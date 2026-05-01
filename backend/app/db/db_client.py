@@ -37,6 +37,14 @@ class DBClient:
         self.kms_client = self._init_kms()
         self.encryption_key = self._load_encryption_key()
         
+        # Initialize in-memory fallback database
+        self._in_memory_db = {
+            'persons': {},
+            'embeddings': {},
+            'consent_logs': {},
+            'audit_log': []
+        }
+        
         # Initialize read replicas if provided
         if read_replicas:
             self.read_replica_urls = read_replicas
