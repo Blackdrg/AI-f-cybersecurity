@@ -11,7 +11,7 @@ import {
   ShowChart, CompareArrows, FilterCenterFocus, BugReport,
   Fingerprint, Eye, Style, BlurLinear, VerifiedUser, Key,
   Description, Layers, Storage, Public, Policy, Gavel as GavelIcon,
-  AlertCircle, Lock, TrendingUp, Analytics, Brain, Database,
+  Warning, Lock, TrendingUp, Analytics, Brain, Database,
   Cloud, Domain, Timeline, AccountCircle, ChevronRight
 } from '@mui/icons-material';
 
@@ -92,7 +92,7 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
         { id: 'policies', text: 'Policy Engine', icon: <Policy />, roles: ['admin'] },
         { id: 'jurisdictions', text: 'Cross-Border Rules', icon: <Public />, roles: ['admin'] },
         { id: 'consent', text: 'Consent Mgmt', icon: <VerifiedUser />, roles: ['super_admin', 'admin', 'analyst'] },
-        { id: 'ethical-alerts', text: 'Ethical Alerts', icon: <AlertCircle />, badge: 1, roles: ['admin'] },
+        { id: 'ethical-alerts', text: 'Ethical Alerts', icon: <Warning />, badge: 1, roles: ['admin'] },
         { id: 'audit', text: 'Audit Trails', icon: <Key />, roles: ['admin'] },
       ]
     },

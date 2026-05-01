@@ -7,9 +7,9 @@ import {
   ListItemAvatar, Divider
 } from '@mui/material';
 import {
-  BugReport, Security, Radar, AlertCircle,
+  BugReport, Security, Radar, Warning,
   CheckCircle, Error as ErrorIcon, Timeline,
-  PlayCircle, Pause, Database, Block
+  PlayCircle, PlayArrow, Pause, Database, Block
 } from '@mui/icons-material';
 import API from '../services/api';
 
@@ -175,7 +175,7 @@ function DeepfakeTab() {
           <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AlertCircle />
+                <Warning />
                 <Typography variant="body2" sx={{ opacity: 0.8 }}>False Positive</Typography>
               </Box>
               <Typography variant="h4" fontWeight="bold" sx={{ mt: 1 }}>

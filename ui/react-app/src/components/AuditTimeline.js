@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box, Typography, Paper, Card, CardContent,
-  Timeline as MuiTimeline, TimelineItem, TimelineSeparator,
-  TimelineConnector, TimelineContent, TimelineDot,
-  IconButton, Tooltip, Chip, Table, TableBody, TableCell,
-  TableHead, TableRow, Button, TextField, Select, MenuItem,
-  FormControl, InputLabel, Grid, Collapse, List, ListItem,
-  ListItemText, ListItemIcon, Divider, LinearProgress
+  Chip, Button, TextField, MenuItem,
+  Grid, Collapse, List, ListItem,
+  ListItemText, ListItemIcon, LinearProgress,
+  CircularProgress
 } from '@mui/material';
+import { TimelineDot } from '@mui/lab';
 import {
-  History, Timeline, Security, Block, CheckCircle,
+  History, Security, Block, CheckCircle,
   Error, Warning, Info, Link, VerifiedUser,
-  Key, Fingerprint, Description, Download, FilterList,
+  Key, Fingerprint, Description, Download,
   ExpandMore, ExpandLess, Search, Refresh
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
@@ -19,13 +18,46 @@ import API from '../services/api';
 
 export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }) => {
   const [auditLogs, setAuditLogs] = useState([]);
-  const [chainVerification, setChainVerification] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedLog, setExpandedLog] = useState(null);
   const [verificationStatus, setVerificationStatus] = useState({});
   const [timeframe, setTimeframe] = useState('24h');
   const [filterSeverity, setFilterSeverity] = useState('all');
   const [filterAction, setFilterAction] = useState('all');
+
+  const fetchAuditLogs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await API.get('/api/admin/logs', {
+        params: {
+          limit: 100,
+          action: filterAction !== 'all' ? filterAction : undefined
+        }
+      });
+      if (res.data?.logs) {
+        setAuditLogs(res.data.logs);
+        verifyChainIntegrity(res.data.logs);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch audit logs');
+    } finally {
+      setLoading(false);
+    }
+  }, [filterAction]);
+
+  const fetchChainVerification = useCallback(async () => {
+    try {
+      const res = await API.get('/api/admin/analytics');
+      if (res.data) {
+        setVerificationStatus(prev => ({
+          ...prev,
+          chainData: res.data.device_stats || []
+        }));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch chain verification');
+    }
+  }, []);
 
   const severityColors = {
     critical: '#ef4444',
@@ -99,38 +131,7 @@ export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }) => {
       if (socket) socket.close();
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
-  }, [timeframe, filterSeverity, filterAction]);
-
-  const fetchAuditLogs = async () => {
-    setLoading(true);
-    try {
-      const res = await API.get('/api/admin/logs', {
-        params: {
-          limit: 100,
-          action: filterAction !== 'all' ? filterAction : undefined
-        }
-      });
-      if (res.data?.logs) {
-        setAuditLogs(res.data.logs);
-        verifyChainIntegrity(res.data.logs);
-      }
-    } catch (err) {
-      console.warn('Failed to fetch audit logs');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchChainVerification = async () => {
-    try {
-      const res = await API.get('/api/admin/analytics');
-      if (res.data) {
-        setChainVerification(res.data.device_stats || []);
-      }
-    } catch (err) {
-      console.warn('Failed to fetch chain verification');
-    }
-  };
+  }, [fetchAuditLogs, fetchChainVerification]);
 
   const verifyChainIntegrity = (logs) => {
     const verification = {

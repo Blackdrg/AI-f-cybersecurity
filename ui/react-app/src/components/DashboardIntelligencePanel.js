@@ -1,21 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Paper, Grid, Card, CardContent,
   Table, TableBody, TableCell, TableHead, TableRow,
-  Chip, IconButton, Tooltip, LinearProgress, Button,
+  Chip, LinearProgress, Button,
   Accordion, AccordionSummary, AccordionDetails, Alert,
-  Tabs, Tab, Divider, List, ListItem, ListItemText,
-  ListItemIcon, Badge, CircularProgress, TextField,
-  Select, MenuItem, FormControl, InputLabel
+  Tabs, Tab, Badge, CircularProgress, TextField,
+  Select, MenuItem, FormControl, InputLabel, Stack
 } from '@mui/material';
 import {
-  Analytics, Timeline, BarChart, AlertCircle,
-  TrendingUp, BugReport, Security, FilterList,
-  Search, CompareArrows, AccountTree, NetworkCheck,
-  ShowChart, History, Database, Download, PlayArrow,
-  Pause, Refresh, ExpandMore, ChevronRight
+  Timeline, Warning, TrendingUp, FilterList,
+  Search, Database, ExpandMore, Assessment
 } from '@mui/icons-material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area, BarChart as RechartsBarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import API from '../services/api';
 
 const DashboardIntelligencePanel = ({ 
@@ -40,37 +36,7 @@ const DashboardIntelligencePanel = ({
     dateRange: '7d'
   });
 
-  useEffect(() => {
-    fetchDashboardIntelligence();
-    const interval = setInterval(fetchDashboardIntelligence, 60000);
-    return () => clearInterval(interval);
-  }, [timeframe]);
-
-  const fetchDashboardIntelligence = async () => {
-    setIsLoading(true);
-    try {
-      const [analyticsRes, alertsRes, trendsRes, riskRes] = await Promise.all([
-        API.get(`/api/analytics?timeframe=${timeframe}`).catch(() => ({ data: null })),
-        API.get('/api/alerts/active').catch(() => ({ data: { alerts: [] } })),
-        API.get(`/api/analytics/risk-trends`).catch(() => ({ data: [] })),
-        API.get('/api/analytics/risk-metrics').catch(() => ({ data: {} }))
-      ]);
-      
-      setAnalyticsData(analyticsRes.data);
-      setAlerts(alertsRes.data?.alerts || []);
-      setHistoricalTrends(trendsRes.data || []);
-      setRiskMetrics(riskRes.data || {});
-      
-      // Fetch decision trace
-      fetchDecisionTrace();
-    } catch (err) {
-      console.warn('Failed to fetch intelligence data:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchDecisionTrace = async () => {
+  const fetchDecisionTrace = useCallback(async () => {
     try {
       const res = await API.get('/api/events?limit=50');
       const events = res.data?.events || [];
@@ -88,7 +54,7 @@ const DashboardIntelligencePanel = ({
     } catch (err) {
       console.warn('Failed to fetch decision trace');
     }
-  };
+  }, []);
 
   const generateDecisionPath = (event) => {
     const steps = [];
@@ -98,6 +64,35 @@ const DashboardIntelligencePanel = ({
     if (event.decision) steps.push({ name: 'Decision', value: event.decision });
     return steps;
   };
+
+  const fetchDashboardIntelligence = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [analyticsRes, alertsRes, trendsRes, riskRes] = await Promise.all([
+        API.get(`/api/analytics?timeframe=${timeframe}`).catch(() => ({ data: null })),
+        API.get('/api/alerts/active').catch(() => ({ data: { alerts: [] } })),
+        API.get(`/api/analytics/risk-trends`).catch(() => ({ data: [] })),
+        API.get('/api/analytics/risk-metrics').catch(() => ({ data: {} }))
+      ]);
+
+      setAnalyticsData(analyticsRes.data);
+      setAlerts(alertsRes.data?.alerts || []);
+      setHistoricalTrends(trendsRes.data || []);
+      setRiskMetrics(riskRes.data || {});
+
+      fetchDecisionTrace();
+    } catch (err) {
+      console.warn('Failed to fetch intelligence data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [timeframe, fetchDecisionTrace]);
+
+  useEffect(() => {
+    fetchDashboardIntelligence();
+    const interval = setInterval(fetchDashboardIntelligence, 60000);
+    return () => clearInterval(interval);
+}, [fetchDashboardIntelligence]);
 
   const handleDrillDown = (metric, data) => {
     setDrilldownData({ metric, data });
@@ -144,7 +139,7 @@ const DashboardIntelligencePanel = ({
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AlertCircle color="warning" />
+            <Warning color="warning" />
             Alert Prioritization Center
           </Typography>
           <Badge badgeContent={alerts.length} color="error">

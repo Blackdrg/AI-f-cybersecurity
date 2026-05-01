@@ -1,23 +1,22 @@
-# TODO - Implementation Plan
+# TODO - Critical Fixes for AI-F Backend Test Suite
 
-## GAP 6: Spoof Detector Test Signature Fix
-- [x] Read and analyze current test file
-- [x] Read enhanced_spoof.py to understand detect() signature
-- [ ] Update test_spoof_detection.py to use 3-arg detect() calls
-- [ ] Add fallback handling in detect() for backward compatibility
+## Phase 1: Test Suite Configuration (Critical)
+- [ ] 1.1 Create pytest.ini with PYTHONPATH=backend
+- [ ] 1.2 Check and fix role name "user" → "viewer" in conftest.py
+- [ ] 1.3 Fix spoof detector call signature (add missing args)
+- [ ] 1.4 Run tests to verify fixes
 
-## GAP 3: CI/CD and Test Infrastructure Fix
-- [ ] Create proper test fixtures in conftest.py
-- [ ] Fix test role assignments (user → viewer)
-- [ ] Fix async/await issues in tests
-- [ ] Mock external service dependencies
+## Phase 2: Backend Bug Fixes
+- [ ] 2.1 Fix async/await bug in rate_limit.py
+- [ ] 2.2 Implement in-memory fallback for rate limiter (global state)
+- [ ] 2.3 Audit await patterns across middleware
 
-## GAP 10: Federated Learning Fix
-- [ ] Update test endpoints in test_federated_learning.py
-- [ ] Fix Pydantic v2 method (.dict() → .model_dump())
-- [ ] Add proper client registration tests
-- [ ] Fix model upload/download tests
+## Phase 3: Database & Integration Tests
+- [ ] 3.1 Set up SQLite → PostgreSQL configuration
+- [ ] 3.2 Add integration tests for missing API routers
+- [ ] 3.3 Add Stripe/OpenAI mocks for CI
 
-## Verification
-- [ ] Run pytest to verify fixes
-- [ ] Update TODO_CRITICAL_GAPS.md with completion status
+## Progress Tracking
+- Phase 1 started: [ ]
+- Phase 2 started: [ ]
+- Phase 3 started: [ ]

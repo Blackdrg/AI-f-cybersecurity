@@ -6,7 +6,7 @@ import {
 import { 
   TrendingUp, TrendingDown, People, 
   CameraAlt, Speed, GppGood, Map,
-  Analytics, Timeline, AlertCircle, BugReport
+  Analytics, Timeline, Warning, BugReport
 } from '@mui/icons-material';
 import { LineChart, BarChart } from '@mui/x-charts';
 import API from '../services/api';
