@@ -22,6 +22,7 @@
         "react-scripts": "5.0.1",
         "react-stripe-js": "^1.1.5",
         "react-webcam": "^7.2.0",
+        "recharts": "^3.8.1",
         "typescript": "^4.9.5"
     },
     "scripts": {

@@ -380,18 +380,22 @@ function Recognize() {
                  />
                </React.Suspense>
 
-               <Tabs
-                 value={tabValue}
-                 onChange={(e, v) => setTabValue(v)}
-                 sx={{ mb: 2, bgcolor: 'background.paper', borderRadius: 1, p: 0.5 }}
-               >
+<Tabs
+                  value={tabValue}
+                  onChange={(e, v) => setTabValue(v)}
+                  sx={{ mb: 2, bgcolor: 'background.paper', borderRadius: 1, p: 0.5 }}
+                >
+                  <Tab label="Results" />
+                  <Tab label="AI Explanation" />
+                  <Tab label="Factors" />
+                </Tabs>
 
-              <TabPanel value={tabValue} index={0}>
-                <RecognizeView result={recognitionResult} />
-                {getMatchDetails()}
-              </TabPanel>
+                <TabPanel value={tabValue} index={0}>
+                  <RecognizeView result={recognitionResult} />
+                  {getMatchDetails()}
+                </TabPanel>
 
-              <TabPanel value={tabValue} index={1}>
+                <TabPanel value={tabValue} index={1}>
                 {explainableAI ? (
                   <>
                     <Card sx={{ mb: 3 }}>

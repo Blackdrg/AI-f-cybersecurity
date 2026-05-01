@@ -5,58 +5,76 @@ import {
   Chip, LinearProgress, Button,
   Accordion, AccordionSummary, AccordionDetails, Alert,
   Tabs, Tab, Badge, CircularProgress, TextField,
-  Select, MenuItem, FormControl, InputLabel, Stack
+  Select, MenuItem, FormControl, InputLabel, Stack,
+  SelectChangeEvent
 } from '@mui/material';
 import {
   Timeline, Warning, TrendingUp, FilterList,
-  Search, Database, ExpandMore, Assessment
+  Search, ExpandMore, Assessment, Dataset
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import API from '../services/api';
 
-const DashboardIntelligencePanel = ({ 
+interface DashboardIntelligencePanelProps {
+  timeframe?: string;
+  onTimeframeChange?: (timeframe: string) => void;
+  onAlertAction?: (alert: any, action: string) => void;
+  onDrillDown?: (metric: string, data: any) => void;
+  isLoading?: boolean;
+}
+
+interface RiskMetrics {
+  avgRiskScore?: number;
+  falsePositiveRate?: number;
+  falseNegativeRate?: number;
+  threatCount?: number;
+  anomalyScore?: number;
+}
+
+const DashboardIntelligencePanel: React.FC<DashboardIntelligencePanelProps> = ({ 
   timeframe = '24h',
   onTimeframeChange,
-  onAlertAction,
-  onDrillDown,
+  onAlertAction: onAlertActionProp,
+  onDrillDown: onDrillDownProp,
   isLoading: propLoading
 }) => {
   const [activeTab, setActiveTab] = useState(0);
-  const [expandedAccordion, setExpandedAccordion] = useState(null);
+  const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
-  const [alerts, setAlerts] = useState([]);
-  const [decisionTrace, setDecisionTrace] = useState([]);
-  const [historicalTrends, setHistoricalTrends] = useState([]);
-  const [riskMetrics, setRiskMetrics] = useState({});
-  const [drilldownData, setDrilldownData] = useState(null);
+   const [alerts, setAlerts] = useState<any[]>([]);
+   const [decisionTrace, setDecisionTrace] = useState<any[]>([]);
+   const [historicalTrends, setHistoricalTrends] = useState<any[]>([]);
+  const [riskMetrics, setRiskMetrics] = useState<RiskMetrics>({});
+  const [drilldownData, setDrilldownData] = useState<{ metric: string; data: any } | null>(null);
   const [filterCriteria, setFilterCriteria] = useState({
     severity: 'all',
     type: 'all',
-    dateRange: '7d'
+    dateRange: '7d',
+    search: ''
   });
 
-  const fetchDecisionTrace = useCallback(async () => {
-    try {
-      const res = await API.get('/api/events?limit=50');
-      const events = res.data?.events || [];
-      const trace = events.map(e => ({
-        id: e.event_id || `event_${Date.now()}_${Math.random()}`,
-        timestamp: e.timestamp,
-        type: e.decision || e.action,
-        confidence: e.confidence_score,
-        riskScore: e.risk_score,
-        subject: e.person_name || e.person_id || 'Unknown',
-        details: e.details || {},
-        path: generateDecisionPath(e)
-      }));
-      setDecisionTrace(trace);
-    } catch (err) {
-      console.warn('Failed to fetch decision trace');
-    }
-  }, []);
+    const fetchDecisionTrace = useCallback(async () => {
+      try {
+        const res = await API.get('/api/events?limit=50');
+        const events = res.data?.events || [] as any[];
+        const trace = events.map((e: any) => ({
+          id: e.event_id || `event_${Date.now()}_${Math.random()}`,
+          timestamp: e.timestamp,
+          type: e.decision || e.action,
+          confidence: e.confidence_score,
+          riskScore: e.risk_score,
+          subject: e.person_name || e.person_id || 'Unknown',
+          details: e.details || {},
+          path: generateDecisionPath(e)
+        }));
+        setDecisionTrace(trace);
+      } catch (err: any) {
+        console.warn('Failed to fetch decision trace');
+      }
+    }, []);
 
-  const generateDecisionPath = (event) => {
+   const generateDecisionPath = (event: any) => {
     const steps = [];
     if (event.detection_method) steps.push({ name: 'Detection', value: event.detection_method });
     if (event.confidence_score) steps.push({ name: 'Confidence', value: `${(event.confidence_score * 100).toFixed(1)}%` });
@@ -86,7 +104,7 @@ const DashboardIntelligencePanel = ({
     } finally {
       setIsLoading(false);
     }
-  }, [timeframe, fetchDecisionTrace]);
+  }, [timeframe]);
 
   useEffect(() => {
     fetchDashboardIntelligence();
@@ -94,24 +112,24 @@ const DashboardIntelligencePanel = ({
     return () => clearInterval(interval);
 }, [fetchDashboardIntelligence]);
 
-  const handleDrillDown = (metric, data) => {
-    setDrilldownData({ metric, data });
-    onDrillDown && onDrillDown(metric, data);
-  };
+   const handleDrillDown = (metric: string, data: any) => {
+     setDrilldownData({ metric, data });
+     onDrillDownProp && onDrillDownProp(metric, data);
+   };
 
-  const handleAlertAction = (alert, action) => {
-    onAlertAction && onAlertAction(alert, action);
-    setAlerts(prev => prev.filter(a => a.id !== alert.id));
-  };
+   const handleAlertAction = (alert: any, action: string) => {
+     onAlertActionProp && onAlertActionProp(alert, action);
+     setAlerts(prev => prev.filter(a => a.id !== alert.id));
+   };
 
-  const getTrendIndicator = (value, baseline) => {
+   const getTrendIndicator = (value: number, baseline: number) => {
     const diff = ((value - baseline) / baseline) * 100;
     if (diff > 10) return { icon: <TrendingUp color="error" />, color: 'error', label: 'Rising' };
     if (diff < -10) return { icon: <TrendingUp color="success" />, color: 'success', label: 'Declining' };
     return { icon: <TrendingUp color="info" />, color: 'info', label: 'Stable' };
   };
 
-  const getSeverityColor = (severity) => {
+  const getSeverityColor = (severity: string) => {
     const colors = {
       critical: '#ef4444',
       high: '#f59e0b',
@@ -119,7 +137,7 @@ const DashboardIntelligencePanel = ({
       low: '#10b981',
       info: '#3b82f6'
     };
-    return colors[severity] || colors.info;
+    return colors[severity as keyof typeof colors] || colors.info;
   };
 
   const prepareTrendData = () => {
@@ -151,10 +169,10 @@ const DashboardIntelligencePanel = ({
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>Severity</InputLabel>
             <Select
-              value={filterCriteria.severity}
-              onChange={(e) => setFilterCriteria({...filterCriteria, severity: e.target.value})}
-              label="Severity"
-            >
+                value={filterCriteria.severity}
+                onChange={(e: SelectChangeEvent<string>) => setFilterCriteria({...filterCriteria, severity: e.target.value})}
+                label="Severity"
+              >
               <MenuItem value="all">All</MenuItem>
               <MenuItem value="critical">Critical</MenuItem>
               <MenuItem value="high">High</MenuItem>
@@ -162,13 +180,13 @@ const DashboardIntelligencePanel = ({
               <MenuItem value="low">Low</MenuItem>
             </Select>
           </FormControl>
-          <TextField
-            size="small"
-            placeholder="Search alerts..."
-            InputProps={{ startAdornment: <Search sx={{ mr: 1, fontSize: 20 }} /> }}
-            onChange={(e) => setFilterCriteria({...filterCriteria, search: e.target.value})}
-            sx={{ minWidth: 200 }}
-          />
+           <TextField
+             size="small"
+             placeholder="Search alerts..."
+             InputProps={{ startAdornment: <Search sx={{ mr: 1, fontSize: 20 }} /> }}
+             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCriteria({...filterCriteria, search: e.target.value})}
+             sx={{ minWidth: 200 }}
+           />
         </Box>
 
         {alerts.length === 0 ? (
@@ -179,10 +197,10 @@ const DashboardIntelligencePanel = ({
           <Stack spacing={2}>
             {alerts
               .filter(a => filterCriteria.severity === 'all' || a.severity === filterCriteria.severity)
-              .sort((a, b) => {
-                const severityOrder = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
-                return (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
-              })
+               .sort((a, b) => {
+                 const severityOrder = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+                 return (severityOrder[b.severity as keyof typeof severityOrder] || 0) - (severityOrder[a.severity as keyof typeof severityOrder] || 0);
+               })
               .map((alert, idx) => (
                 <Paper
                   key={idx}
@@ -371,7 +389,7 @@ const DashboardIntelligencePanel = ({
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Database color="primary" />
+            <Dataset color="primary" />
             Decision Traceability
           </Typography>
           <Typography variant="caption" color="text.secondary">
@@ -440,7 +458,7 @@ const DashboardIntelligencePanel = ({
           </TableBody>
         </Table>
 
-                    {drilldownData && (
+        {drilldownData && (
           <Accordion
             expanded={expandedAccordion === 'drilldown'}
             onChange={() => setExpandedAccordion(expandedAccordion === 'drilldown' ? null : 'drilldown')}
@@ -468,9 +486,9 @@ const DashboardIntelligencePanel = ({
           Risk Analytics
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'background.paper' }}>
-              <Typography variant="h3" sx={{ color: riskMetrics.avgRiskScore > 0.6 ? '#ef4444' : riskMetrics.avgRiskScore > 0.3 ? '#f59e0b' : '#10b981' }}>
+               <Typography variant="h3" sx={{ color: (riskMetrics.avgRiskScore ?? 0) > 0.6 ? '#ef4444' : (riskMetrics.avgRiskScore ?? 0) > 0.3 ? '#f59e0b' : '#10b981' }}>
                 {((riskMetrics.avgRiskScore || 0) * 100).toFixed(1)}%
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -478,9 +496,9 @@ const DashboardIntelligencePanel = ({
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'background.paper' }}>
-              <Typography variant="h3" color="success.main">
+              <Typography variant="h3" sx={{ color: '#10b981' }}>
                 {riskMetrics.falsePositiveRate ? (riskMetrics.falsePositiveRate * 100).toFixed(2) : '0.01'}%
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -488,9 +506,9 @@ const DashboardIntelligencePanel = ({
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'background.paper' }}>
-              <Typography variant="h3" color="info.main">
+              <Typography variant="h3" sx={{ color: '#3b82f6' }}>
                 {riskMetrics.falseNegativeRate ? (riskMetrics.falseNegativeRate * 100).toFixed(2) : '0.03'}%
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -498,9 +516,9 @@ const DashboardIntelligencePanel = ({
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'background.paper' }}>
-              <Typography variant="h3" color="warning.main">
+              <Typography variant="h3" sx={{ color: '#f59e0b' }}>
                 {riskMetrics.threatCount || 0}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -533,13 +551,13 @@ const DashboardIntelligencePanel = ({
     </Card>
   );
 
-  if (isLoading && propLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+   if (isLoading || propLoading) {
+     return (
+       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+         <CircularProgress />
+       </Box>
+     );
+   }
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

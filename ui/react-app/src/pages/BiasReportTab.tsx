@@ -306,7 +306,7 @@ function BiasReportTab() {
                           '& .MuiLinearProgress-bar': { bgcolor: '#10b981' }
                         }}
                       />
-                      <Typography variant="caption">6.2% (target: <5%)</Typography>
+                      <Typography variant="caption">6.2% (target: {'<'}5%)</Typography>
                     </Box>
                     <Box>
                       <Typography variant="body2" color="text.secondary">Demographic Parity</Typography>
@@ -320,7 +320,7 @@ function BiasReportTab() {
                           '& .MuiLinearProgress-bar': { bgcolor: '#3b82f6' }
                         }}
                       />
-                      <Typography variant="caption">3.2% (target: <5%) ✓</Typography>
+                      <Typography variant="caption">3.2% (target: {'<'}5%) {'\u2713'}</Typography>
                     </Box>
                   </Box>
                 </CardContent>

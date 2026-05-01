@@ -158,9 +158,9 @@ const DashboardHome = () => {
 <IconButton onClick={fetchDashboardData} className="refresh-btn">
               <Refresh />
             </IconButton>
-          <Button, CircularProgress variant="contained" startIcon={<Settings />} className="settings-btn">
-            System Config
-          </Button, CircularProgress>
+<Button variant="contained" startIcon={<Settings />} className="settings-btn">
+               System Config
+             </Button>
         </div>
       </div>
 
