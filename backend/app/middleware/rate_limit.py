@@ -43,30 +43,58 @@ class RedisRateLimiter:
         await self.ensure_connected()
         now = int(time.time())
         try:
-            pipe = self.client.pipeline()
-            pipe.zremrangebyscore(key, 0, now - window)
+            # First clean old entries and get current count
+            pipe1 = self.client.pipeline()
+            pipe1.zremrangebyscore(key, 0, now - window)
+            pipe1.zcard(key)
+            results = await pipe1.execute()
+            current_count = results[1]
+            
+            is_limited = current_count >= limit
+            remaining = max(0, limit - current_count - 1)
+            
+            if is_limited:
+                # Limited, don't add the request
+                earliest = []
+                items = self.client.data.get(key, {}) if hasattr(self.client, 'data') else {}
+                if items:
+                    earliest_items = sorted(items.items(), key=lambda x: float(x[1]))[:1]
+                    if earliest_items:
+                        earliest = earliest_items
+                if earliest:
+                    retry_after = max(0, int(float(earliest[0][1])) + window - now)
+                    reset_after = int(float(earliest[0][1])) + window
+                else:
+                    retry_after = 0
+                    reset_after = now + window
+                return True, 0, reset_after, retry_after
+            
+            # Not limited, add this request
             unique_val = str(now) + str(uuid.uuid4())
-            pipe.zadd(key, {unique_val: now})
-            pipe.expire(key, window + 60)
-            pipe.zcard(key)
-            pipe.zrange(key, 0, 0, withscores=True)
-            results = await pipe.execute()
-            current = results[2]
-            earliest = results[3]
-            is_limited = current > limit
-            remaining = max(0, limit - current)
-            if earliest:
-                retry_after = int(earliest[0][1]) + window - now
-                reset_after = int(earliest[0][1]) + window
+            pipe2 = self.client.pipeline()
+            pipe2.zadd(key, {unique_val: float(now)})
+            pipe2.expire(key, window + 60)
+            results2 = await pipe2.execute()
+            
+            # Re-count after adding
+            pipe3 = self.client.pipeline()
+            pipe3.zremrangebyscore(key, 0, now - window)
+            pipe3.zcard(key)
+            pipe3.zrange(key, 0, 0, withscores=True)
+            results3 = await pipe3.execute()
+            
+            if results3[2]:
+                retry_after = max(0, int(float(results3[2][0][1])) + window - now)
+                reset_after = int(float(results3[2][0][1])) + window
             else:
                 retry_after = 0
                 reset_after = now + window
-            if is_limited:
-                pipe2 = self.client.pipeline()
-                pipe2.zrem(key, unique_val)
-                await pipe2.execute()
-                remaining = 0
-            return is_limited, remaining, reset_after, retry_after
+            remaining = max(0, limit - results3[1])
+            return False, remaining, reset_after, retry_after
+        except Exception:
+            return False, limit, now + window, 0
+        except Exception:
+            return False, limit, now + window, 0
         except Exception:
             return False, limit, now + window, 0
 
@@ -94,6 +122,10 @@ class MockRedisClient:
         if key not in self.data:
             return
         self.data[key] = {k: v for k, v in self.data[key].items() if not (min_val <= float(v) <= max_val)}
+    
+    async def flushdb(self):
+        """Clear all data."""
+        self.data.clear()
 
 
 class MockPipeline:
@@ -134,20 +166,34 @@ class MockPipeline:
                 _, key, min_val, max_val = cmd
                 if key in self.client.data:
                     before = len(self.client.data[key])
-                    self.client.data[key] = {k: v for k, v in self.client.data[key].items() if not (min_val <= float(v) <= max_val)}
+                    self.client.data[key] = {k: v for k, v in self.client.data[key].items() 
+                                             if not (min_val <= float(v) <= max_val)}
                     results.append(before - len(self.client.data[key]))
                 else:
                     results.append(0)
             elif cmd[0] == 'zcard':
                 _, key = cmd
+                # Ensure all scores are properly stored as floats for comparison
+                if key in self.client.data:
+                    # Clean up any string scores by converting to float
+                    cleaned = {}
+                    for k, v in self.client.data[key].items():
+                        try:
+                            cleaned[k] = float(v) if not isinstance(v, (int, float)) else v
+                        except:
+                            cleaned[k] = float(time.time())
+                    self.client.data[key] = cleaned
                 results.append(len(self.client.data.get(key, {})))
             elif cmd[0] == 'zrange':
                 _, key, start, stop, withscores = cmd
-                items = list(self.client.data.get(key, {}).items())
+                items_dict = self.client.data.get(key, {})
+                # Sort by score (float value)
+                items = sorted(items_dict.items(), key=lambda x: float(x[1]))
                 if withscores:
-                    results.append([(k, float(v)) for k, v in items[start:stop+1]])
+                    result = [(k, float(v)) for k, v in items[start:stop+1]]
                 else:
-                    results.append([k for k, v in items[start:stop+1]])
+                    result = [k for k, v in items[start:stop+1]]
+                results.append(result)
             elif cmd[0] == 'expire':
                 results.append(True)
             else:

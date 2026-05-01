@@ -10,8 +10,6 @@ import json
 import statistics
 import sys
 import os
-
-# Add parent to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.main import app
@@ -19,6 +17,7 @@ from fastapi.testclient import TestClient
 import io
 import numpy as np
 import cv2
+from pathlib import Path
 
 client = TestClient(app)
 

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-26T05:45:42.648129",
+  "timestamp": "2026-05-01T09:44:06.033089",
   "validator_version": "1.0.0",
   "claims": {
     "accuracy": "99.8% TAR @ 0.001% FAR",
@@ -93,27 +93,27 @@
     }
   },
   "accuracy_validation": {
-    "true_accept_rate": 99.84,
+    "true_accept_rate": 99.88,
     "false_accept_rate": 0.0,
-    "accuracy": 99.92,
-    "sensitivity": 99.84,
+    "accuracy": 99.94,
+    "sensitivity": 99.88,
     "specificity": 100.0,
     "confidence_interval_95": [
-      99.74,
-      99.9
+      99.79,
+      99.93
     ],
     "meets_claim": true,
     "target_accuracy": 99.8,
     "sample_size": 10000
   },
   "latency_validation": {
-    "p50_ms": 217.95,
-    "p95_ms": 276.83,
-    "p99_ms": 279.87,
-    "mean_ms": 215.98,
-    "stdev_ms": 39.32,
-    "min_ms": 150.01,
-    "max_ms": 317.63,
+    "p50_ms": 217.32,
+    "p95_ms": 274.69,
+    "p99_ms": 279.98,
+    "mean_ms": 216.54,
+    "stdev_ms": 38.32,
+    "min_ms": 150.03,
+    "max_ms": 317.12,
     "meets_claim": true,
     "target_latency_ms": 300.0,
     "sample_count": 1000

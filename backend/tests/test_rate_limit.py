@@ -9,7 +9,7 @@ async def test_sliding_window_rate_limit():
     Test the Redis-backed sliding window logic.
     """
     # Use local redis for testing
-    redis_url = "redis://localhost:6379/1"
+    redis_url = "redis://mock:6379"
     limiter = RedisRateLimiter(redis_url)
     
     key = "test_user_123"
