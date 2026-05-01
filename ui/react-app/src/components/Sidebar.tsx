@@ -1,144 +1,41 @@
-import React, { useState, ReactNode } from 'react';
-import {
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Toolbar,
-  Divider,
-  Box,
-  Typography,
-  Collapse,
-  ListItemButton,
-  Chip,
-  Tooltip,
-  Badge,
-  Avatar,
-  useTheme,
-  ListItemButtonProps,
-  DrawerProps,
-  BoxProps,
-  TypographyProps,
-  ChipProps,
-  BadgeProps,
-  AvatarProps,
+import React, { useState } from 'react';
+import { 
+  Drawer, List, ListItem, ListItemIcon, ListItemText, 
+  Toolbar, Divider, Box, Typography, Collapse, ListItemButton,
+  Chip, Tooltip, Badge, Avatar, useTheme
 } from '@mui/material';
 import {
-  ExpandLess,
-  ExpandMore,
-  Shield,
-  Home,
-  PersonAdd,
-  CameraAlt,
-  BarChart,
-  Settings,
-  ExitToApp,
-  AdminPanelSettings,
-  Videocam,
-  Gavel,
-  Code,
-  Monitor,
-  Radar,
-  NetworkCheck,
-  ShowChart,
-  CompareArrows,
-  FilterCenterFocus,
-  BugReport,
-Fingerprint,
-  RemoveRedEye,
-  Style,
-  BlurLinear,
-  VerifiedUser,
-  Key,
-  Description,
-Layers,
-  Storage,
-  Public,
-  Policy,
-  Gavel as GavelIcon,
-  ReportProblem,
-  Lock,
-  TrendingUp,
-  Analytics,
-  Psychology,
-  Cloud,
-  Domain,
-  Timeline,
-  AccountCircle,
-  ChevronRight,
+  ExpandLess, ExpandMore, Shield, Home, PersonAdd, CameraAlt, 
+  BarChart, Settings, ExitToApp, AdminPanelSettings,
+  Videocam, Gavel, Code, Monitor, Radar, NetworkCheck,
+  ShowChart, CompareArrows, FilterCenterFocus, BugReport,
+  Fingerprint, Eye, Style, BlurLinear, VerifiedUser, Key,
+  Description, Layers, Storage, Public, Policy, Gavel as GavelIcon,
+  Warning, Lock, TrendingUp, Analytics, Brain, Database,
+  Cloud, Domain, Timeline, AccountCircle, ChevronRight
 } from '@mui/icons-material';
 
-// TypeScript types for Sidebar props and navigation
-export interface NavItem {
-  id: string;
-  text: string;
-  icon: ReactNode;
-  roles: string[];
-  badge?: number;
-}
+const drawerWidth = 280;
 
-export interface NavSection {
-  key: string;
-  label: string;
-  icon: ReactNode;
-  items: NavItem[];
-  badge?: number;
-  alert?: boolean;
-}
-
-export interface SidebarProps {
-  activePage: string;
-  setActivePage: (page: string) => void;
-  onLogout: () => void;
-  user: User | null;
-}
-
-export interface User {
-  user_id?: string;
-  email?: string;
-  name?: string;
-  role?: string;
-  subscription_tier?: string;
-}
-
-type Theme = ReturnType<typeof useTheme>;
-
-const DRAWER_WIDTH = 280;
-
-// Helper component types for styling
-interface StyledBoxProps extends BoxProps {
-  theme?: Theme;
-}
-
-interface SectionIconProps {
-  theme?: Theme;
-  expanded?: boolean;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onLogout, user }) => {
+const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
   const theme = useTheme();
-
-  // Expanded sections state
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+  const [expandedSections, setExpandedSections] = useState({
     core: true,
     monitoring: true,
     explainability: true,
     security: true,
     governance: true,
-    identity: true,
+    identity: true
   });
 
-  // Toggle section expansion
-  const toggleSection = (section: string): void => {
-    setExpandedSections((prev) => ({
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
       ...prev,
-      [section]: !prev[section],
+      [section]: !prev[section]
     }));
   };
 
-  // Navigation sections configuration
-  const navSections: NavSection[] = [
+  const navSections = [
     {
       key: 'core',
       label: 'Core System',
@@ -148,7 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onLogout, 
         { id: 'enroll', text: 'Identity Enrollment', icon: <PersonAdd />, roles: ['super_admin', 'admin', 'analyst'] },
         { id: 'recognize', text: 'Real-time Recognize', icon: <CameraAlt />, roles: ['super_admin', 'admin', 'operator', 'security'] },
         { id: 'cameras', text: 'Camera Management', icon: <Videocam />, roles: ['super_admin', 'admin', 'operator'] },
-      ],
+      ]
     },
     {
       key: 'monitoring',
@@ -160,32 +57,32 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onLogout, 
         { id: 'analytics', text: 'Behavior Analytics', icon: <Radar />, roles: ['super_admin', 'admin', 'operator', 'auditor', 'analyst'] },
         { id: 'tracking', text: 'Multi-Camera Track', icon: <NetworkCheck />, roles: ['super_admin', 'admin', 'operator', 'security'] },
         { id: 'drift', text: 'Behavior Drift', icon: <TrendingUp />, badge: 2, roles: ['admin'] },
-      ],
+      ]
     },
-{
+    {
       key: 'explainability',
       label: 'Explainable AI',
-      icon: <Psychology />,
+      icon: <Brain />,
       items: [
         { id: 'explanations', text: 'Decision Breakdown', icon: <ShowChart />, roles: ['admin'] },
         { id: 'attribution', text: 'Visual Attribution', icon: <FilterCenterFocus />, roles: ['admin'] },
         { id: 'counterfactuals', text: 'Counterfactual Analysis', icon: <CompareArrows />, roles: ['admin'] },
         { id: 'calibration', text: 'Confidence Calibration', icon: <Analytics />, roles: ['admin'] },
         { id: 'bias-report', text: 'Bias Detection', icon: <AccountCircle />, roles: ['admin'] },
-      ],
+      ]
     },
     {
       key: 'security',
       label: 'Anti-Spoof & Defense',
-      icon: <Shield />,
+      icon: <Security />,
       alert: true,
-items: [
+      items: [
         { id: 'deepfake', text: 'Deepfake Detection', icon: <BugReport />, badge: 12, roles: ['admin', 'security'] },
-        { id: 'threats', text: 'Threat Intelligence', icon: <Storage />, roles: ['admin'] },
-        { id: 'liveness', text: 'Liveness Analysis', icon: <RemoveRedEye />, roles: ['admin', 'security'] },
+        { id: 'threats', text: 'Threat Intelligence', icon: <Database />, roles: ['admin'] },
+        { id: 'liveness', text: 'Liveness Analysis', icon: <Eye />, roles: ['admin', 'security'] },
         { id: 'gan-detection', text: 'GAN Artifacts', icon: <Style />, roles: ['admin'] },
         { id: 'watermarks', text: 'Watermark Detect', icon: <BlurLinear />, roles: ['admin'] },
-      ],
+      ]
     },
     {
       key: 'governance',
@@ -195,9 +92,9 @@ items: [
         { id: 'policies', text: 'Policy Engine', icon: <Policy />, roles: ['admin'] },
         { id: 'jurisdictions', text: 'Cross-Border Rules', icon: <Public />, roles: ['admin'] },
         { id: 'consent', text: 'Consent Mgmt', icon: <VerifiedUser />, roles: ['super_admin', 'admin', 'analyst'] },
-{ id: 'ethical-alerts', text: 'Ethical Alerts', icon: <ReportProblem />, badge: 1, roles: ['admin'] },
+        { id: 'ethical-alerts', text: 'Ethical Alerts', icon: <Warning />, badge: 1, roles: ['admin'] },
         { id: 'audit', text: 'Audit Trails', icon: <Key />, roles: ['admin'] },
-      ],
+      ]
     },
     {
       key: 'identity',
@@ -208,34 +105,25 @@ items: [
         { id: 'vc', text: 'Verifiable Credentials', icon: <Description />, roles: ['admin', 'hr'] },
         { id: 'tokens', text: 'Revocable Tokens', icon: <Lock />, roles: ['admin'] },
         { id: 'disclosure', text: 'Selective Disclosure', icon: <Layers />, roles: ['admin'] },
-{ id: 'wallet', text: 'Secure Wallet', icon: <Storage />, roles: ['admin'] },
-      ],
+        { id: 'wallet', text: 'Secure Wallet', icon: <Database />, roles: ['admin'] },
+      ]
     },
   ];
 
-  // Flatten menu items for filtering
-  const menuItems = navSections.flatMap((section) => section.items);
+  const menuItems = navSections.flatMap(section => section.items);
 
-  // Filter menu items by user role
-  const filteredMenuItems = menuItems.filter(
-    (item) => !user?.role || item.roles.includes(user.role.toLowerCase())
+  const filteredMenuItems = menuItems.filter(item => 
+    !user?.role || item.roles.includes(user.role.toLowerCase())
   );
-
-  // Get user initial for avatar
-  const getUserInitial = (): string => {
-    if (user?.name) return user.name[0];
-    if (user?.email) return user.email[0];
-    return 'U';
-  };
 
   return (
     <Drawer
       variant="permanent"
       sx={{
-        width: DRAWER_WIDTH,
+        width: drawerWidth,
         flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: DRAWER_WIDTH,
+        [`& .MuiDrawer-paper`]: { 
+          width: drawerWidth, 
           boxSizing: 'border-box',
           background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
           borderRight: '1px solid rgba(255,255,255,0.1)',
@@ -244,24 +132,19 @@ items: [
     >
       <Toolbar>
         <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+          <Box sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
             <Shield sx={{ color: 'white', fontSize: 20 }} />
           </Box>
           <Box>
-            <Typography
-              variant="subtitle1"
-              sx={{ color: '#f1f5f9', fontWeight: 700, fontSize: '0.9rem' }}
-            >
+            <Typography variant="subtitle1" sx={{ color: '#f1f5f9', fontWeight: 700, fontSize: '0.9rem' }}>
               Zero-Knowledge ID
             </Typography>
             <Typography variant="caption" sx={{ color: '#64748b' }}>
@@ -270,17 +153,10 @@ items: [
           </Box>
         </Box>
       </Toolbar>
-
+      
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-
-      <Box
-        sx={{
-          overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-        }}
-      >
+      
+      <Box sx={{ overflow: 'auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
         {navSections.map((section) => (
           <Box key={section.key} sx={{ mb: 1 }}>
             <ListItemButton
@@ -295,46 +171,36 @@ items: [
                 },
               }}
             >
-              <ListItemIcon
-                sx={{
-                  minWidth: 40,
-                  color: expandedSections[section.key] ? '#3b82f6' : '#94a3b8',
-                  fontSize: 18,
-                }}
-              >
+              <ListItemIcon sx={{ 
+                minWidth: 40, 
+                color: expandedSections[section.key] ? '#3b82f6' : '#94a3b8',
+                fontSize: 18,
+              }}>
                 {section.icon}
               </ListItemIcon>
-              <Typography
-                variant="body2"
-                sx={{
-                  flex: 1,
-                  color: expandedSections[section.key] ? '#f1f5f9' : '#94a3b8',
-                  fontWeight: expandedSections[section.key] ? 600 : 400,
-                  fontSize: '0.8rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
+              <Typography variant="body2" sx={{
+                flex: 1,
+                color: expandedSections[section.key] ? '#f1f5f9' : '#94a3b8',
+                fontWeight: expandedSections[section.key] ? 600 : 400,
+                fontSize: '0.8rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}>
                 {section.label}
               </Typography>
-{section.badge && (
-                <Badge badgeContent={section.badge} color="error" />
+              {section.badge && (
+                <Badge badgeContent={section.badge} color="error" size="small" />
               )}
-              {expandedSections[section.key] ? (
-                <ExpandLess sx={{ color: '#3b82f6', fontSize: 18 }} />
-              ) : (
+              {expandedSections[section.key] ? 
+                <ExpandLess sx={{ color: '#3b82f6', fontSize: 18 }} /> : 
                 <ExpandMore sx={{ color: '#64748b', fontSize: 18 }} />
-              )}
+              }
             </ListItemButton>
-
+            
             <Collapse in={expandedSections[section.key]} timeout="auto" unmountOnExit>
               <List component="div" disablePadding>
                 {section.items
-                  .filter(
-                    (item) =>
-                      !user?.role ||
-                      item.roles.includes(user.role.toLowerCase())
-                  )
+                  .filter(item => !user?.role || item.roles.includes(user.role.toLowerCase()))
                   .map((item) => (
                     <ListItemButton
                       key={item.id}
@@ -358,13 +224,11 @@ items: [
                         },
                       }}
                     >
-                      <ListItemIcon
-                        sx={{
-                          minWidth: 36,
-                          fontSize: 16,
-                          color: activePage === item.id ? '#3b82f6' : '#94a3b8',
-                        }}
-                      >
+                      <ListItemIcon sx={{ 
+                        minWidth: 36, 
+                        fontSize: 16,
+                        color: activePage === item.id ? '#3b82f6' : '#94a3b8',
+                      }}>
                         {item.icon}
                       </ListItemIcon>
                       <ListItemText
@@ -374,16 +238,17 @@ items: [
                           fontWeight: activePage === item.id ? 600 : 400,
                         }}
                       />
-{item.badge && (
-                        <Badge
-                          badgeContent={item.badge}
-                          color="error"
+                      {item.badge && (
+                        <Badge 
+                          badgeContent={item.badge} 
+                          color="error" 
+                          size="small"
                           sx={{
                             '& .MuiBadge-badge': {
                               fontSize: '0.7rem',
                               height: 14,
                               minWidth: 14,
-                            },
+                            }
                           }}
                         />
                       )}
@@ -396,51 +261,39 @@ items: [
 
         <Box sx={{ flexGrow: 1 }} />
 
-        <Divider
-          sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 1 }}
-        />
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 1 }} />
 
         {user && (
           <Box sx={{ p: 2, mb: 1 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                mb: 1.5,
-              }}
-            >
-              <Avatar
-                sx={{
-                  width: 36,
-                  height: 36,
-                  fontSize: '0.8rem',
-                  bgcolor: '#3b82f6',
-                }}
-              >
-                {getUserInitial()}
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 1.5,
+            }}>
+              <Avatar sx={{
+                width: 36,
+                height: 36,
+                fontSize: '0.8rem',
+                bgcolor: '#3b82f6',
+              }}>
+                {user.name?.[0] || user.email?.[0] || 'U'}
               </Avatar>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: '#f1f5f9',
-                    fontWeight: 600,
-                    fontSize: '0.8rem',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
+                <Typography variant="body2" sx={{ 
+                  color: '#f1f5f9', 
+                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
                   {user.name || user.email}
                 </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: '#64748b',
-                    fontSize: '0.7rem',
-                    textTransform: 'capitalize',
-                  }}
-                >
+                <Typography variant="caption" sx={{ 
+                  color: '#64748b',
+                  fontSize: '0.7rem',
+                  textTransform: 'capitalize',
+                }}>
                   {user.role || 'viewer'}
                 </Typography>
               </Box>
@@ -460,7 +313,7 @@ items: [
             />
           </Box>
         )}
-
+        
         <ListItemButton
           onClick={onLogout}
           sx={{

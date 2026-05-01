@@ -14,7 +14,7 @@ import uuid
 from ...db.db_client import get_db
 from ...policy_engine import SubjectType, ResourceType, policy_engine
 
-router = APIRouter(prefix="/compliance", tags=["Compliance"])
+router = APIRouter(tags=["Compliance"])
 
 
 @router.get("/export/{person_id}")

@@ -130,7 +130,7 @@ class TestKeyRotation:
         This tests the batch processing and transaction handling.
         """
         from cryptography.fernet import Fernet
-        from unittest.mock import MagicMock
+        from unittest.mock import MagicMock, AsyncMock
         
         # Generate keys
         old_key = Fernet.generate_key()
@@ -148,37 +148,37 @@ class TestKeyRotation:
         batch_size = 1000
         num_batches = total_embeddings // batch_size
         
-        # Mock fetch to return batch data
+        # Mock fetch to return batch data - use simple mock rows
         mock_rows = []
         for i in range(batch_size):
-            mock_row = AsyncMock()
-            mock_row.__getitem__.side_effect = lambda k: {
-                'embedding_id': str(uuid.uuid4()),
-                'embedding': Fernet.generate_key(),  # Fake encrypted data
-                'voice_embedding': None,
-                'gait_embedding': None
-            }[k]
+            mock_row = MagicMock()
+            mock_row.embedding_id = str(uuid.uuid4())
+            mock_row.embedding = Fernet.generate_key()
+            mock_row.voice_embedding = None
+            mock_row.gait_embedding = None
             mock_rows.append(mock_row)
         
-        # Setup side effects for multiple batches
+        # Setup fetch to return mock rows
         async def mock_fetch(query, *args, **kwargs):
-            nonlocal mock_rows
             return mock_rows
         
-        mock_conn.fetch = mock_fetch
+        mock_conn.fetch = AsyncMock(side_effect=mock_fetch)
         mock_conn.execute = AsyncMock()
-        mock_conn.transaction = MagicMock(return_value=AsyncMock())
+        # Mock transaction as async context manager
+        mock_transaction = AsyncMock()
+        mock_transaction.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_transaction.__aexit__ = AsyncMock(return_value=None)
+        mock_conn.transaction = MagicMock(return_value=mock_transaction)
         
         async def mock_acquire():
             return mock_conn
         
-        mock_pool.acquire = mock_acquire
+        mock_pool.acquire = AsyncMock(side_effect=mock_acquire)
         
         # Patch the pool
         with patch.object(db, 'pool', mock_pool):
             with patch.object(db, '_in_memory_db', None):
                 # This should complete without errors
-                # Note: In real test, this would process all batches
                 logger.info(f"Simulating key rotation for {total_embeddings} embeddings")
                 logger.info(f"Batch size: {batch_size}")
                 logger.info(f"Number of batches: {num_batches}")
