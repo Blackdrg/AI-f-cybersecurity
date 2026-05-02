@@ -72,7 +72,7 @@ async def start_federated_round(
         max_grad_norm=config.get("max_grad_norm", 1.0)
     )
     
-    result = await client_orchestrator.run_round(round_config.round_id, round_config)
+    result = await asyncio.create_task(client_orchestrator.run_round(round_config.round_id, round_config))
     
     return {
         "success": True,

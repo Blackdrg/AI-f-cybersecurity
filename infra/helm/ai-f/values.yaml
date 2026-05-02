@@ -1,0 +1,46 @@
+backend:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: ai-f/backend
+    tag: "latest"
+    pullPolicy: Always
+  gpu: true
+  resources:
+    limits:
+      cpu: 4
+      memory: 8Gi
+      nvidia.com/gpu: 1
+    requests:
+      cpu: 1
+      memory: 2Gi
+
+redis:
+  enabled: true
+  password: "change-me-prod"
+
+postgres:
+  enabled: true
+
+faiss:
+  enabled: true
+  replicaCount: 2
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: ai-f.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+canary:
+  enabled: true
+  weight: 20
+
+hpa:
+  backend:
+    minReplicas: 3
+  faiss:
+    minReplicas: 2

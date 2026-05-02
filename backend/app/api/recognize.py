@@ -30,7 +30,7 @@ from ..models.explainable_ai import decision_breakdown_engine
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Model singletons
+# Model singletons (embedding models stay outside enclave)
 detector = FaceDetector()
 embedder = FaceEmbedder()
 voice_embedder = VoiceEmbedder()
@@ -44,7 +44,7 @@ from ..services.reliability import ai_model_circuit_breaker, db_circuit_breaker,
 
 
 def recvall(conn, n):
-    """Helper function to receive n bytes or return None if EOF is reached."""
+    \"\"\"Helper to receive exactly n bytes.\"\"\"
     data = b''
     while len(data) < n:
         packet = conn.recv(n - len(data))
@@ -55,39 +55,36 @@ def recvall(conn, n):
 
 
 def send_request_to_enclave(request_dict):
-    """Send a request to the enclave service via VSOCK and return the response."""
+    \"\"\"Send encrypted request to TEE enclave via VSOCK.
+    
+    Encrypts embedding → VSOCK → Decrypt response.
+    \"\"\"
+    from ..security.encryption_utils import encrypt_request, decrypt_response
+    
+    encrypted_req = encrypt_request(request_dict)
+    
     try:
-        # Connect to the enclave via VSOCK
-        # Note: The enclave's CID is usually 3, but you can get it from the nitro-cli output
         sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
-        sock.connect((3, 5000))  # (CID, port)
+        sock.settimeout(5.0)
+        sock.connect((3, 5000))
 
-        # Encode the request
-        request_json = json.dumps(request_dict)
+        request_json = json.dumps(encrypted_req)
         request_bytes = request_json.encode('utf-8')
-        # Send length first
         sock.sendall(struct.pack('>I', len(request_bytes)))
         sock.sendall(request_bytes)
 
-        # Receive response
         raw_msglen = recvall(sock, 4)
         if not raw_msglen:
-            sock.close()
-            return {"success": False, "error": "Failed to receive response length"}
+            return {"success": False, "error": "No response"}
         msglen = struct.unpack('>I', raw_msglen)[0]
         response_bytes = recvall(sock, msglen)
         sock.close()
         
-        if not response_bytes:
-            return {"success": False, "error": "Failed to receive response data"}
-            
-        return json.loads(response_bytes.decode('utf-8'))
-    except socket.timeout:
-        return {"success": False, "error": "Enclave service timeout"}
-    except ConnectionRefusedError:
-        return {"success": False, "error": "Enclave service not available"}
+        response = json.loads(response_bytes.decode('utf-8'))
+        return decrypt_response(response)
     except Exception as e:
-        return {"success": False, "error": f"Enclave communication error: {str(e)}"}
+        logger.error(f"TEE enclave error: {e}")
+        return {"success": False, "error": str(e)}
 
 
 @router.post("/recognize", response_model=StandardResponse)

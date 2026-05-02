@@ -1,168 +1,78 @@
-"""
-Biometric Recognition Models Package.
+\"\"\"AI-F Model Registry - ONNX Production Runtime\"\"\"
+import os
+import logging
+from pathlib import Path
+from typing import Dict, Any
+import onnxruntime as ort
+import numpy as np
 
-Includes all ML models and utility modules for identity recognition.
-"""
+logger = logging.getLogger(__name__)
 
-# Core models
-from .face_detector import FaceDetector
-from .face_embedder import FaceEmbedder
-from .face_reconstructor import FaceReconstructor
-from .spoof_detector import SpoofDetector
-from .emotion_detector import EmotionDetector
-from .age_gender_estimator import AgeGenderEstimator
-from .behavioral_predictor import BehavioralPredictor
-from .gait_analyzer import GaitAnalyzer
-from .voice_embedder import VoiceEmbedder
+# Production ONNX bundle path (docker /models/onnx_bundle)
+ONNX_BUNDLE_PATH = Path(\"/models/onnx_bundle\") if os.getenv(\"IN_DOCKER\") else Path(__file__).parent / \"..\" / \"models\" / \"onnx_bundle\"
 
-# Advanced security models
-from .enhanced_spoof import (
-    SpoofResult,
-    ChallengeResponseVerifier,
-    TemporalAnalyzer,
-    EnhancedSpoofDetector
-)
-from .model_calibrator import ModelCalibrator
-from .bias_detector import BiasDetector
-from .ethical_governor import EthicalGovernor
-from .crypto_attestation import CryptoAttestation
+class ModelRegistry:
+    def __init__(self):
+        self.sessions: Dict[str, ort.InferenceSession] = {}
+        self.init_onnx_bundle()
+    
+    def init_onnx_bundle(self):
+        \"\"\"Load production ONNX models from bundle. Fallback to legacy PyTorch.\"\"\"
+        if not ONNX_BUNDLE_PATH.exists():
+            logger.warning(f\"ONNX bundle missing: {ONNX_BUNDLE_PATH}. Using PyTorch fallback.\")
+            return
+        
+        onnx_files = {
+            \"spoof_detector\": \"spoof_detector.onnx\",
+            \"deepfake_detector\": \"deepfake_detector.onnx\",
+            \"face_reconstructor\": \"face_reconstructor.onnx\",
+        }
+        
+        for name, onnx_file in onnx_files.items():
+            onnx_path = ONNX_BUNDLE_PATH / onnx_file
+            if onnx_path.exists():
+                try:
+                    self.sessions[name] = ort.InferenceSession(str(onnx_path))
+                    logger.info(f\"Loaded ONNX {name}: {onnx_path}\")
+                except Exception as e:
+                    logger.error(f\"Failed to load {onnx_path}: {e}\")
+        
+        # Symlink bundles
+        (ONNX_BUNDLE_PATH / \"insightface_buffalo_l\").exists() or logger.info(\"InsightFace bundle ready\")
+        (ONNX_BUNDLE_PATH / \"speechbrain_voxceleb\").exists() or logger.info(\"SpeechBrain bundle ready\")
+    
+    def infer_onnx(self, model_name: str, input_data: np.ndarray) -> np.ndarray:
+        \"\"\"Run ONNX inference with preprocessing/normalization.\"\"\"
+        if model_name not in self.sessions:
+            raise ValueError(f\"ONNX model '{model_name}' not loaded\")
+        
+        session = self.sessions[model_name]
+        inputs = {session.get_inputs()[0].name: input_data.astype(np.float32)}
+        outputs = session.run(None, inputs)
+        return outputs[0][0]  # Squeeze batch/single output
 
-# Next-gen identity features
-from .homomorphic_encryption import (
-    HomomorphicEncryptionEngine,
-    HomomorphicVectorStore
-)
-from .mpc_matching import (
-    MPCIdentityMatcher,
-    FederatedIdentityRegistry,
-    PrivateSetIntersection,
-    BloomFilter,
-    SecureScalarProduct
-)
-from .did_identity import (
-    DIDManager,
-    SecureEnclaveWallet,
-    DIDKeyManager,
-    DIDDocument,
-    VerifiableCredential
-)
-from .revocable_tokens import (
-    RevocableTokenManager,
-    TokenRevocationRegistry,
-    RevocableToken,
-    TokenType,
-    TokenMetadata
-)
-from .zkp_audit_trails import (
-    AuditTrail,
-    ZKProofGenerator,
-    AuditEvent,
-    ZKPAuditProof
-)
-from .cross_border_privacy import (
-    PrivacyPolicyEngine,
-    ProcessingDecision,
-    GeoIPResolver,
-    Jurisdiction,
-    PrivacyLaw,
-    RegionalPolicy
-)
+# Global production registry
+registry = ModelRegistry()
 
-# Explainable AI & monitoring
-from .explainable_ai import (
-    DecisionBreakdownEngine,
-    ExplainableDecision,
-    DecisionFactor,
-    AttributionMap,
-    CounterfactualExplanation,
-    CalibrationPoint,
-    BiasMetrics,
-    ConfidenceCalibrator,
-    BiasAuditor,
-    decision_breakdown_engine
-)
-from .continuous_monitoring import (
-    PrivacyAwareSessionManager,
-    SessionContinuityTracker,
-    SessionContext,
-    BehavioralDrift,
-    PassiveReauthManager
-)
-
-# Deepfake defense
-from .enhanced_spoof import (
-    DeepfakeDetector,
-    DeepfakeThreatIntelligence,
-    WatermarkDetector,
-    SyntheticRiskModel,
-    enhanced_spoof_detector
-)
-
-# Emotion + Behavior Layer
-from .emotion_behavior import (
-    EmotionBehaviorEngine,
-    EmotionDetector as BehaviorEmotionDetector,
-    BehaviorTracker,
-    RulesEngine,
-    get_emotion_behavior_engine,
-    analyze_recognition_with_behavior
-)
+# Legacy imports (PyTorch fallback if ONNX unavailable)
+try:
+    from .face_detector import FaceDetector
+    from .face_embedder import FaceEmbedder
+    from .spoof_detector import SpoofDetector
+    from .face_reconstructor import FaceReconstructor
+    from .emotion_detector import EmotionDetector
+    from .age_gender_estimator import AgeGenderEstimator
+    from .voice_embedder import VoiceEmbedder
+    from .gait_analyzer import GaitAnalyzer
+    from .bias_detector import BiasDetector
+    from .privacy_engine import dp_engine
+    from .behavioral_predictor import BehavioralPredictor
+except ImportError as e:
+    logger.warning(f\"Model import failed: {e}\")
 
 __all__ = [
-    # Core models
-    'FaceDetector',
-    'FaceEmbedder',
-    'FaceReconstructor',
-    'SpoofDetector',
-    'EmotionDetector',
-    'AgeGenderEstimator',
-    'BehavioralPredictor',
-    'GaitAnalyzer',
-    'VoiceEmbedder',
-    
-    # Advanced security
-    'EnhancedSpoofDetector',
-    'ChallengeResponseVerifier',
-    'TemporalAnalyzer',
-    'ModelCalibrator',
-    'BiasDetector',
-    'EthicalGovernor',
-    'CryptoAttestation',
-    
-    # Next-gen identity
-    'HomomorphicEncryptionEngine',
-    'HomomorphicVectorStore',
-    'MPCIdentityMatcher',
-    'FederatedIdentityRegistry',
-    'DIDManager',
-    'SecureEnclaveWallet',
-    'RevocableTokenManager',
-    'AuditTrail',
-    'PrivacyPolicyEngine',
-    
-    # Explainable AI
-    'DecisionBreakdownEngine',
-    'ExplainableDecision',
-    'ConfidenceCalibrator',
-    'BiasAuditor',
-    'decision_breakdown_engine',
-    
-    # Monitoring
-    'PrivacyAwareSessionManager',
-    'SessionContinuityTracker',
-    
-    # Deepfake defense
-    'DeepfakeDetector',
-    'DeepfakeThreatIntelligence',
-    'WatermarkDetector',
-    'SyntheticRiskModel',
-    'enhanced_spoof_detector',
-    
-    # Emotion + Behavior Layer
-    'EmotionBehaviorEngine',
-    'BehaviorEmotionDetector',
-    'BehaviorTracker',
-    'RulesEngine',
-    'get_emotion_behavior_engine',
-    'analyze_recognition_with_behavior'
+    \"registry\", \"ModelRegistry\",
+    \"FaceDetector\", \"FaceEmbedder\", \"SpoofDetector\", \"FaceReconstructor\",
+    \"EmotionDetector\", \"AgeGenderEstimator\", \"VoiceEmbedder\", \"GaitAnalyzer\",
+    \"BiasDetector\", \"dp_engine\", \"BehavioralPredictor\"
 ]

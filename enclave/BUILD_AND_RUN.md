@@ -7,15 +7,25 @@
 
 ## Steps
 
-### 1. Build the Docker image
+### 1. Build the EIF-optimized Docker image
 From the `enclave` directory:
 ```bash
-docker build -t face-recognition-enclave .
+docker build -f Dockerfile.eif -t ai-f-enclave:eif .
 ```
 
 ### 2. Convert the Docker image to an EIF (Enclave Image File)
 ```bash
-nitro-cli build-enclave --docker-uri face-recognition-enclave --output-file face-recognition-enclave.eif
+nitro-cli build-enclave \
+  --docker-uri ai-f-enclave:eif \
+  --output-file ai-f-enclave.eif \
+  --memory-mib 512 \
+  --cpu-count 2
+```
+
+**Or use the unified script:**
+```bash
+cd ../scripts
+./build_deploy_enclave.sh build
 ```
 
 ### 3. Run the enclave

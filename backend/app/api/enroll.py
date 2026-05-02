@@ -46,39 +46,39 @@ def recvall(conn, n):
 
 
 def send_request_to_enclave(request_dict):
-    """Send a request to the enclave service via VSOCK and return the response."""
+    """Send encrypted request to enclave via VSOCK with attestation.
+    
+    Encrypts embedding field, sends via VSOCK, decrypts response.
+    """
+    from ..security.encryption_utils import encrypt_request, decrypt_response
+    
+    # Encrypt embedding before transmission
+    encrypted_req = encrypt_request(request_dict)
+    
     try:
-        # Connect to the enclave via VSOCK
-        # Note: The enclave's CID is usually 3, but you can get it from the nitro-cli output
         sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
-        sock.connect((3, 5000))  # (CID, port)
+        sock.settimeout(5.0)
+        sock.connect((3, 5000))
 
-        # Encode the request
-        request_json = json.dumps(request_dict)
+        request_json = json.dumps(encrypted_req)
         request_bytes = request_json.encode('utf-8')
-        # Send length first
         sock.sendall(struct.pack('>I', len(request_bytes)))
         sock.sendall(request_bytes)
 
-        # Receive response
         raw_msglen = recvall(sock, 4)
         if not raw_msglen:
-            sock.close()
-            return {"success": False, "error": "Failed to receive response length"}
+            return {"success": False, "error": "No response"}
         msglen = struct.unpack('>I', raw_msglen)[0]
         response_bytes = recvall(sock, msglen)
         sock.close()
         
-        if not response_bytes:
-            return {"success": False, "error": "Failed to receive response data"}
-            
-        return json.loads(response_bytes.decode('utf-8'))
-    except socket.timeout:
-        return {"success": False, "error": "Enclave service timeout"}
-    except ConnectionRefusedError:
-        return {"success": False, "error": "Enclave service not available"}
+        response = json.loads(response_bytes.decode('utf-8'))
+        # Decrypt response if encrypted
+        decrypted = decrypt_response(response)
+        return decrypted
     except Exception as e:
-        return {"success": False, "error": f"Enclave communication error: {str(e)}"}
+        logger.error(f"Enclave error: {e}")
+        return {"success": False, "error": str(e)}
 
 
 @router.post("/identities/merge")

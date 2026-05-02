@@ -32,29 +32,18 @@ async def stripe_webhook(
     x_stripe_signature: Optional[str] = Header(None)
 ):
     """
-    Handle Stripe billing webhooks with signature verification.
+    Production Stripe webhook handler.
     """
     payload = await request.body()
+    sig_header = x_stripe_signature
+    from ..services.stripe_service import stripe, billing_service
+    event = stripe.Webhook.construct_event(
+        payload, sig_header, stripe.webhook_secret
+    )
     
-    # In production, use stripe.Webhook.construct_event
-    # For this OS baseline, we show the manual verification pattern
-    if not verify_signature(payload, x_stripe_signature, WEBHOOK_SECRET):
-        raise HTTPException(
-            status_code=401,
-            detail={"code": ErrorCode.AUTH_INVALID_TOKEN, "message": "Invalid webhook signature"}
-        )
+    response = await billing_service.handle_webhook(event)
     
-    event = json.loads(payload)
-    event_type = event.get("type")
-    
-    if event_type == "checkout.session.completed":
-        # Handle successful payment
-        pass
-    elif event_type == "customer.subscription.deleted":
-        # Handle cancellation
-        pass
-        
-    return {"status": "success"}
+    return response
 
 @router.post("/webhooks/biometric-event")
 async def biometric_event_webhook(

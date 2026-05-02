@@ -30,23 +30,18 @@ class SpoofNet(nn.Module):
 
 
 class SpoofDetector:
-    def __init__(self):
-        # Integrate texture/depth-based spoof detector model
-        self.device = torch.device(
-            'cuda' if torch.cuda.is_available() else 'cpu')
-        self.model = SpoofNet().to(self.device)
-        # For POC, use random weights; in production, load pre-trained model
-        # self.model.load_state_dict(torch.load('path/to/spoof_model.pth'))
-        self.model.eval()
+    \"\"\"Production ONNX + PyTorch hybrid spoof/deepfake detector.\"\"\"
 
-        # Fallback to insightface if available
-        # try:
-        #     self.app = FaceAnalysis(name='antelope')  # Antelope has anti-spoof
-        #     self.app.prepare(ctx_id=0, det_size=(640, 640))
-        #     self.use_insightface = True
-        # except:
-        #     self.use_insightface = False
-        self.use_insightface = False
+    def __init__(self):
+        from . import registry
+        self.registry = registry
+        self.use_onnx = hasattr(self.registry, 'sessions') and 'spoof_detector' in self.registry.sessions
+        self.use_onnx_deepfake = self.use_onnx and 'deepfake_detector' in self.registry.sessions
+        logger.info(f\"SpoofDetector: ONNX={self.use_onnx}, Deepfake ONNX={self.use_onnx_deepfake}\")
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if not self.use_onnx:
+            self.model = SpoofNet().to(self.device)
+            self.model.eval()
 
     def detect_spoof(self, image: np.ndarray, face_bbox: list) -> float:
         """
@@ -67,13 +62,18 @@ class SpoofDetector:
         #             return face['spoofing']  # Assuming 0-1 score
         #     # Fallback if no spoof score
 
-        # Model-based detection: extract texture features
-        face_resized = cv2.resize(face_roi, (64, 64))  # Resize for model
-        face_tensor = torch.from_numpy(face_resized).permute(
-            2, 0, 1).float().unsqueeze(0).to(self.device) / 255.0
-
-        with torch.no_grad():
-            spoof_prob = self.model(face_tensor).item()
+        # ONNX priority, PyTorch fallback
+        face_resized = cv2.resize(face_roi, (64, 64))
+        face_tensor = torch.from_numpy(face_resized).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+        
+        if self.use_onnx:
+            # ONNX SpoofNet inference
+            spoof_prob = float(self.registry.infer_onnx('spoof_detector', face_tensor.numpy())[0])
+        else:
+            # PyTorch fallback
+            face_tensor = face_tensor.to(self.device)
+            with torch.no_grad():
+                spoof_prob = self.model(face_tensor).item()
 
         # Combine with heuristics for robustness
         # Variance of Laplacian (blur detection)
@@ -90,9 +90,16 @@ class SpoofDetector:
 
         heuristic_score = (blur_score + color_score) / 2
 
-        # Weighted combination: model 50%, heuristic 20%, LBP 30%
+        # Deepfake check if available
+        deepfake_prob = 0.0
+        if self.use_onnx_deepfake:
+            deepfake_tensor = cv2.resize(face_roi, (224, 224))
+            deepfake_tensor = torch.from_numpy(deepfake_tensor).permute(2, 0, 1).float().unsqueeze(0) / 255.0
+            deepfake_prob = float(self.registry.infer_onnx('deepfake_detector', deepfake_tensor.numpy())[0])
+        
+        # Weighted: spoof 40%, deepfake 30%, heuristic 15%, LBP 15%
         lbp_score = self._compute_lbp_score(face_roi)
-        combined_score = 0.5 * spoof_prob + 0.2 * heuristic_score + 0.3 * lbp_score
+        combined_score = 0.4 * spoof_prob + 0.3 * deepfake_prob + 0.15 * heuristic_score + 0.15 * lbp_score
 
         return min(1.0, combined_score)
 

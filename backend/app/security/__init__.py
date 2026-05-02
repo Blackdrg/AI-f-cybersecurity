@@ -27,6 +27,7 @@ ethical_governor = EthicalGovernor() if ETHICAL_GOVERNOR_AVAILABLE else None
 
 
 from .secrets_manager import secrets_manager
+from .encryption_utils import encrypt_request, decrypt_response, encrypt_embedding, get_encryption_key
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """Verify JWT token from Authorization header.

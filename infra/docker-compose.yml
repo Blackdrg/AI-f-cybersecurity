@@ -1,28 +1,56 @@
-version: '3.8'
+# Docker Compose for AI-F (version auto-detected, no version key needed)
 
 services:
   postgres:
-    image: postgres:15.5-bullseye
+    image: pgvector/pgvector:pg15
     environment:
       POSTGRES_DB: face_recognition
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init_pgvector.sql:/docker-entrypoint-initdb.d/01-pgvector.sql
+      - ../backend/scripts/init_pgvector.sql:/docker-entrypoint-initdb.d/01-pgvector.sql
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -d face_recognition -tAc \"SELECT 1\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     ports:
       - "5432:5432"
 
-  redis:
+  redis-master:
     image: redis:7.2.3-alpine
-    command: redis-server --appendonly yes --appendfilename "redis-aof.aof" --dir /data --requirepass "${REDIS_PASSWORD:-redis_pass}" --masterauth "${REDIS_PASSWORD:-redis_pass}"
+    command: redis-server --appendonly yes --appendfilename "redis-master.aof" --dir /data --requirepass "${REDIS_PASSWORD:-redis_pass}" --masterauth "${REDIS_PASSWORD:-redis_pass}"
+    volumes:
+      - redis_master_data:/data
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_pass}", "ping"]
+  
+  redis-replica:
+    image: redis:7.2.3-alpine
+    command: redis-server --replicaof redis-master 6379 --requirepass "${REDIS_PASSWORD:-redis_pass}" --masterauth "${REDIS_PASSWORD:-redis_pass}"
     volumes:
-      - redis_data:/data
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
-    environment:
-      - REDIS_PASSWORD=redis_pass
+      - redis_replica_data:/data
+    depends_on:
+      - redis-master
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_pass}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "6380:6379"
 
   backend:
     build: ../backend
@@ -32,7 +60,7 @@ services:
       DB_USER: postgres
       DB_PASSWORD: password
       DB_NAME: face_recognition
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis-master:6379/0
       JWT_SECRET: secret
       ENCRYPTION_KEY: your-32-byte-secret-key-here123456789012
       AWS_REGION: us-east-1
@@ -40,13 +68,19 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_...}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       FRONTEND_URL: http://localhost:3000
+      ONNX_BUNDLE_PATH: /models/onnx_bundle
+      IN_DOCKER: 'true'
     ports:
       - "8000:8000"
     volumes:
       - insightface_models:/root/.insightface/models
+      - ../backend/models/onnx_bundle:/models/onnx_bundle:ro
+      - faiss_index:/faiss/index
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
 
   ui:
     build: ../ui/react-app
@@ -54,6 +88,22 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+
+  enclave:
+    image: ai-f-enclave:eif
+    # Note: In production, run via nitro-cli run-enclave, not Docker
+    # This is for local mock/development
+    build:
+      context: ../../enclave
+      dockerfile: Dockerfile.eif
+    ports:
+      - "5000:5000"  # VSOCK mapped to TCP for mock
+    volumes:
+      - enclave_data:/secure-data
+    environment:
+      - KNOWN_FACE_EMBEDDINGS_PATH=/secure-data/known_face_embeddings.npy
+    networks:
+      - enclave-net
 
   nginx:
     image: nginx:alpine
@@ -84,23 +134,59 @@ services:
 
   celery-worker:
     build: ../backend
-    command: celery -A app.celery worker --loglevel=info
+    command: celery -A app.celery worker --loglevel=info -Q celery,faiss_sync
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: password
       DB_NAME: face_recognition
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis-master:6379/0
       JWT_SECRET: secret
+      ENCLAVE_VSOCK_CID: 3
+      ENCLAVE_VSOCK_PORT: 5000
+      FAISS_GRPC_HOST: faiss:50051
+    volumes:
+      - ../backend/models/onnx_bundle:/models/onnx_bundle:ro
+      - faiss_index:/faiss/index
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+      backend:
+        condition: service_started
+      enclave:
+        condition: service_started
+      faiss:
+        condition: service_started
+
+  faiss:
+    image: faiss/faiss:gpu
+    command: faiss_index_server /faiss/index --host 0.0.0.0 --port 50051 --enable-grpc
+    volumes:
+      - faiss_index:/faiss/index
+    ports:
+      - "50051:50051"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
       - backend
 
 volumes:
   postgres_data:
-  redis_data:
+  redis_master_data:
+  redis_replica_data:
+  faiss_index:
   ssl_certs:
   ssl_private:
   insightface_models:
+  enclave_data:
+
+networks:
+  enclave-net:

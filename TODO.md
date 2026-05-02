@@ -1,22 +1,23 @@
-# TODO - Critical Fixes for AI-F Backend Test Suite
+# AI-f README Update TODO
+Breakdown of approved plan into steps. Track progress here.
 
-## Phase 1: Test Suite Configuration (Critical)
-- [ ] 1.1 Create pytest.ini with PYTHONPATH=backend
-- [ ] 1.2 Check and fix role name "user" → "viewer" in conftest.py
-- [ ] 1.3 Fix spoof detector call signature (add missing args)
-- [ ] 1.4 Run tests to verify fixes
+## Step 1: Create TODO.md [COMPLETED ✅]
+- File created with steps.
 
-## Phase 2: Backend Bug Fixes
-- [ ] 2.1 Fix async/await bug in rate_limit.py
-- [ ] 2.2 Implement in-memory fallback for rate limiter (global state)
-- [ ] 2.3 Audit await patterns across middleware
+## Step 2: Edit README.md [PENDING ⏳]
+- Replace test results table with real data (49 tests: 9✅/34❌/6💥 ~75% cov).
+- Update benchmarks: 99.88% TAR@0.001%FAR, P99 279.98ms, 80qps.
+- Add recent fixes from PHASES/COMPLETE (RTSP, Celery, policy engine).
+- Add "Known Issues & Next Steps" section.
+- Cleanup redundant tables/markdown.
 
-## Phase 3: Database & Integration Tests
-- [ ] 3.1 Set up SQLite → PostgreSQL configuration
-- [ ] 3.2 Add integration tests for missing API routers
-- [ ] 3.3 Add Stripe/OpenAI mocks for CI
+## Step 3: Validate Changes [PENDING ⏳]
+- Check new README renders correctly (markdown preview).
+- Verify numbers match sources (run_full_suite.py output, benchmark JSON).
 
-## Progress Tracking
-- Phase 1 started: [ ]
-- Phase 2 started: [ ]
-- Phase 3 started: [ ]
+## Step 4: Final Review & Complete [PENDING ⏳]
+- User feedback if needed.
+- `attempt_completion` with result + demo command (e.g. `cat README.md`).
+
+**Status:** 1/4 complete. Next: Edit README.md.
+

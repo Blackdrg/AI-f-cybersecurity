@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: faiss
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: faiss
+  template:
+    metadata:
+      labels:
+        app: faiss
+    spec:
+      containers:
+      - name: faiss
+        image: faiss/faiss:gpu
+        command: [\"faiss_index_server\", \"/faiss/index\", \"--host\", \"0.0.0.0\", \"--port\", \"50051\", \"--enable-grpc\"]
+        ports:
+        - containerPort: 50051
+        volumeMounts:
+        - name: faiss-storage
+          mountPath: /faiss
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+      volumes:
+      - name: faiss-storage
+        persistentVolumeClaim:
+          claimName: faiss-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: faiss-grpc
+spec:
+  selector:
+    app: faiss
+  ports:
+  - port: 50051
+    targetPort: 50051
+    name: grpc
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: faiss-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: faiss
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70

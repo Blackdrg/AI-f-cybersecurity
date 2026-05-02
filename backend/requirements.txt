@@ -51,5 +51,5 @@ ecdsa==0.18.0
 faiss-cpu>=1.7.4  # For hybrid vector search (HNSW)
 geoip2>=4.7.0  # For geographic policy conditions
 python-dateutil>=2.8.0  # For temporal policy parsing
-hash_ring>=1.5.0  # For consistent shard hashing
+# hash_ring>=1.5.0  # Commented: Windows compatibility issue, use alternative in CI
 

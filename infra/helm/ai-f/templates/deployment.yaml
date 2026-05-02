@@ -1,0 +1,49 @@
+{{- if .Values.backend.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-f.fullname" . }}-backend
+  labels:
+    {{- include "ai-f.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ai-f.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "ai-f.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      {{- if .Values.backend.gpu }}
+      nodeSelector:
+        nvidia.com/gpu: "true"
+      {{- end }}
+      containers:
+      - name: backend
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        env:
+        - name: DB_HOST
+          value: "{{ include "ai-f.postgres.host" . }}"
+        - name: REDIS_URL
+          value: "redis://:{{ .Values.redis.password }}@{{ include "ai-f.redis.host" . }}:6379"
+        - name: ONNX_BUNDLE_PATH
+          value: "/models/onnx_bundle"
+        resources:
+          {{- toYaml .Values.backend.resources | nindent 10 }}
+        volumeMounts:
+        - name: onnx-bundle
+          mountPath: /models/onnx_bundle
+          readOnly: true
+      volumes:
+      - name: onnx-bundle
+        persistentVolumeClaim:
+          claimName: onnx-pvc
+{{- end }}

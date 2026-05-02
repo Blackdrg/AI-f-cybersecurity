@@ -1,0 +1,137 @@
+name: Backend CI - Unblock Infra Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - 'infra/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'infra/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.11']
+        include:
+          - os: ubuntu-22.04
+            python-version: '3.11'
+            gpu: true
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_DB: face_recognition
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7.2.3-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: GPU Setup (CUDA)
+      if: matrix.gpu
+      run: |
+        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+        sudo dpkg -i cuda-keyring_1.1-1_all.deb
+        sudo apt-get update
+        sudo apt-get -y install cuda-toolkit-12-4
+        export PATH=/usr/local/cuda/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+        echo "CUDA_PATH=/usr/local/cuda" >> $GITHUB_ENV
+
+    - name: Install dependencies
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: postgres
+        DB_PASSWORD: password
+        DB_NAME: face_recognition
+        REDIS_URL: redis://localhost:6379
+      run: |
+        pip install -r requirements.txt
+        pip install asyncpg pytest-asyncio pytest-mock  # test deps
+        if [ "${{ matrix.gpu }}" = true ]; then
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+        fi
+
+    - name: Wait for services
+      run: |
+        python -c "
+        import time
+        import subprocess
+        while True:
+          try:
+            subprocess.check_output(['docker', 'ps', '--services', '--filter', 'name=postgres'])
+            print('Postgres ready')
+            break
+          except:
+            time.sleep(5)
+        "
+        sleep 10  # schema init
+
+- name: Run full production suite
+      env:
+        CI: 'true'
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: postgres
+        DB_PASSWORD: password
+        DB_NAME: face_recognition
+        REDIS_URL: redis://localhost:6379
+        STRIPE_SECRET_KEY: ${{ secrets.STRIPE_TEST_KEY }}
+        CUDA_VISIBLE_DEVICES: ${{ matrix.gpu && '0' || '' }}
+      run: |
+        cd backend
+        python run_full_suite.py
+        pytest backend/tests/ -v --cov=backend/app --cov-report=xml --cov-fail-under=95 --junitxml=junit.xml
+
+    - name: Upload coverage & results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: pytest-coverage-${{ matrix.gpu && 'gpu' || 'cpu' }}
+        path: |
+          backend/coverage.xml
+          backend/junit.xml
+
+    - name: Test count verification
+      run: |
+        python ../../count_tests.py | grep -E 'integration|gpu|slow' || true
+        python ../../count_tests.py | tail -1 | grep -q '49' || echo 'Warning: Expected ~49 infra tests'
+

@@ -1,0 +1,38 @@
+FROM public.ecr.aws/nitrolambdas/python:3.11 AS builder
+
+# Install EIF-specific build deps
+RUN dnf install -y docker make gcc-c++ python3-devel
+
+# Install ML packages
+RUN pip install --no-cache-dir numpy==1.24.3 scipy==1.10.1 \
+    onnxruntime==1.15.0 opencv-python-headless==4.8.0.76 \
+    pillow==10.0.1 torch==2.0.1+cpu torchvision==0.15.2+cpu \
+    --index-url https://download.pytorch.org/whl/cpu && \
+    pip install speechbrain==0.5.11 librosa==0.10.0
+
+# Copy source
+WORKDIR /app
+COPY app.py decision_engine.py ./
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Multi-stage: Runtime EIF image
+FROM public.ecr.aws/nitrolambdas/python:3.11
+
+# Labels for Nitro Enclaves
+LABEL com.amazonaws.enclave=true
+LABEL enclave.memory_mib=512
+LABEL enclave.debug-mode=Application
+
+# Copy from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY app.py decision_engine.py ./
+
+# Secure embeddings mount (volume at runtime)
+VOLUME ["/secure-data"]
+ENV KNOWN_FACE_EMBEDDINGS_PATH=/secure-data/known_face_embeddings.npy
+ENV KNOWN_VOICE_EMBEDDINGS_PATH=/secure-data/known_voice_embeddings.npy
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]
