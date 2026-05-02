@@ -1,53 +1,65 @@
 {
-    "name": "face-recognition-ui",
-    "version": "1.0.0",
-    "private": true,
-    "dependencies": {
-        "@emotion/react": "^11.14.0",
-        "@emotion/styled": "^11.14.1",
-        "@mui/icons-material": "^7.3.4",
-        "@mui/lab": "^7.0.0",
-        "@mui/material": "^7.3.4",
-        "@mui/x-charts": "^7.0.0",
-        "@mui/x-data-grid": "^8.15.0",
-        "@stripe/stripe-js": "^2.1.0",
-        "@types/react": "^18.2.37",
-        "@types/react-dom": "^18.2.15",
-        "axios": "^1.13.0",
-        "http-proxy-middleware": "^2.0.6",
-        "lucide-react": "^0.548.0",
-        "react": "^18.2.0",
-        "react-chatbot-kit": "^2.2.2",
-        "react-dom": "^18.2.0",
-        "react-scripts": "5.0.1",
-        "react-stripe-js": "^1.1.5",
-        "react-webcam": "^7.2.0",
-        "recharts": "^3.8.1",
-        "typescript": "^4.9.5"
-    },
-    "scripts": {
-        "start": "react-scripts start",
-        "build": "react-scripts build",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject"
-    },
-    "proxy": "http://localhost:8000",
-    "eslintConfig": {
-        "extends": [
-            "react-app",
-            "react-app/jest"
-        ]
-    },
-    "browserslist": {
-        "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
-    }
+  "name": "face-recognition-ui",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.4",
+    "@mui/lab": "^7.0.0",
+    "@mui/material": "^7.3.4",
+    "@mui/x-charts": "^7.0.0",
+    "@mui/x-data-grid": "^8.15.0",
+    "@stripe/stripe-js": "^2.1.0",
+    "@testing-library/jest-dom": "^6.4.0",
+    "@testing-library/react": "^15.0.0",
+    "@types/jest": "^29.5.0",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "axios": "^1.13.0",
+    "http-proxy-middleware": "^2.0.6",
+    "identity-obj-proxy": "^3.0.0",
+    "lucide-react": "^0.548.0",
+    "react": "^18.2.0",
+    "react-chatbot-kit": "^2.2.2",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.30.3",
+    "react-scripts": "5.0.1",
+    "react-stripe-js": "^1.1.5",
+    "react-webcam": "^7.2.0",
+    "recharts": "^3.8.1",
+    "ts-jest": "^29.1.0",
+    "typescript": "^4.9.5"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --watchAll=false",
+    "test:ci": "jest --coverage",
+    "eject": "react-scripts eject",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run"
+  },
+  "proxy": "http://localhost:8000",
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "cypress": "^15.14.2"
+  }
 }

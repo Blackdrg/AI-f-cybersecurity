@@ -11,7 +11,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-PUBLIC_PATHS = {"/health", "/api/health", "/api/version", "/docs", "/openapi.json", "/redoc"}
+PUBLIC_PATHS = {"/health", "/api/health", "/api/version", "/docs", "/openapi.json", "/redoc", "/api/webhooks/stripe", "/api/webhooks/biometric-event"}
 
 class MockRevocationStore:
     """Mock Redis store for tests and degraded operation."""
@@ -31,11 +31,9 @@ class MockRevocationStore:
         return self.data.get(key)
     
     async def ttl(self, key):
-        # Mock: return a default TTL
         return 3600 if key in self.data else -2
     
     def pipeline(self):
-        # Return a mock pipeline that executes operations immediately
         return MockPipeline(self)
 
 
@@ -50,16 +48,13 @@ class MockPipeline:
         return self
     
     async def execute(self):
-        # Execute all queued operations
         for op in self.operations:
             if op[0] == 'setex':
                 _, key, ttl, value = op
                 self.client.data[key] = value
         return [True] * len(self.operations)
     
-    # Allow chaining
     def __getattr__(self, name):
-        # For other pipeline methods, do nothing
         def dummy(*args, **kwargs):
             return self
         return dummy
@@ -70,10 +65,9 @@ class DistributedJWTRevocationStore:
         self.redis_url = redis_url or "redis://localhost:6379"
         self.client = None
         self._initialized = False
-        self._mock_mode = self.redis_url in ("redis://mock:6379",)  # Only explicit mock URL
+        self._mock_mode = self.redis_url in ("redis://mock:6379",)
     
     async def ensure_connected(self):
-        """Try to connect. On failure, store remains uninitialized."""
         if self._initialized or self.client is not None:
             return
         try:
@@ -83,23 +77,18 @@ class DistributedJWTRevocationStore:
             logger.info("JWT revocation store connected to Redis")
         except Exception as e:
             logger.warning("Redis connection failed: " + str(e))
-            # On failure, store remains uninitialized
-            # Methods will return safe defaults
     
     async def _ensure_client(self):
-        """Ensure client is available, using mock as fallback."""
         if self._initialized and self.client is not None:
             return
         if self._mock_mode:
             self.client = MockRevocationStore()
             self._initialized = True
-            logger.info("JWT revocation store using mock mode")
             return
         try:
             self.client = await redis.from_url(self.redis_url, decode_responses=True)
             await self.client.ping()
             self._initialized = True
-            logger.info("JWT revocation store connected to Redis")
         except Exception as e:
             logger.warning("Redis connection failed: " + str(e) + "; using mock mode.")
             self.client = MockRevocationStore()
@@ -126,7 +115,6 @@ class DistributedJWTRevocationStore:
             for jti in jtis:
                 pipe.setex("jwt_revoked:" + jti, ttl, str(expires_at))
             await pipe.execute()
-            logger.info("Batch revoked " + str(len(jtis)) + " JWTs")
             return {"success": True, "revoked": len(jtis)}
         except Exception as e:
             logger.error("Batch revocation failed: " + str(e))
@@ -154,9 +142,7 @@ class DistributedJWTRevocationStore:
         except Exception as e:
             logger.error("Failed to get revocation info: " + str(e))
             return None
-        except Exception as e:
-            logger.error("Failed to get revocation info: " + str(e))
-            return None
+
 
 _jwt_revocation_store = None
 
@@ -165,6 +151,7 @@ def get_jwt_revocation_store():
     if _jwt_revocation_store is None:
         _jwt_revocation_store = DistributedJWTRevocationStore()
     return _jwt_revocation_store
+
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, secret_key, algorithm="HS256"):
@@ -181,7 +168,6 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         token = auth_header.split(" ")[1]
         local_jti = None
         try:
-            # Unverified decode to get jti (passing None as key)
             unverified = jwt.decode(token, None, options={"verify_signature": False}, algorithms=[self.algorithm])
             local_jti = unverified.get("jti")
             if local_jti:

@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, Any
+from ..db.db_client import get_db
 
 logger = logging.getLogger(__name__)
 

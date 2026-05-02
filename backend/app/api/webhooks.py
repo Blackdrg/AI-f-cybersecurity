@@ -14,6 +14,10 @@ def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
     if not signature:
         return False
     
+    # Handle both raw hex and "sha256=" prefix formats
+    if signature.startswith("sha256="):
+        signature = signature[7:]
+    
     expected_signature = hmac.new(
         secret.encode(),
         payload,

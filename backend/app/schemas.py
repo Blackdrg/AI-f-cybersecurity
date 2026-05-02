@@ -14,9 +14,8 @@ class EnrollRequest(BaseModel):
     metadata: Dict[str, Any] = {}
     consent: bool
     camera_id: Optional[str] = None
-    voice_files: Optional[List[str]] = None  # Base64 encoded or file paths
-    gait_video: Optional[str] = None  # Base64 encoded video
-    # PPG, heart rate, etc.
+    voice_files: Optional[List[str]] = None
+    gait_video: Optional[str] = None
     physiological_data: Optional[Dict[str, Any]] = None
 
 
@@ -36,7 +35,7 @@ class RecognizeRequest(BaseModel):
     enable_emotion: bool = True
     enable_age_gender: bool = True
     enable_behavior: bool = True
-    voice_file: Optional[str] = None  # For multi-modal
+    voice_file: Optional[str] = None
     gait_video: Optional[str] = None
     physiological_data: Optional[Dict[str, Any]] = None
 
@@ -78,8 +77,8 @@ class RevokeRequest(BaseModel):
 
 
 class ConsentVaultRequest(BaseModel):
-    action: str  # 'grant', 'revoke', 'view'
-    biometric_type: Optional[str] = None  # 'face', 'voice', 'gait'
+    action: str
+    biometric_type: Optional[str] = None
 
 
 class ZKPRequest(BaseModel):
@@ -97,7 +96,7 @@ class DeleteResponse(BaseModel):
     message: str
 
 
-# SaaS & B2B Schemas
+# SaaS Schemas
 class UserCreate(BaseModel):
     email: str
     name: str
@@ -114,6 +113,14 @@ class UserResponse(BaseModel):
 
 
 class PlanResponse(BaseModel):
+    plan_id: str
+    name: str
+    price: float
+    features: List[str]
+    limits: Dict[str, Any]
+
+
+class PlanCreate(BaseModel):
     plan_id: str
     name: str
     price: float
@@ -230,28 +237,28 @@ class LogsResponse(BaseModel):
 
 class FederatedUpdate(BaseModel):
     device_id: str
-    model_gradients: Dict[str, Any]  # Serialized gradients or model updates
+    model_gradients: Dict[str, Any]
     num_samples: int
     timestamp: str
 
 
 class ModelVersion(BaseModel):
     version_id: str
-    model_data: bytes  # Serialized model
+    model_data: bytes
     created_at: str
     description: Optional[str] = None
 
 
 class EdgeDeviceRequest(BaseModel):
     device_id: str
-    action: str  # 'register', 'update', 'status'
+    action: str
     model_version: Optional[str] = None
 
 
 class MultiCameraRequest(BaseModel):
     camera_ids: List[str]
     sync_timestamps: List[str]
-    streams: List[str]  # Base64 encoded streams or URLs
+    streams: List[str]
 
 
 class OTADownload(BaseModel):
@@ -260,73 +267,9 @@ class OTADownload(BaseModel):
 
 
 class AnalyticsResponse(BaseModel):
-    # e.g., [{'date': '2023-01-01', 'recognitions': 100, 'enrollments': 10}]
     time_series: List[Dict[str, Any]]
     bias_trends: List[Dict[str, Any]]
     device_stats: List[Dict[str, Any]]
-
-
-# SaaS Schemas
-class UserCreate(BaseModel):
-    email: str
-    name: str
-    subscription_tier: str = "free"
-
-
-class UserResponse(BaseModel):
-    user_id: str
-    email: str
-    name: str
-    subscription_tier: str
-    created_at: str
-
-
-class PlanResponse(BaseModel):
-    plan_id: str
-    name: str
-    price: float
-    features: List[str]
-    limits: Dict[str, Any]
-
-
-class SubscriptionCreate(BaseModel):
-    plan_id: str
-
-
-class SubscriptionResponse(BaseModel):
-    subscription_id: str
-    user_id: str
-    plan_id: str
-    status: str
-    created_at: str
-    expires_at: str
-
-
-class PlanCreate(BaseModel):
-    plan_id: str
-    name: str
-    price: float
-    features: List[str]
-    limits: Dict[str, Any]
-
-
-class SubscriptionCreate(BaseModel):
-    plan_id: str
-
-
-class PaymentCreate(BaseModel):
-    plan_id: str
-    amount: float
-
-
-class PaymentResponse(BaseModel):
-    payment_id: str
-    user_id: str
-    amount: float
-    currency: str
-    status: str
-    stripe_payment_id: Optional[str]
-    created_at: str
 
 
 class UsageResponse(BaseModel):
@@ -339,33 +282,14 @@ class UsageResponse(BaseModel):
     enrollments_limit: int
 
 
-class AIAssistantRequest(BaseModel):
-    query: str
-
-
-class AIAssistantResponse(BaseModel):
-    query: str
-    response: str
-    model_used: str
-
-
 class SupportTicketCreate(BaseModel):
     subject: str
     description: str
     priority: str = "medium"
 
 
-class SupportTicketResponse(BaseModel):
-    ticket_id: str
-    user_id: str
-    subject: str
-    description: str
-    priority: str
-    status: str
-    created_at: str
-
-
 class SupportTicketUpdate(BaseModel):
+    subject: Optional[str] = None
     description: Optional[str] = None
     priority: Optional[str] = None
 
@@ -381,7 +305,6 @@ class SupportTicketResponse(BaseModel):
     updated_at: Optional[str] = None
 
 
-# Public Enrichment Schemas
 class ConsentRequest(BaseModel):
     subject_id: Optional[str] = None
     purpose: str
@@ -397,7 +320,6 @@ class ConsentResponse(BaseModel):
 
 class PublicEnrichRequest(BaseModel):
     person_id: Optional[str] = None
-    # e.g., {"name": "John Doe", "email": "john@example.com"}
     identifiers: Dict[str, str]
     requested_by: str
     purpose: str
@@ -452,6 +374,7 @@ class HashChainedAuditLog(BaseModel):
     hash: str
     zkp_proof: Optional[Dict[str, Any]] = None
     timestamp: Any
+
 
 class AuditLogsResponse(BaseModel):
     logs: List[AuditLogEntry]

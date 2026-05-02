@@ -1,7 +1,16 @@
 from datetime import datetime, timedelta
 from typing import Dict, List
 import logging
-from backend.app.db.db_client import DBClient
+
+logger = logging.getLogger(__name__)
+
+class UsageRecord:
+    """Represents a usage record for tracking."""
+    def __init__(self, user_id: str, org_id: str, endpoint: str, count: int = 1):
+        self.user_id = user_id
+        self.org_id = org_id
+        self.endpoint = endpoint
+        self.count = count
 
 class UsageMonitor:
     """

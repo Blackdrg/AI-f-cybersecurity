@@ -13,19 +13,34 @@ import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
 // Validation Schemas
+interface RecognitionResponseSchema {
+  required: ('faces' | 'timestamp' | 'processing_time')[];
+  optional: ('matches' | 'confidence' | 'spoof_detected' | 'explanations')[];
+}
+
+interface EnrollmentResponseSchema {
+  required: ('person_id' | 'template_id' | 'enrolled_at')[];
+  optional: ('warnings' | 'quality_score')[];
+}
+
+interface HealthResponseSchema {
+  required: ('status' | 'timestamp')[];
+  optional: ('services' | 'version' | 'uptime')[];
+}
+
 const ResponseSchemas = {
   recognition: {
     required: ['faces', 'timestamp', 'processing_time'],
     optional: ['matches', 'confidence', 'spoof_detected', 'explanations']
-  },
+  } as RecognitionResponseSchema,
   enrollment: {
     required: ['person_id', 'template_id', 'enrolled_at'],
     optional: ['warnings', 'quality_score']
-  },
+  } as EnrollmentResponseSchema,
   health: {
     required: ['status', 'timestamp'],
     optional: ['services', 'version', 'uptime']
-  }
+  } as HealthResponseSchema
 };
 
 // Error Categories for Enterprise UX
@@ -42,8 +57,13 @@ export const ErrorTypes = {
   QUALITY_ISSUE: 'QUALITY_ISSUE'
 };
 
-class APIError extends Error {
-  constructor(type, message, details = {}) {
+export class APIError extends Error {
+  public type: string;
+  public details: Record<string, any>;
+  public timestamp: string;
+  public id: string;
+
+  constructor(type: string, message: string, details: Record<string, any> = {}) {
     super(message);
     this.name = 'APIError';
     this.type = type;
@@ -52,8 +72,8 @@ class APIError extends Error {
     this.id = uuidv4();
   }
 
-  toUserMessage() {
-    const messages = {
+  toUserMessage(): string {
+    const messages: Record<string, string> = {
       [ErrorTypes.NETWORK]: 'Network connection unavailable. Please check your internet connection.',
       [ErrorTypes.TIMEOUT]: 'Request timed out. The service may be under high load.',
       [ErrorTypes.AUTH]: 'Your session has expired. Please log in again.',
@@ -81,7 +101,7 @@ class APIError extends Error {
 }
 
 // Create Enhanced Axios Instance
-const createAPI = (config = {}) => {
+const createAPI = (config: { baseURL?: string; timeout?: number; headers?: Record<string, string>; maxRetries?: number; retryDelay?: number } = {}) => {
   const api = axios.create({
     baseURL: config.baseURL || process.env.REACT_APP_API_URL || 'http://localhost:8000',
     timeout: config.timeout || 30000,
@@ -89,8 +109,7 @@ const createAPI = (config = {}) => {
       'Content-Type': 'application/json',
       ...config.headers
     },
-    maxRetries: config.maxRetries || 3,
-    retryDelay: config.retryDelay || 1000
+    // Note: axios doesn't have built-in retry, we'll implement in interceptors
   });
 
   // Request Interceptor
@@ -150,7 +169,7 @@ const createAPI = (config = {}) => {
       const originalRequest = error.config;
 
       // Handle different error types
-      let apiError;
+      let apiError: APIError;
 
       if (!error.response) {
         // Network error
@@ -180,7 +199,8 @@ const createAPI = (config = {}) => {
         );
       } else if (error.response.status === 408 || error.code === 'ECONNABORTED') {
         // Timeout - retry with exponential backoff
-        if (originalRequest?._retryCount < (originalRequest?.maxRetries || 3)) {
+        const maxRetries = originalRequest?.maxRetries || 3;
+        if (originalRequest?._retryCount < maxRetries) {
           originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
           const delay = Math.pow(2, originalRequest._retryCount) * (originalRequest.retryDelay || 1000);
           
@@ -239,7 +259,7 @@ const createAPI = (config = {}) => {
 
 // Helper Functions
 
-const sanitizeInput = (data) => {
+const sanitizeInput = (data: any): any => {
   if (typeof data === 'string') {
     return data.trim();
   }
@@ -247,7 +267,7 @@ const sanitizeInput = (data) => {
     return data.map(sanitizeInput);
   }
   if (typeof data === 'object' && data !== null) {
-    const sanitized = {};
+    const sanitized: Record<string, any> = {};
     for (const [key, value] of Object.entries(data)) {
       sanitized[key] = sanitizeInput(value);
     }
@@ -256,15 +276,15 @@ const sanitizeInput = (data) => {
   return data;
 };
 
-const getResponseSchema = (url) => {
+const getResponseSchema = (url: string): any => {
   if (url.includes('/recognize')) return ResponseSchemas.recognition;
   if (url.includes('/enroll')) return ResponseSchemas.enrollment;
   if (url.includes('/health')) return ResponseSchemas.health;
   return null;
 };
 
-const validateResponse = (data, schema) => {
-  const missing = schema.required.filter(field => !(field in data));
+const validateResponse = (data: any, schema: any) => {
+  const missing = schema.required.filter((field: string) => !(field in data));
   if (missing.length > 0) {
     console.warn('Response missing required fields:', missing);
     // Don't throw in production, just warn
@@ -274,7 +294,7 @@ const validateResponse = (data, schema) => {
   }
 };
 
-const logAPIError = (error) => {
+const logAPIError = (error: APIError) => {
   const logEntry = error.toLogEntry();
   
   // Send to error tracking service (Sentry, etc.)
@@ -301,7 +321,7 @@ const EnhancedAPI = {
   APIError,
   
   // Wrapper with error handling for React components
-  call: async (fn) => {
+  call: async <T>(fn: () => Promise<any>): Promise<{ data: T | null; error: APIError | null }> => {
     try {
       const response = await fn();
       return { data: response.data, error: null };
@@ -320,36 +340,36 @@ const EnhancedAPI = {
   // Enterprise API Endpoints
   mfa: {
     enroll: () => API.post('/api/mfa/enroll'),
-    verify: (code) => API.post('/api/mfa/verify', { code }),
-    verifyLogin: (code) => API.post('/api/mfa/verify-totp', { code }),
+    verify: (code: string) => API.post('/api/mfa/verify', { code }),
+    verifyLogin: (code: string) => API.post('/api/mfa/verify-totp', { code }),
     status: () => API.get('/api/mfa/status'),
-    disable: (password) => API.post('/api/mfa/disable', { password })
+    disable: (password: string) => API.post('/api/mfa/disable', { password })
   },
 
   alerts: {
     getActive: () => API.get('/api/orgs/alerts/active'),
-    acknowledge: (id) => API.put(`/api/orgs/alerts/${id}/acknowledge`),
-    getHistory: (params) => API.get('/api/orgs/alerts/history', { params })
+    acknowledge: (id: string) => API.put(`/api/orgs/alerts/${id}/acknowledge`),
+    getHistory: (params: Record<string, any>) => API.get('/api/orgs/alerts/history', { params })
   },
 
   incidents: {
-    list: (params) => API.get('/api/orgs/incidents', { params }),
-    getDetails: (id) => API.get(`/api/orgs/incidents/${id}`),
-    updateStatus: (id, status) => API.put(`/api/orgs/incidents/${id}/status`, { status }),
-    create: (data) => API.post('/api/orgs/incidents', data)
+    list: (params: Record<string, any>) => API.get('/api/orgs/incidents', { params }),
+    getDetails: (id: string) => API.get(`/api/orgs/incidents/${id}`),
+    updateStatus: (id: string, status: string) => API.put(`/api/orgs/incidents/${id}/status`, { status }),
+    create: (data: Record<string, any>) => API.post('/api/orgs/incidents', data)
   },
 
   audit: {
-    getLogs: (params) => API.get('/api/admin/logs', { params }),
-    getForensicTrace: (eventId) => API.get(`/api/audit/forensic/${eventId}`),
+    getLogs: (params: Record<string, any>) => API.get('/api/admin/logs', { params }),
+    getForensicTrace: (eventId: string) => API.get(`/api/audit/forensic/${eventId}`),
     verifyChain: () => API.get('/api/audit/verify')
   },
 
   compliance: {
     getDPIA: () => API.get('/api/compliance/dpia'),
     getGapAssessment: () => API.get('/api/compliance/soc2-gap'),
-    triggerSAR: (personId) => API.post('/api/compliance/sar', { person_id: personId }),
-    getSARStatus: (requestId) => API.get(`/api/compliance/sar/${requestId}`)
+    triggerSAR: (personId: string) => API.post('/api/compliance/sar', { person_id: personId }),
+    getSARStatus: (requestId: string) => API.get(`/api/compliance/sar/${requestId}`)
   }
 };
 

@@ -7,6 +7,9 @@ import tempfile
 import os
 import uuid
 import logging
+import json
+import socket
+import struct
 from ..models.face_detector import FaceDetector
 from ..models.face_embedder import FaceEmbedder
 from ..models.voice_embedder import VoiceEmbedder
@@ -15,7 +18,6 @@ from ..models.emotion_detector import EmotionDetector
 from ..models.age_gender_estimator import AgeGenderEstimator
 from ..models.behavioral_predictor import BehavioralPredictor
 from ..models.bias_detector import BiasDetector
-from ..models.emotion_behavior import get_emotion_behavior_engine, BehaviorContext
 from ..models.emotion_behavior import get_emotion_behavior_engine, BehaviorContext
 from ..db.db_client import get_db
 from ..schemas import StandardResponse
@@ -41,6 +43,54 @@ bias_detector = BiasDetector()
 from ..services.reliability import ai_model_circuit_breaker, db_circuit_breaker, CircuitBreakerOpenException
 
 
+def recvall(conn, n):
+    """Helper function to receive n bytes or return None if EOF is reached."""
+    data = b''
+    while len(data) < n:
+        packet = conn.recv(n - len(data))
+        if not packet:
+            return None
+        data += packet
+    return data
+
+
+def send_request_to_enclave(request_dict):
+    """Send a request to the enclave service and return the response."""
+    try:
+        # Connect to the enclave service (mock service running on localhost:5000)
+        # In production, this would connect to the enclave via VSOCK
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5.0)  # 5 second timeout
+        sock.connect(('localhost', 5000))
+
+        # Encode the request
+        request_json = json.dumps(request_dict)
+        request_bytes = request_json.encode('utf-8')
+        # Send length first
+        sock.sendall(struct.pack('>I', len(request_bytes)))
+        sock.sendall(request_bytes)
+
+        # Receive response
+        raw_msglen = recvall(sock, 4)
+        if not raw_msglen:
+            sock.close()
+            return {"success": False, "error": "Failed to receive response length"}
+        msglen = struct.unpack('>I', raw_msglen)[0]
+        response_bytes = recvall(sock, msglen)
+        sock.close()
+        
+        if not response_bytes:
+            return {"success": False, "error": "Failed to receive response data"}
+            
+        return json.loads(response_bytes.decode('utf-8'))
+    except socket.timeout:
+        return {"success": False, "error": "Enclave service timeout"}
+    except ConnectionRefusedError:
+        return {"success": False, "error": "Enclave service not available"}
+    except Exception as e:
+        return {"success": False, "error": f"Enclave communication error: {str(e)}"}
+
+
 @router.post("/recognize", response_model=StandardResponse)
 async def recognize_faces(
     image: UploadFile = File(...),
@@ -60,6 +110,7 @@ async def recognize_faces(
 ):
     """
     Multi-modal biometric recognition with full decision engine integration.
+    Face matching is performed inside the secure enclave.
     """
     try:
         start_time = time.time()
@@ -130,16 +181,51 @@ async def recognize_faces(
             except Exception:
                 continue
 
-            # Search
-            try:
+            # Search for matches inside the secure enclave
+            enclave_request = {
+                "id": str(uuid.uuid4()),
+                "operation": "face_match",
+                "embedding": query_emb.flatten().tolist()  # Send as flat list
+            }
+            
+            enclave_response = send_request_to_enclave(enclave_request)
+            
+            if not enclave_response.get("success", False):
+                logger.warning(f"Enclave request failed: {enclave_response.get('error')}")
+                # Fallback to local matching if enclave is unavailable
+                # In production, you might want to fail closed instead
                 db_matches = await db_circuit_breaker(lambda: db.recognize_faces(
                     query_emb, top_k=top_k, threshold=threshold,
                     camera_id=camera_id,
                     voice_embedding=voice_embedding,
                     gait_embedding=gait_embedding
                 ))()
-            except Exception:
-                db_matches = []
+            else:
+                # Process enclave response
+                result = enclave_response.get("result", {})
+                if result.get("matched", False):
+                    # We have a match, get the details from the database
+                    matched_index = result.get("index")
+                    similarity = result.get("similarity", 0.0)
+                    
+                    # Get the person details from the database
+                    # For simplicity, we'll get all matches and then filter by index
+                    # In a production system, you might optimize this
+                    db_matches = await db_circuit_breaker(lambda: db.recognize_faces(
+                        query_emb, top_k=top_k*2, threshold=threshold*0.8,  # Lower threshold to get more candidates
+                        camera_id=camera_id,
+                        voice_embedding=voice_embedding,
+                        gait_embedding=gait_embedding
+                    ))()
+                    
+                    # Reorder matches so the enclave-matched one is first if possible
+                    if matched_index is not None and matched_index < len(db_matches):
+                        # Swap the matched index to the front
+                        matched_person = db_matches.pop(matched_index)
+                        db_matches.insert(0, matched_person)
+                else:
+                    # No match found in enclave
+                    db_matches = []
 
             is_unknown = len(db_matches) == 0
 

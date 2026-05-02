@@ -54,7 +54,6 @@ class StripeProvider(PaymentProvider):
         if not self.api_key or self.api_key == "sk_test_...":
             return "unconfigured"
         try:
-            # Simple check by listing small number of sessions
             stripe.checkout.Session.list(limit=1)
             return "healthy"
         except Exception:
@@ -71,3 +70,31 @@ class MockPaymentProvider(PaymentProvider):
 
     async def get_health_status(self) -> str:
         return "healthy"
+
+    def process_webhook(self, payload: bytes, signature: str) -> Dict[str, Any]:
+        """Process a webhook payload."""
+        import json
+        event = json.loads(payload)
+        return {"type": event.get("type"), "data": event.get("data", {})}
+
+
+# Provider registry
+_provider_instance: Optional[PaymentProvider] = None
+
+def get_payment_provider() -> PaymentProvider:
+    """Get the payment provider instance (singleton)."""
+    global _provider_instance
+    if _provider_instance is None:
+        api_key = os.getenv("STRIPE_SECRET_KEY")
+        if api_key and api_key != "sk_test_...":
+            _provider_instance = StripeProvider(api_key)
+        else:
+            _provider_instance = MockPaymentProvider()
+    return _provider_instance
+
+
+def process_webhook(payload: bytes, signature: str) -> Dict[str, Any]:
+    """Process a webhook payload (mock implementation for CI)."""
+    import json
+    event = json.loads(payload)
+    return {"type": event.get("type"), "data": event.get("data", {})}

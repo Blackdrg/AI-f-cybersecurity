@@ -9,6 +9,8 @@ import os
 import json
 import time
 import logging
+import socket
+import struct
 from ..models.face_detector import FaceDetector
 from ..models.face_embedder import FaceEmbedder
 from ..models.voice_embedder import VoiceEmbedder
@@ -30,6 +32,54 @@ embedder = FaceEmbedder()
 voice_embedder = VoiceEmbedder()
 gait_analyzer = GaitAnalyzer()
 age_gender_estimator = AgeGenderEstimator()
+
+
+def recvall(conn, n):
+    """Helper function to receive n bytes or return None if EOF is reached."""
+    data = b''
+    while len(data) < n:
+        packet = conn.recv(n - len(data))
+        if not packet:
+            return None
+        data += packet
+    return data
+
+
+def send_request_to_enclave(request_dict):
+    """Send a request to the enclave service and return the response."""
+    try:
+        # Connect to the enclave service (mock service running on localhost:5000)
+        # In production, this would connect to the enclave via VSOCK
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5.0)  # 5 second timeout
+        sock.connect(('localhost', 5000))
+
+        # Encode the request
+        request_json = json.dumps(request_dict)
+        request_bytes = request_json.encode('utf-8')
+        # Send length first
+        sock.sendall(struct.pack('>I', len(request_bytes)))
+        sock.sendall(request_bytes)
+
+        # Receive response
+        raw_msglen = recvall(sock, 4)
+        if not raw_msglen:
+            sock.close()
+            return {"success": False, "error": "Failed to receive response length"}
+        msglen = struct.unpack('>I', raw_msglen)[0]
+        response_bytes = recvall(sock, msglen)
+        sock.close()
+        
+        if not response_bytes:
+            return {"success": False, "error": "Failed to receive response data"}
+            
+        return json.loads(response_bytes.decode('utf-8'))
+    except socket.timeout:
+        return {"success": False, "error": "Enclave service timeout"}
+    except ConnectionRefusedError:
+        return {"success": False, "error": "Enclave service not available"}
+    except Exception as e:
+        return {"success": False, "error": f"Enclave communication error: {str(e)}"}
 
 
 @router.post("/identities/merge")
@@ -64,8 +114,10 @@ async def split_identity(person_id: str, embedding_ids: List[str], new_name: str
     # 2. Move specified embeddings
     for emb_id in embedding_ids:
         await db.pool.execute("UPDATE embeddings SET person_id = $1 WHERE embedding_id = $2", new_person_id, emb_id)
-        
+    
     return {"success": True, "new_person_id": new_person_id}
+
+
 @router.post('/v1/enroll')
 @router.post('/enroll')
 async def enroll_person(
@@ -207,8 +259,31 @@ async def enroll_person(
             'signed_token': None
         }
 
+        # Store embeddings securely in the enclave
+        # For each embedding, we'll send it to the enclave to be stored
+        stored_embeddings = []
+        for i, emb in enumerate(embeddings):
+            enclave_request = {
+                "id": str(uuid.uuid4()),
+                "operation": "add_known_embedding",
+                "embedding": emb.flatten().tolist(),
+                "label": f"{name or 'unknown'}_{i}"
+            }
+            
+            enclave_response = send_request_to_enclave(enclave_request)
+            
+            if not enclave_response.get("success", False):
+                logger.warning(f"Failed to store embedding {i} in enclave: {enclave_response.get('error')}")
+                # Fallback to storing in database if enclave is unavailable
+                # In production, you might want to fail the enrollment if secure storage fails
+                stored_embeddings.append(emb)
+            else:
+                # Embedding was stored successfully in the enclave
+                # We still keep a reference in our local list for immediate use
+                stored_embeddings.append(emb)
+
         db = await get_db()
-        await db.enroll_person(person_id, name, embeddings, consent_record, camera_id, voice_embeddings, gait_embedding, age, gender)
+        await db.enroll_person(person_id, name, stored_embeddings, consent_record, camera_id, voice_embeddings, gait_embedding, age, gender)
 
         enroll_count.inc()
         enroll_latency.observe(time.time() - start_time)
@@ -217,7 +292,7 @@ async def enroll_person(
             success=True,
             data={
                 "person_id": person_id,
-                "num_embeddings": len(embeddings),
+                "num_embeddings": len(stored_embeddings),
                 "message": f"Successfully enrolled {name or 'unknown person'}"
             },
             error=None

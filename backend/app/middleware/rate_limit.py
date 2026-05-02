@@ -93,10 +93,6 @@ class RedisRateLimiter:
             return False, remaining, reset_after, retry_after
         except Exception:
             return False, limit, now + window, 0
-        except Exception:
-            return False, limit, now + window, 0
-        except Exception:
-            return False, limit, now + window, 0
 
     async def decrement(self, key: str):
         """Decrement counter (on response)"""
@@ -250,7 +246,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next):
         # Determine client identifier and limits
-        # Note: _get_rate_limit_details is synchronous (returns tuple, not awaited)
         client_key, base_limit = self._get_rate_limit_details(request)
         limit = self._get_limit_for_endpoint(request, client_key)
         window = 60
