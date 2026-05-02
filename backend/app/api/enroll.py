@@ -46,13 +46,12 @@ def recvall(conn, n):
 
 
 def send_request_to_enclave(request_dict):
-    """Send a request to the enclave service and return the response."""
+    """Send a request to the enclave service via VSOCK and return the response."""
     try:
-        # Connect to the enclave service (mock service running on localhost:5000)
-        # In production, this would connect to the enclave via VSOCK
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5.0)  # 5 second timeout
-        sock.connect(('localhost', 5000))
+        # Connect to the enclave via VSOCK
+        # Note: The enclave's CID is usually 3, but you can get it from the nitro-cli output
+        sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
+        sock.connect((3, 5000))  # (CID, port)
 
         # Encode the request
         request_json = json.dumps(request_dict)
@@ -249,38 +248,47 @@ async def enroll_person(
         if gait_embedding is not None:
             gait_embedding = dp_engine.add_noise(gait_embedding)
 
-        person_id = str(uuid.uuid4())
-
-        consent_record = {
-            'consent_record_id': str(uuid.uuid4()),
-            'client_id': user.get('user_id'),
-            'consent_text_version': 'v1',
-            'captured_ip': request.client.host,
-            'signed_token': None
-        }
-
         # Store embeddings securely in the enclave
-        # For each embedding, we'll send it to the enclave to be stored
-        stored_embeddings = []
-        for i, emb in enumerate(embeddings):
+        stored_embeddings = []  # for DB storage as fallback
+
+        # Store face embeddings in the enclave
+        for i, emb in enumerate(embeddings):   # embeddings is the list of face embeddings (after noise)
             enclave_request = {
                 "id": str(uuid.uuid4()),
-                "operation": "add_known_embedding",
+                "operation": "add_known_face_embedding",
                 "embedding": emb.flatten().tolist(),
-                "label": f"{name or 'unknown'}_{i}"
+                "label": f"{name or 'unknown'}_face_{i}"
             }
-            
             enclave_response = send_request_to_enclave(enclave_request)
-            
             if not enclave_response.get("success", False):
-                logger.warning(f"Failed to store embedding {i} in enclave: {enclave_response.get('error')}")
-                # Fallback to storing in database if enclave is unavailable
-                # In production, you might want to fail the enrollment if secure storage fails
+                logger.warning(f"Failed to store face embedding {i} in enclave: {enclave_response.get('error')}")
+                # Fallback to storing in database
                 stored_embeddings.append(emb)
             else:
-                # Embedding was stored successfully in the enclave
-                # We still keep a reference in our local list for immediate use
+                logger.info(f"Stored face embedding {i} in enclave: {enclave_response.get('result')}")
                 stored_embeddings.append(emb)
+
+        # Store voice embeddings in the enclave
+        for i, emb in enumerate(voice_embeddings):   # voice_embeddings is the list of voice embeddings (after noise)
+            enclave_request = {
+                "id": str(uuid.uuid4()),
+                "operation": "add_known_voice_embedding",
+                "embedding": emb.flatten().tolist(),
+                "label": f"{name or 'unknown'}_voice_{i}"
+            }
+            enclave_response = send_request_to_enclave(enclave_request)
+            if not enclave_response.get("success", False):
+                logger.warning(f"Failed to store voice embedding {i} in enclave: {enclave_response.get('error')}")
+                # Fallback to storing in database
+                stored_embeddings.append(emb)
+            else:
+                logger.info(f"Stored voice embedding {i} in enclave: {enclave_response.get('result')}")
+                stored_embeddings.append(emb)
+
+        # Note: We are not storing gait in the enclave because we don't have the operation yet.
+        # But we still want to store gait in the DB, so we add gait_embedding to stored_embeddings if present.
+        if gait_embedding is not None:
+            stored_embeddings.append(gait_embedding)
 
         db = await get_db()
         await db.enroll_person(person_id, name, stored_embeddings, consent_record, camera_id, voice_embeddings, gait_embedding, age, gender)

@@ -55,13 +55,12 @@ def recvall(conn, n):
 
 
 def send_request_to_enclave(request_dict):
-    """Send a request to the enclave service and return the response."""
+    """Send a request to the enclave service via VSOCK and return the response."""
     try:
-        # Connect to the enclave service (mock service running on localhost:5000)
-        # In production, this would connect to the enclave via VSOCK
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5.0)  # 5 second timeout
-        sock.connect(('localhost', 5000))
+        # Connect to the enclave via VSOCK
+        # Note: The enclave's CID is usually 3, but you can get it from the nitro-cli output
+        sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
+        sock.connect((3, 5000))  # (CID, port)
 
         # Encode the request
         request_json = json.dumps(request_dict)
@@ -181,7 +180,6 @@ async def recognize_faces(
             except Exception:
                 continue
 
-            # Search for matches inside the secure enclave
             enclave_request = {
                 "id": str(uuid.uuid4()),
                 "operation": "face_match",

@@ -9,13 +9,14 @@ import sys
 # In a real implementation, you would load your model and known embeddings here.
 # For this example, we'll simulate the face matching by comparing embeddings.
 
-# Path to the known embeddings file (inside the enclave)
-KNOWN_EMBEDDINGS_PATH = "/known_embeddings.npy"
+# Path to the known embeddings files (inside the enclave)
+KNOWN_FACE_EMBEDDINGS_PATH = "/known_face_embeddings.npy"
+KNOWN_VOICE_EMBEDDINGS_PATH = "/known_voice_embeddings.npy"
 
-def load_known_embeddings():
+def load_known_embeddings(path):
     """Load known embeddings from a file."""
-    if os.path.exists(KNOWN_EMBEDDINGS_PATH):
-        return np.load(KNOWN_EMBEDDINGS_PATH)
+    if os.path.exists(path):
+        return np.load(path)
     else:
         # If the file doesn't exist, return an empty array for demonstration.
         # In production, you would have a secure way to provision this data.
@@ -81,7 +82,7 @@ def handle_client(conn):
                 continue
 
             input_embedding = np.array(request['embedding'], dtype=np.float32)
-            known_embeddings = load_known_embeddings()
+            known_embeddings = load_known_embeddings(KNOWN_FACE_EMBEDDINGS_PATH)
 
             best_idx, similarity = find_best_match(input_embedding, known_embeddings)
 
@@ -104,7 +105,37 @@ def handle_client(conn):
                     },
                     'status': 'success'
                 }
-        elif operation == 'add_known_embedding':
+        elif operation == 'voice_match':
+            # Expecting an embedding to compare against known embeddings
+            if 'embedding' not in request:
+                send_error(conn, "Missing 'embedding' in request")
+                continue
+
+            input_embedding = np.array(request['embedding'], dtype=np.float32)
+            known_embeddings = load_known_embeddings(KNOWN_VOICE_EMBEDDINGS_PATH)
+
+            best_idx, similarity = find_best_match(input_embedding, known_embeddings)
+
+            if best_idx is not None:
+                response = {
+                    'id': request_id,
+                    'result': {
+                        'matched': True,
+                        'index': int(best_idx),
+                        'similarity': float(similarity)
+                    },
+                    'status': 'success'
+                }
+            else:
+                response = {
+                    'id': request_id,
+                    'result': {
+                        'matched': False,
+                        'similarity': float(similarity)
+                    },
+                    'status': 'success'
+                }
+        elif operation == 'add_known_face_embedding':
             # This operation would be used to enroll a new person (securely)
             # In production, you would have strict authentication and authorization for this.
             if 'embedding' not in request or 'label' not in request:
@@ -115,7 +146,7 @@ def handle_client(conn):
             label = request['label']
 
             # Load existing embeddings
-            known_embeddings = load_known_embeddings()
+            known_embeddings = load_known_embeddings(KNOWN_FACE_EMBEDDINGS_PATH)
             # For simplicity, we are just appending. In production, you would store this securely.
             if known_embeddings.size == 0:
                 known_embeddings = new_embedding.reshape(1, -1)
@@ -123,7 +154,36 @@ def handle_client(conn):
                 known_embeddings = np.vstack([known_embeddings, new_embedding])
 
             # Save the updated embeddings back to the file (in production, you would encrypt this)
-            np.save(KNOWN_EMBEDDINGS_PATH, known_embeddings)
+            np.save(KNOWN_FACE_EMBEDDINGS_PATH, known_embeddings)
+
+            response = {
+                'id': request_id,
+                'result': {
+                    'message': f'Added embedding for {label}',
+                    'total_embeddings': known_embeddings.shape[0]
+                },
+                'status': 'success'
+            }
+        elif operation == 'add_known_voice_embedding':
+            # This operation would be used to enroll a new person (securely)
+            # In production, you would have strict authentication and authorization for this.
+            if 'embedding' not in request or 'label' not in request:
+                send_error(conn, "Missing 'embedding' or 'label' in request")
+                continue
+
+            new_embedding = np.array(request['embedding'], dtype=np.float32)
+            label = request['label']
+
+            # Load existing embeddings
+            known_embeddings = load_known_embeddings(KNOWN_VOICE_EMBEDDINGS_PATH)
+            # For simplicity, we are just appending. In production, you would store this securely.
+            if known_embeddings.size == 0:
+                known_embeddings = new_embedding.reshape(1, -1)
+            else:
+                known_embeddings = np.vstack([known_embeddings, new_embedding])
+
+            # Save the updated embeddings back to the file (in production, you would encrypt this)
+            np.save(KNOWN_VOICE_EMBEDDINGS_PATH, known_embeddings)
 
             response = {
                 'id': request_id,
