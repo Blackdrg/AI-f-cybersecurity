@@ -1,0 +1,28 @@
+backend:
+  replicaCount: 5
+  gpu: true
+  resources:
+    limits:
+      cpu: 8
+      memory: 16Gi
+      nvidia.com/gpu: 1
+    requests:
+      cpu: 4
+      memory: 8Gi
+redis:
+  password: "{{ .Values.redisPassword | default 'prodpass' }}"
+postgres:
+  password: "{{ .Values.postgresPassword | default 'prodpass' }}"
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: ai-f.yourdomain.com
+hpa:
+  backend:
+    minReplicas: 3
+  faiss:
+    minReplicas: 2
+canary:
+  enabled: true
+  weight: 10

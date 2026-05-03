@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+jest.mock('axios');
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -30,27 +31,11 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock WebSocket (partial)
-class WebSocket {
-  static CONNECTING = 0;
-  static OPEN = 1;
-  static CLOSING = 2;
-  static CLOSED = 3;
-
-  constructor(url) {
-    this.url = url;
-    this.readyState = WebSocket.CONNECTING;
-    setTimeout(() => { this.readyState = WebSocket.OPEN; }, 0);
-  }
-  send(data) {}
+(global as any).WebSocket = class {
+  constructor(url: string) { }
+  send() { }
   close() {}
-  addEventListener(event, handler) {
-    this[event] = handler;
-  }
-  removeEventListener(event) {}
-  dispatchEvent(event) {}
-}
-
-global.WebSocket = WebSocket;
+};
 
 // Suppress console.error in tests (optional)
 // console.error = jest.fn();

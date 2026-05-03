@@ -1,23 +1,30 @@
-# AI-f README Update TODO
-Breakdown of approved plan into steps. Track progress here.
+# AI-F Critical Gaps Fix TODO
+Breakdown of approved plan into steps. Progress tracked here.
 
-## Step 1: Create TODO.md [COMPLETED ✅]
-- File created with steps.
+## 1. System Stability [x]
+- [x] Create backend/requirements-cpu.txt (faiss-cpu/torch-cpu)
+- [x] Update backend/Dockerfile (multi-stage, HEALTHCHECK, GPU variant)
+- [x] Create backend/tests/conftest.py (db/stripe/openai/redis mocks)
+- [x] Fix enhanced_spoof.py signature compatibility (already good with 'method' key)
+- [ ] `cd backend && pip install -r requirements-cpu.txt && pytest -v --cov --cov-fail-under=95`
 
-## Step 2: Edit README.md [PENDING ⏳]
-- Replace test results table with real data (49 tests: 9✅/34❌/6💥 ~75% cov).
-- Update benchmarks: 99.88% TAR@0.001%FAR, P99 279.98ms, 80qps.
-- Add recent fixes from PHASES/COMPLETE (RTSP, Celery, policy engine).
-- Add "Known Issues & Next Steps" section.
-- Cleanup redundant tables/markdown.
+## 2. Production Deployment [ ]
+- [ ] Extend .github/workflows/backend-ci.yml (add UI/deploy stages)
+- [ ] Update infra/helm/ai-f/values.yaml (dev/staging/prod envs, monitoring)
 
-## Step 3: Validate Changes [PENDING ⏳]
-- Check new README renders correctly (markdown preview).
-- Verify numbers match sources (run_full_suite.py output, benchmark JSON).
+## 3. Test Quality [ ]
+- [ ] Enhance backend/run_full_suite.py (95% cov, GPU matrix)
+- [ ] Update backend/pytest.ini (add markers if needed)
 
-## Step 4: Final Review & Complete [PENDING ⏳]
-- User feedback if needed.
-- `attempt_completion` with result + demo command (e.g. `cat README.md`).
+## 4. Packaging/Distribution [ ]
+- [ ] Create scripts/setup.sh (one-command Docker/helm)
+- [ ] Create infra/docker-compose.full.yml (unified services)
+- [ ] Create docs/DEPLOY.md (guide + health checks)
+- [ ] Add /healthz endpoint to backend/app/main.py
 
-**Status:** 1/4 complete. Next: Edit README.md.
+## Verification [ ]
+- [ ] `bash scripts/setup.sh`
+- [ ] `helm install ai-f infra/helm/ai-f/ --dry-run`
+- [ ] Full CI run in GitHub Actions
 
+*Updated after each step.*

@@ -16,7 +16,7 @@
     "@types/jest": "^29.5.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
-    "axios": "^1.13.0",
+"axios": "1.6.7",
     "http-proxy-middleware": "^2.0.6",
     "identity-obj-proxy": "^3.0.0",
     "lucide-react": "^0.548.0",
@@ -35,7 +35,10 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --watchAll=false",
-    "test:ci": "jest --coverage",
+"test:ci": "jest --coverage",
+"test:types": "tsc --noEmit",
+"test:coverage": "jest --coverage --coverageReporters=html --watchAll=false",
+"type-check": "tsc --noEmit",
     "eject": "react-scripts eject",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run"
@@ -45,6 +48,11 @@
     "extends": [
       "react-app",
       "react-app/jest"
+    ]
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "node_modules/(?!axios)/"
     ]
   },
   "browserslist": {
@@ -60,6 +68,7 @@
     ]
   },
   "devDependencies": {
-    "cypress": "^15.14.2"
+    "cypress": "^15.14.2",
+    "baseline-browser-mapping": "latest"
   }
 }
