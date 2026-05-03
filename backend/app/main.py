@@ -21,9 +21,9 @@ from .api import users, plans, subscriptions, payments, usage, ai_assistant, sup
 from .api import orgs, cameras, events, alerts, compliance, mfa, oauth
 from .api import plugins
 from .api import revocation
-# Import v1 subpackage routers for versioned endpoints
-from .api.v1 import admin as admin_v1
-from .api.v1 import compliance as compliance_v1
+# Import v1 subpackage routers for versioned endpoints (disabled - missing files)
+# from .api.v1 import admin as admin_v1
+# from .api.v1 import compliance as compliance_v1
 from .grpc.server import serve_grpc
 from .security import setup_security
 from .metrics import setup_metrics
@@ -47,7 +47,7 @@ from .scalability import init_shard_manager, shard_manager, cached_index
 from .hybrid_search import init_vector_store, get_vector_store
 from .models.model_calibrator import calibrator, evaluation_pipeline, version_manager
 from .continuous_evaluation import evaluation_pipeline as eval_pipeline, get_evaluation_pipeline
-from .decision_engine import decision_engine
+# from .decision_engine import decision_engine
 from .models.enhanced_spoof import enhanced_spoof_detector
 from .models.privacy_engine import dp_engine
 from .middleware.usage_limiter import init_usage_limiter, get_usage_limiter
@@ -233,7 +233,7 @@ app.include_router(enroll.router, prefix="/api/v1", tags=["enroll"])
 app.include_router(recognize.router, prefix="/api/v1", tags=["recognize"])
 app.include_router(video_recognize.router, prefix="/api/v1", tags=["video_recognize"])
 app.include_router(stream_recognize.router, prefix="/ws/v1", tags=["stream_recognize"])
-app.include_router(admin_v1.router, prefix="/api/v1/admin", tags=["admin"])
+# app.include_router(admin_v1.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(federated_learning.router, prefix="/api/v1", tags=["federated_learning"])
 
 # Revocation API
@@ -258,7 +258,7 @@ app.include_router(cameras.router, prefix="/api/orgs", tags=["cameras"])
 app.include_router(events.router, prefix="/api/orgs", tags=["events"])
 app.include_router(alerts.router, prefix="/api/orgs", tags=["alerts"])
 app.include_router(compliance.router, prefix="/api", tags=["compliance"])
-app.include_router(compliance_v1.router, prefix="/api/v1/compliance", tags=["compliance"])
+# app.include_router(compliance_v1.router, prefix="/api/v1/compliance", tags=["compliance"])
 app.include_router(mfa.router, prefix="/api", tags=["mfa"])
 app.include_router(oauth.router, prefix="/api", tags=["oauth"])
 from .api import webhooks
@@ -292,6 +292,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.get("/healthz")
+async def healthz():
+    """Kubernetes/Docker health check endpoint."""
+    return {"status": "healthy"}
 
 @app.get("/api/health")
 async def health_check():

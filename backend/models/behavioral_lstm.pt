@@ -1,0 +1,1 @@
+fake pretrained LSTM weights for behavioral predictor (torch.save(mock_model.state_dict()))

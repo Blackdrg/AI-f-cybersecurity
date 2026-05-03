@@ -1,4 +1,4 @@
-i#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Export ONNX models + bundle weights for production deployment."""
 import os
 import sys
@@ -24,37 +24,36 @@ BUNDLE_DIR = Path(__file__).parent.parent / "models" / "onnx_bundle"
 BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
 
 def download_insightface_buffalo_l():
-    \"\"\"Download InsightFace buffalo_l weights.\"\"\"
+    """Download InsightFace buffalo_l weights."""
     cache_dir = Path.home() / ".insightface" / "models" / "buffalo_l"
     if not cache_dir.exists():
         app = FaceAnalysis(name='buffalo_l')
         app.prepare(ctx_id=0, det_size=(640,640))
     (BUNDLE_DIR / "insightface_buffalo_l").symlink_to(cache_dir, target_is_directory=True)
-    logger.info(f\"Bundled InsightFace buffalo_l: {cache_dir}\")
+    logger.info(f"Bundled InsightFace buffalo_l: {cache_dir}")
 
 def download_speechbrain_voxceleb():
-    \"\"\"Download SpeechBrain VoxCeleb speaker embedding model.\"\"\"
+    """Download SpeechBrain VoxCeleb speaker embedding model."""
     model = EncoderClassifier.from_hparams(
         source="speechbrain/spkrec-ecapa-voxceleb",
-        savedir=str(BUNDLE_DIR / \"speechbrain_voxceleb\")
+        savedir=str(BUNDLE_DIR / "speechbrain_voxceleb")
     )
     torch.save(model, BUNDLE_DIR / "speechbrain_voxceleb" / "model.pt")
-    logger.info(\"Bundled SpeechBrain VoxCeleb\")
+    logger.info("Bundled SpeechBrain VoxCeleb")
 
 def export_spoof_detector_onnx():
-    \"\"\"Train simple spoof CNN and export to ONNX.\"\"\"
-    sys.path.insert(0, str(Path(__file__).parent.parent / \"app\" / \"models\"))
+    """Train simple spoof CNN and export to ONNX."""
+    sys.path.insert(0, str(Path(__file__).parent.parent / "app" / "models"))
     from spoof_detector import SpoofNet  # noqa
     
     model = SpoofNet()
     model.eval()
     dummy_input = torch.randn(1, 3, 64, 64)
     
-torch.onnx.export(
+    torch.onnx.export(
         model,
         dummy_input,
         str(BUNDLE_DIR / "spoof_detector.onnx"),
-
         export_params=True,
         opset_version=11,
         do_constant_folding=True,
@@ -62,11 +61,11 @@ torch.onnx.export(
         output_names=['spoof_score'],
         dynamic_axes={'input': {0: 'batch_size'}, 'spoof_score': {0: 'batch_size'}}
     )
-    logger.info(\"Exported spoof_detector.onnx\")
+    logger.info("Exported spoof_detector.onnx")
 
 def export_behavioral_lstm_onnx():
-    \"\"\"Train/export LSTM behavioral predictor to ONNX.\"\"\"
-    sys.path.insert(0, str(Path(__file__).parent.parent / \"app\" / \"models\"))
+    """Train/export LSTM behavioral predictor to ONNX."""
+    sys.path.insert(0, str(Path(__file__).parent.parent / "app" / "models"))
     from behavioral_predictor import LSTMBehaviorNet
     
     model = LSTMBehaviorNet()
@@ -76,7 +75,6 @@ def export_behavioral_lstm_onnx():
         model,
         dummy_input,
         str(BUNDLE_DIR / "behavioral_predictor.onnx"),
-
         export_params=True,
         opset_version=17,
         do_constant_folding=True,
@@ -84,10 +82,10 @@ def export_behavioral_lstm_onnx():
         output_names=['behavior_vector'],
         dynamic_axes={'sequence' : {0 : 'batch_size', 1 : 'sequence_length'}}
     )
-    logger.info(\"Exported behavioral_predictor.onnx (LSTM 256-dim)\")
+    logger.info("Exported behavioral_predictor.onnx (LSTM 256-dim)")
 
 def export_deepfake_detector_onnx():
-    \"\"\"Placeholder: export deepfake model (e.g., Xception-based).\"\"\"
+    """Placeholder: export deepfake model (e.g., Xception-based)."""
 
     # In production: load/train MesoNet/Xception + export
     # Mock for now - replace with real training
@@ -97,13 +95,12 @@ def export_deepfake_detector_onnx():
     
     model = DeepfakeNet()
     dummy = torch.randn(1, 3, 224, 224)
-        str(BUNDLE_DIR / "deepfake_detector.onnx"), 
-
+    torch.onnx.export(model, dummy, str(BUNDLE_DIR / "deepfake_detector.onnx"), 
                       opset_version=11, input_names=['input'], output_names=['deepfake_score'])
-    logger.info(\"Exported deepfake_detector.onnx (mock - needs real training)\")
+    logger.info("Exported deepfake_detector.onnx (mock - needs real training)")
 
 def export_face_reconstructor_onnx():
-    \"\"\"Export GAN-based reconstructor (placeholder Navier-Stokes -> ONNX).\"\"\"
+    """Export GAN-based reconstructor (placeholder Navier-Stokes -> ONNX)."""
     # Real: pix2pix/LaMa GAN. Mock UNet for inpainting.
     class InpaintUNet(torch.nn.Module):
         def __init__(self): 
@@ -113,25 +110,24 @@ def export_face_reconstructor_onnx():
     
     model = InpaintUNet()
     dummy = torch.randn(1, 4, 256, 256)  # RGB + mask
-        str(BUNDLE_DIR / "face_reconstructor.onnx"),
-
+    torch.onnx.export(model, dummy, str(BUNDLE_DIR / "face_reconstructor.onnx"),
                       opset_version=11, input_names=['input_mask'], output_names=['reconstructed'])
-    logger.info(\"Exported face_reconstructor.onnx (GAN mock)\")
+    logger.info("Exported face_reconstructor.onnx (GAN mock)")
 
 def validate_bundle():
-    \"\"\"Validate all ONNX + weights load correctly.\"\"\"
+    """Validate all ONNX + weights load correctly."""
     sessions = {}
-    for onnx_file in BUNDLE_DIR.glob(\"*.onnx\"):
+    for onnx_file in BUNDLE_DIR.glob("*.onnx"):
         sess = ort.InferenceSession(str(onnx_file))
         dummy = sess.get_inputs()[0].shape
         dummy[0] = 1  # batch=1
         dummy = np.random.randn(*dummy).astype(np.float32)
         outputs = sess.run(None, {'input': dummy})[0]
-        assert outputs.shape[1] == 1, f\"Invalid output shape: {onnx_file}\"
-        logger.info(f\"Validated {onnx_file.name}\")
-    logger.info(\"✅ ONNX Bundle Validation PASS\")
+        assert outputs.shape[1] == 1, f"Invalid output shape: {onnx_file}"
+        logger.info(f"Validated {onnx_file.name}")
+    logger.info("✅ ONNX Bundle Validation PASS")
 
-if __name__ == \"__main__\":
+if __name__ == "__main__":
     download_insightface_buffalo_l()
     download_speechbrain_voxceleb()
     export_spoof_detector_onnx()
@@ -139,6 +135,6 @@ if __name__ == \"__main__\":
     export_deepfake_detector_onnx()
     export_face_reconstructor_onnx()
     validate_bundle()
-    print(f\"Bundle ready: {BUNDLE_DIR}\")
-    print(\"Next: docker cp backend/models/onnx_bundle container:/models/\")
+    print(f"Bundle ready: {BUNDLE_DIR}")
+    print("Next: docker cp backend/models/onnx_bundle container:/models/")
 

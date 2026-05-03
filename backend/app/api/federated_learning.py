@@ -32,7 +32,8 @@ async def get_federated_status(user: dict = Depends(require_auth)):
 @router.post("/register")
 async def register_client(
     request: Dict[str, Any],
-    user: dict = Depends(require_admin)
+    user: dict = Depends(require_auth)
+
 ):
     """Register a federated learning client."""
     client_id = request.get("client_id")

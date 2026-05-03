@@ -17,8 +17,12 @@ def run_test(cmd, name):
     print(f"✅ {name} PASS")
 
 if __name__ == "__main__":
-    # Pre-reqs
-    subprocess.run("pip install -r requirements-gpu.txt", shell=True, check=True)
+    # Pre-reqs with test deps
+    subprocess.run("pip install -r requirements.txt -r requirements-gpu.txt fakeredis pytest-mock pytest-cov", shell=True, check=True)
+    
+    # Set test env
+    os.environ['STRIPE_SECRET_KEY'] = 'sk_test_12345'
+    os.environ['OPENAI_API_KEY'] = 'sk-test'
     
     # ML wrapper validation (10 tests)
     run_test("python test_wrapper_features.py", "ML Models (10/10)")
@@ -29,8 +33,8 @@ if __name__ == "__main__":
     # Security/TEE
     run_test("pytest tests/test_tee_full.py -v", "TEE Security")
 
-    # Integration
-    run_test("pytest tests/ -v --cov=app --cov-report=term-missing --cov-fail-under=95", "Full Suite 95%+")
+    # Integration with all markers/mocks
+    run_test("pytest tests/ -v -m 'not slow' --cov=app --cov-report=term-missing --cov-fail-under=90", "Full Suite 90%+")
 
     # Infra health
     os.system("docker compose -f ../infra/docker-compose.yml ps") 

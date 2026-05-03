@@ -1,0 +1,9 @@
+# CPU Production Requirements (T4+ validated, CPU fallback)
+onnxruntime==1.18.0
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+faiss-cpu==1.13.2
+# insightface==0.7.3  # Requires MSVC on Windows/Python 3.11; use ONNX models (export offline on Linux/Python 3.10)
+speechbrain==0.5.16
+-r requirements.txt
