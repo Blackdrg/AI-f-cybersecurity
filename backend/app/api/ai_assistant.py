@@ -1,80 +1,78 @@
 from fastapi import APIRouter, HTTPException, Depends
-from ..schemas import AIAssistantRequest, AIAssistantResponse
-from ..security import get_current_user
-from ..providers import get_llm_provider, LLMProvider
+from pydantic import BaseModel
+from typing import List, Dict, Any
+import logging
+from backend.app.providers.llm_provider import get_llm_provider
+from backend.app.middleware.auth import get_current_user
+from backend.app.db.db_client import get_db
+from backend.app.services.redis_client import get_redis
+from datetime import datetime
 
-router = APIRouter()
+router = APIRouter(tags=["ai_assistant"])
+logger = logging.getLogger(__name__)
 
+class ChatRequest(BaseModel):
+    messages: List[Dict[str, str]]
+    model: str = "gpt-4o-mini"
+    max_tokens: int = 500
+    temperature: float = 0.7
 
-@router.post("/ai/assistant", response_model=AIAssistantResponse)
-async def ai_assistant_query(
-    request: AIAssistantRequest, 
-    current_user=Depends(get_current_user),
-    provider: LLMProvider = Depends(get_llm_provider)
+class ChatResponse(BaseModel):
+    response: str
+    usage: Dict[str, int]
+    status: str
+
+@router.post("/chat", response_model=ChatResponse)
+async def chat_completion(
+    request: ChatRequest,
+    user = Depends(get_current_user),
+    llm = Depends(get_llm_provider),
+    db = Depends(get_db),
+    redis = Depends(get_redis)
 ):
-    """Query the AI assistant using the configured LLM provider."""
+    """
+    AI Assistant endpoint with RBAC, rate limiting, token tracking, audit logs.
+    """
+    # RBAC check
+    sub = await db.get_subscription_history(user['user_id'])
+    if not sub or sub[0]['status'] != 'active':
+        raise HTTPException(403, "Active subscription required for AI features")
+
+    # Rate limit & token quota (Redis)
+    user_key = f"ai_tokens:{user['user_id']}"
+    daily_usage = await redis.get(user_key) or 0
+    if int(daily_usage) > 10000:  # 10k token daily free tier
+        raise HTTPException(429, "Daily AI token quota exceeded")
+
     try:
-        # Special case: Premium AI assistant for daredevil0101a@gmail.com
-        if current_user.get("email") == "daredevil0101a@gmail.com":
-            # Use GPT-4 with higher limits for premium user
-            messages = [
-                {"role": "system", "content": "You are a premium AI assistant specialized in face recognition technology and computer vision. Provide expert-level assistance with advanced technical details, implementation guidance, and cutting-edge research insights."},
-                {"role": "user", "content": request.query}
-            ]
-            
-            ai_response = await provider.chat_completion(
-                messages=messages,
-                model="gpt-4",
-                max_tokens=1000
-            )
-
-            return AIAssistantResponse(
-                query=request.query,
-                response=ai_response,
-                model_used="gpt-4"
-            )
-
-        # Create a system prompt for face recognition assistance
-        system_prompt = """
-        You are an AI assistant specialized in face recognition technology and computer vision.
-        Help users with questions about face recognition, biometric authentication, and related technologies.
-        Provide accurate, helpful information while maintaining privacy and ethical considerations.
-        """
-
-        # Make API call via provider
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": request.query}
-        ]
+        # Call LLM
+        response = await llm.chat_completion(
+            messages=request.messages,
+            model=request.model,
+            max_tokens=request.max_tokens,
+            temperature=request.temperature
+        )
         
-        ai_response = await provider.chat_completion(
-            messages=messages,
-            model="gpt-3.5-turbo",
-            max_tokens=500
+        # Track usage
+        usage = {"tokens": request.max_tokens}  # Approximate
+        new_usage = int(daily_usage) + request.max_tokens
+        await redis.setex(user_key, 86400, new_usage)  # 24h TTL
+
+        # Audit log
+        await db.log_audit_event(
+            action="ai_chat",
+            person_id=user['user_id'],
+            details={
+                "model": request.model,
+                "tokens_used": request.max_tokens,
+                "messages_count": len(request.messages)
+            }
         )
 
-        return AIAssistantResponse(
-            query=request.query,
-            response=ai_response,
-            model_used="gpt-3.5-turbo"
-        )
+        logger.info(f"AI chat for user {user['user_id']}: {len(request.messages)} msgs, {request.max_tokens} tokens")
+        return ChatResponse(response=response, usage=usage, status="success")
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"AI assistant error: {str(e)}")
+        logger.error(f"AI chat error for {user['user_id']}: {e}")
+        raise HTTPException(500, "AI service unavailable")
 
-
-@router.post("/ai/analyze-image")
-async def analyze_image_with_ai(image_data: dict, current_user=Depends(get_current_user)):
-    """Analyze an uploaded image using AI vision capabilities."""
-    try:
-        # This would integrate with OpenAI's vision API
-        # For now, return a placeholder response
-        return {
-            "analysis": "Image analysis feature coming soon",
-            "detected_features": ["face", "expression"],
-            "confidence": 0.95
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Image analysis error: {str(e)}")

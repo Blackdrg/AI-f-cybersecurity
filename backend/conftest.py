@@ -10,28 +10,28 @@ import fakeredis
 from stripe.test_helpers import StripeMock
 import onnxruntime as ort
 import torch
-import asyncio
+import asyncio 
 
 # Import app after mocks to avoid loading real deps
 from app.main import app
 
+# Real Redis for production-like tests (docker up)
 @pytest.fixture(scope="session")
 def mock_redis():
-    """Mock Redis with fakeredis."""
-    r = fakeredis.FakeStrictRedis()
-    with patch('redis.Redis', return_value=r):
-        yield r
+    """No mock - use real Redis from docker-compose."""
+    pass
 
 @pytest.fixture(scope="session")
 def mock_stripe():
-    """Mock Stripe with test keys."""
-    os.environ['STRIPE_SECRET_KEY'] = 'sk_test_12345'
-    with patch('stripe.Stripe.api_key', 'sk_test_12345'):
-        stripe_mock = StripeMock()
-        with patch('stripe.PaymentIntent.create', stripe_mock.payment_intent_create), \
-             patch('stripe.Customer.create', stripe_mock.customer_create), \
-             patch('stripe.Subscription.create', stripe_mock.subscription_create):
-            yield stripe_mock
+    """Mock Stripe API calls."""
+    with patch('stripe.Customer.create') as mock_customer, \
+         patch('stripe.Subscription.create') as mock_sub, \
+         patch('stripe.PaymentIntent.create') as mock_pi, \
+         patch('stripe.Stripe.api_key', 'sk_test_12345'):
+        mock_customer.return_value = MagicMock(id='cus_test123')
+        mock_sub.return_value = MagicMock(id='sub_test123')
+        mock_pi.return_value = MagicMock(id='pi_test123')
+        yield
 
 @pytest.fixture(scope="session")
 def mock_openai():
