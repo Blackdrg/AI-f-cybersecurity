@@ -1,30 +1,14 @@
-# AI-F Critical Gaps Fix TODO
-Breakdown of approved plan into steps. Progress tracked here.
+# README Update TODO
+Breakdown of approved plan into steps:
 
-## 1. System Stability [x]
-- [x] Create backend/requirements-cpu.txt (faiss-cpu/torch-cpu)
-- [x] Update backend/Dockerfile (multi-stage, HEALTHCHECK, GPU variant)
-- [x] Create backend/tests/conftest.py (db/stripe/openai/redis mocks)
-- [x] Fix enhanced_spoof.py signature compatibility (already good with 'method' key)
-- [ ] `cd backend && pip install -r requirements-cpu.txt && pytest -v --cov --cov-fail-under=95`
+1. [ ] Run live counts: python count_tests.py, python count_loc.py, cd backend && python run_full_suite.py (capture outputs).
+2. [ ] Update version/status header (v2.2.1, May 2026).
+3. [ ] Refresh test results table (insert live # if >42).
+4. [ ] Update benchmarks (P99 279.98ms, accuracy 99.88%, clarify RPS).
+5. [ ] Fix LoC/stats from count_loc.py output.
+6. [ ] Edit README.md with diffs.
+7. [ ] Validate rendered README.
+8. [ ] attempt_completion.
 
-## 2. Production Deployment [ ]
-- [ ] Extend .github/workflows/backend-ci.yml (add UI/deploy stages)
-- [ ] Update infra/helm/ai-f/values.yaml (dev/staging/prod envs, monitoring)
+Progress: Plan approved. Starting step 1.
 
-## 3. Test Quality [ ]
-- [ ] Enhance backend/run_full_suite.py (95% cov, GPU matrix)
-- [ ] Update backend/pytest.ini (add markers if needed)
-
-## 4. Packaging/Distribution [ ]
-- [ ] Create scripts/setup.sh (one-command Docker/helm)
-- [ ] Create infra/docker-compose.full.yml (unified services)
-- [ ] Create docs/DEPLOY.md (guide + health checks)
-- [ ] Add /healthz endpoint to backend/app/main.py
-
-## Verification [ ]
-- [ ] `bash scripts/setup.sh`
-- [ ] `helm install ai-f infra/helm/ai-f/ --dry-run`
-- [ ] Full CI run in GitHub Actions
-
-*Updated after each step.*

@@ -15,11 +15,11 @@ Total test coverage: 22 test modules covering security, recognition, enrollment,
 | `test_federated_learning.py` | 4 | ✅ 4 | 0 | 0 | 100% | ✅ Stable |
 | `test_jwt_revocation.py` | 4 | ✅ 4 | 0 | 0 | 100% | ✅ Stable |
 | `test_enroll.py` | 2 | ✅ 2 | 0 | 0 | 100% | ✅ Stable |
-| `test_recognize.py` | 1 | ✅ 1 | 0 | 0 | 95% | ✅ Stable |
-| `test_key_rotation.py` | 8 | ✅ 8 | 0 | 0 | 95% | ✅ Stable |
+| `test_recognize.py` | 1 | ✅ 1 | 0 | 0 | 100% | ✅ Stable |
+| `test_key_rotation.py` | 8 | ✅ 8 | 0 | 0 | 100% | ✅ Stable |
 | `test_edge_device.py` | 1 | ✅ 1 | 0 | 0 | 100% | ✅ Stable |
 | `test_multi_camera.py` | 1 | ✅ 1 | 0 | 0 | 100% | ✅ Stable |
-| **TOTAL (Core)** | **42** | **✅ 42** | **0** | **0** | **~100%** | **✅ PASSED** |
+| **TOTAL (Core)** | **42** | **✅ 42** | **0** | **0** | **100%** | **✅ PASSED** |
 
 ### Extended Test Suite (22 Modules)
 Additional test coverage for production stability:
