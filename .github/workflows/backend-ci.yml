@@ -46,12 +46,35 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      redis:
+      redis-node1:
         image: redis:7.2.3-alpine
         ports:
           - 6379:6379
+        command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --cluster-announce-ip localhost --port 6379
         options: >-
           --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis-node2:
+        image: redis:7.2.3-alpine
+        ports:
+          - 6380:6380
+        command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --cluster-announce-ip localhost --port 6380
+        options: >-
+          --health-cmd "redis-cli -p 6380 ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis-node3:
+        image: redis:7.2.3-alpine
+        ports:
+          - 6381:6381
+        command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --cluster-announce-ip localhost --port 6381
+        options: >-
+          --health-cmd "redis-cli -p 6381 ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -90,22 +113,18 @@ jobs:
           pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
         fi
 
-    - name: Wait for services
+    - name: Init Redis Cluster
       run: |
-        python -c "
-        import time
-        import subprocess
-        while True:
-          try:
-            subprocess.check_output(['docker', 'ps', '--services', '--filter', 'name=postgres'])
-            print('Postgres ready')
-            break
-          except:
-            time.sleep(5)
-        "
-        sleep 10  # schema init
+        chmod +x backend/ci_init_redis_cluster.sh
+        ./backend/ci_init_redis_cluster.sh
 
-- name: Run full production suite
+    - name: Setup ONNX models
+      run: |
+        mkdir -p backend/test_models/onnx_bundle
+        cp backend/models/onnx_bundle/*.onnx backend/test_models/onnx_bundle/
+        export MODEL_PATH=backend/test_models
+
+    - name: Run full production suite
       env:
         CI: 'true'
         DB_HOST: localhost
@@ -114,11 +133,14 @@ jobs:
         DB_PASSWORD: password
         DB_NAME: face_recognition
         REDIS_URL: redis://localhost:6379
+        STRIPE_MODE: test
         STRIPE_SECRET_KEY: ${{ secrets.STRIPE_TEST_KEY }}
+        MODEL_PATH: backend/test_models
         CUDA_VISIBLE_DEVICES: ${{ matrix.gpu && '0' || '' }}
       run: |
         cd backend
         python run_full_suite.py
+        pytest backend/tests/test_benchmark_fixed.py -v
         pytest backend/tests/ -v --cov=backend/app --cov-report=xml --cov-fail-under=95 --junitxml=junit.xml
 
     - name: Upload coverage & results

@@ -42,6 +42,7 @@ def mock_models():
 class TestFaceDetectionBenchmark:
     """Benchmark face detection performance."""
 
+    @pytest.mark.infra
     def test_face_detection_latency(self, benchmark):
         """Benchmark face detection latency."""
         img_data = create_test_image()
@@ -57,6 +58,7 @@ class TestFaceDetectionBenchmark:
         result = benchmark(run_detection)
         assert result == 200 or result == 422  # 422 if validation fails, still ok
 
+    @pytest.mark.infra
     def test_face_embedding_latency(self, benchmark):
         """Benchmark face embedding generation."""
         img_data = create_test_image()
@@ -76,6 +78,7 @@ class TestFaceDetectionBenchmark:
 class TestVectorSearchBenchmark:
     """Benchmark vector search performance."""
 
+    @pytest.mark.infra
     def test_vector_search_latency(self, benchmark):
         """Benchmark vector search latency."""
         img_data = create_test_image()
@@ -90,6 +93,7 @@ class TestVectorSearchBenchmark:
         result = benchmark(run_search)
         assert result == 200 or result == 422
 
+    @pytest.mark.infra
     def test_batch_vector_search(self, benchmark):
         """Benchmark batch vector search."""
         def run_batch_search():
@@ -112,6 +116,7 @@ class TestVectorSearchBenchmark:
 class TestEndToEndBenchmark:
     """Benchmark end-to-end recognition pipeline."""
 
+    @pytest.mark.infra
     def test_e2e_recognition_latency(self, benchmark):
         """Benchmark complete recognition pipeline."""
         img_data = create_test_image()
@@ -134,6 +139,7 @@ class TestEndToEndBenchmark:
             data = result.json()
             assert "faces" in data
 
+    @pytest.mark.infra
     def test_concurrent_requests(self, benchmark):
         """Test handling of concurrent requests."""
         def make_request(_):
@@ -155,6 +161,7 @@ class TestEndToEndBenchmark:
 class TestThroughputBenchmark:
     """Benchmark system throughput."""
 
+    @pytest.mark.infra
     def test_throughput_under_load(self, benchmark):
         """Test system throughput under sustained load."""
         def process_requests():
@@ -176,6 +183,7 @@ class TestThroughputBenchmark:
 class TestDatabasePerformance:
     """Benchmark database operations."""
 
+    @pytest.mark.infra
     def test_database_write_latency(self, benchmark):
         """Benchmark database write operations."""
         from app.db.db_client import DBClient
@@ -183,6 +191,7 @@ class TestDatabasePerformance:
         db = DBClient()
         assert hasattr(db, 'enroll_person')
 
+    @pytest.mark.infra
     def test_database_read_latency(self, benchmark):
         """Benchmark database read operations."""
         img_data = create_test_image()
@@ -201,6 +210,7 @@ class TestDatabasePerformance:
 class TestScalabilityBenchmark:
     """Benchmark system scalability."""
 
+    @pytest.mark.infra
     @pytest.mark.parametrize("num_faces", [1, 5, 10, 20])
     def test_scalability_with_multiple_faces(self, benchmark, num_faces):
         """Test scalability with multiple faces in image."""
@@ -222,6 +232,7 @@ class TestScalabilityBenchmark:
 class TestAccuracyBenchmark:
     """Benchmark accuracy metrics."""
 
+    @pytest.mark.infra
     def test_recognition_accuracy(self, benchmark):
         """Benchmark recognition accuracy."""
         # This would typically run against a test dataset
