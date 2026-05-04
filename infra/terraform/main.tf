@@ -1,5 +1,23 @@
 # AI-f Sovereign OS - Cloud Infrastructure Baseline (AWS)
 
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "db_user" {
+  description = "Database user"
+  type        = string
+  default     = "ai_f_user"
+}
+
+variable "db_password" {
+  description = "Database password"
+  type        = string
+  sensitive   = true
+}
+
 provider "aws" {
   region = var.region
 }

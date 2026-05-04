@@ -40,7 +40,7 @@ Write-Host "Waiting for services to stabilize (20s)..." -ForegroundColor Yellow
 Start-Sleep -Seconds 20
 
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:8000/health" -Method Get -ErrorAction Stop
+    $null = Invoke-WebRequest -Uri "http://localhost:8000/health" -Method Get -ErrorAction Stop
     Write-Host "--- Installation Complete! ---" -ForegroundColor Green
     Write-Host "API Docs: http://localhost:8000/docs"
     Write-Host "Dashboard: http://localhost:3000"
