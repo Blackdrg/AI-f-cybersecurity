@@ -7,8 +7,7 @@ import {
 } from '@mui/material';
 import {
   Security, Timeline, Refresh, Settings, Warning,
-  AccountCircle, Notifications, Error as ErrorIcon,
-  CheckCircle, Flag, Menu as MenuIcon,
+  AccountCircle, Notifications, Error as ErrorIcon, CheckCircle, Flag, Menu as MenuIcon,
   ExpandMore
 } from '@mui/icons-material';
 import Sidebar from '../components/Sidebar';
@@ -26,7 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { OrgSwitcher } from '../components/OrgSwitcher';
 import { AuditTimeline } from '../components/AuditTimeline';
 import { IncidentAlertDashboard } from '../components/IncidentAlertDashboard';
-import { RBACGuard, RoleBadge } from '../components/RBACGuard';
+import { PermissionGuard as RBACGuard, RoleBadge } from '../components/RBACGuard';
 import { PERMISSIONS } from '../contexts/AuthContext';
 import './Dashboard.css';
 

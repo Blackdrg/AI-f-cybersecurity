@@ -3,22 +3,23 @@ import axios from 'axios';
 import { Button, Typography, Grid, Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab, Paper, Divider } from '@mui/material';
 import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, BarChart, PieChart } from '@mui/icons-material';
 
+import { Face, RecognitionResult } from './types';
+
 const RecognizeView = () => {
-    const [image, setImage] = useState(null);
-    const [results, setResults] = useState(null);
+    const [image, setImage] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [severity, setSeverity] = useState('success');
     const [webcamActive, setWebcamActive] = useState(false);
-    const [streamResults, setStreamResults] = useState(null);
-    const videoRef = useRef(null);
-    const canvasRef = useRef(null);
-    const overlayCanvasRef = useRef(null);
-    const wsRef = useRef(null);
-    const intervalRef = useRef(null);
+    const [streamResults, setStreamResults] = useState<RecognitionResult | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+    const wsRef = useRef<WebSocket | null>(null);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Emotion-based theme adaptation with enhanced animations
-    const getEmotionTheme = (emotion) => {
+    const getEmotionTheme = (emotion: any) => {
         if (!emotion) return {
             primary: '#00bcd4',
             secondary: '#ff4081',
@@ -90,7 +91,7 @@ const RecognizeView = () => {
         }
     };
 
-    const getEmotionIcon = (emotion) => {
+    const getEmotionIcon = (emotion: any) => {
         if (!emotion) return <SentimentNeutral />;
 
         const dominant = emotion.dominant_emotion;
@@ -214,7 +215,7 @@ const RecognizeView = () => {
         return summary;
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!image) return;
 
@@ -251,13 +252,13 @@ const RecognizeView = () => {
             wsRef.current.onopen = () => {
                 console.log('WebSocket connected');
             };
-            wsRef.current.onmessage = (event) => {
+            wsRef.current!.onmessage = (event: MessageEvent) => {
                 const data = JSON.parse(event.data);
                 setStreamResults(data);
                 // Draw overlays after receiving results
                 setTimeout(drawOverlays, 100); // Small delay to ensure video is ready
             };
-            wsRef.current.onerror = (error) => {
+            wsRef.current!.onerror = (error: Event) => {
                 console.error('WebSocket error:', error);
                 setMessage('WebSocket connection failed');
                 setSeverity('error');
@@ -276,7 +277,7 @@ const RecognizeView = () => {
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject;
             const tracks = stream.getTracks();
-            tracks.forEach(track => track.stop());
+            tracks.forEach((track: MediaStreamTrack) => track.stop());
             videoRef.current.srcObject = null;
         }
         setWebcamActive(false);
@@ -304,7 +305,7 @@ const RecognizeView = () => {
 
         const canvas = canvasRef.current;
         const video = videoRef.current;
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext('2d')!;
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -313,8 +314,8 @@ const RecognizeView = () => {
         canvas.toBlob((blob) => {
             const reader = new FileReader();
             reader.onload = () => {
-                const base64Data = reader.result.split(',')[1];
-                wsRef.current.send(JSON.stringify({
+                const base64Data = (reader.result as string).split(',')[1]!;
+                wsRef.current!.send(JSON.stringify({
                     type: 'frame',
                     data: base64Data
                 }));
@@ -382,9 +383,9 @@ const RecognizeView = () => {
                 </Typography>
 
             <Grid container spacing={4}>
-                <Grid item xs={12}>
-                    <Card sx={{ p: 4 }}>
-                        <CardContent>
+                    <Grid item component="div" xs={12}>
+                        <Card sx={{ p: 4 }}>
+                            <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                                 <Fab
                                     color={webcamActive ? 'secondary' : 'primary'}
@@ -507,7 +508,7 @@ const RecognizeView = () => {
                 {message && (
                     <Grid item xs={12}>
                         <Alert
-                            severity={severity}
+                                severity={severity as 'success' | 'error' | 'info' | 'warning'}
                             sx={{
                                 borderRadius: '16px',
                                 fontSize: '1rem',
@@ -741,7 +742,7 @@ const RecognizeView = () => {
                         </Card>
                     </Grid>
                 ) : webcamActive ? (
-                    <Grid item xs={12}>
+                            <Grid item component="div" xs={12}>
                         <Card sx={{ p: 4 }}>
                             <CardContent sx={{ textAlign: 'center' }}>
                                 <Typography variant="h6" sx={{ color: 'text.secondary' }}>

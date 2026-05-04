@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { Box, Toolbar, Typography, Container, Grid, Paper, Card, CardContent, IconButton, CircularProgress, Select, MenuItem, Button, CircularProgress } from '@mui/material';
+import { Box, Toolbar, Typography, Container, Grid, Paper, Card, CardContent, IconButton, CircularProgress, Select, MenuItem, Button } from '@mui/material';
 import { 
   People, CameraAlt, History, Assessment, 
   Security, Timeline, ShowChart, Warning,

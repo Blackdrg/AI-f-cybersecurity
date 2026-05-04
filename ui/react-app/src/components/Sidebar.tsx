@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { 
   Drawer, List, ListItem, ListItemIcon, ListItemText, 
   Toolbar, Divider, Box, Typography, Collapse, ListItemButton,
-  Chip, Tooltip, Badge, Avatar, useTheme
+  Chip, Tooltip, Badge, Avatar
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   ExpandLess, ExpandMore, Shield, Home, PersonAdd, CameraAlt, 
-  BarChart, Settings, ExitToApp, AdminPanelSettings,
+  BarChart, Settings, ExitToApp, AdminPanelSettings, Security,
   Videocam, Gavel, Code, Monitor, Radar, NetworkCheck,
   ShowChart, CompareArrows, FilterCenterFocus, BugReport,
   Fingerprint, Eye, Style, BlurLinear, VerifiedUser, Key,
   Description, Layers, Storage, Public, Policy, Gavel as GavelIcon,
-  Warning, Lock, TrendingUp, Analytics, Brain, Database,
-  Cloud, Domain, Timeline, AccountCircle, ChevronRight
+  Warning, Lock, TrendingUp, Analytics, PsychologyOutlined, StorageOutlined,
+  VisibilityOutlined, Cloud, Domain, Timeline, AccountCircle, ChevronRight
 } from '@mui/icons-material';
 
 const drawerWidth = 280;
@@ -62,7 +63,7 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
     {
       key: 'explainability',
       label: 'Explainable AI',
-      icon: <Brain />,
+      icon: <PsychologyOutlined />,
       items: [
         { id: 'explanations', text: 'Decision Breakdown', icon: <ShowChart />, roles: ['admin'] },
         { id: 'attribution', text: 'Visual Attribution', icon: <FilterCenterFocus />, roles: ['admin'] },
@@ -78,8 +79,8 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
       alert: true,
       items: [
         { id: 'deepfake', text: 'Deepfake Detection', icon: <BugReport />, badge: 12, roles: ['admin', 'security'] },
-        { id: 'threats', text: 'Threat Intelligence', icon: <Database />, roles: ['admin'] },
-        { id: 'liveness', text: 'Liveness Analysis', icon: <Eye />, roles: ['admin', 'security'] },
+        { id: 'threats', text: 'Threat Intelligence', icon: <StorageOutlined />, roles: ['admin'] },
+        { id: 'liveness', text: 'Liveness Analysis', icon: <VisibilityOutlined />, roles: ['admin', 'security'] },
         { id: 'gan-detection', text: 'GAN Artifacts', icon: <Style />, roles: ['admin'] },
         { id: 'watermarks', text: 'Watermark Detect', icon: <BlurLinear />, roles: ['admin'] },
       ]
@@ -105,7 +106,7 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
         { id: 'vc', text: 'Verifiable Credentials', icon: <Description />, roles: ['admin', 'hr'] },
         { id: 'tokens', text: 'Revocable Tokens', icon: <Lock />, roles: ['admin'] },
         { id: 'disclosure', text: 'Selective Disclosure', icon: <Layers />, roles: ['admin'] },
-        { id: 'wallet', text: 'Secure Wallet', icon: <Database />, roles: ['admin'] },
+        { id: 'wallet', text: 'Secure Wallet', icon: <StorageOutlined />, roles: ['admin'] },
       ]
     },
   ];

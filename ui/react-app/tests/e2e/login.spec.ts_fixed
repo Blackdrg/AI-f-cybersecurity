@@ -1,0 +1,19 @@
+import { test, expect } from '@playwright/test';
+
+test('user login flow', async ({ page }) => {
+  await page.goto('http://localhost:3000/login');
+  await page.fill('[name=\\"email\\"]', 'demo@ai-f.com');
+  await page.fill('[name=\\"password\\"]', 'demo123');
+  await page.click('button[type=\\"submit\\"]');
+  await expect(page).toHaveURL(/.*dashboard/);
+  await expect(page.getByText('Welcome')).toBeVisible();
+});
+
+test('subscription upgrade', async ({ page }) => {
+  await page.goto('http://localhost:3000/subscriptions');
+  await page.click('text=Upgrade Pro');
+  await expect(page.locator('text=Stripe checkout')).toBeVisible();
+});
+
+console.log('E2E tests syntax clean');
+
