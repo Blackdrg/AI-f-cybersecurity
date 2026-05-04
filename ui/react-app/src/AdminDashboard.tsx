@@ -1,26 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent } from 'react';
+import type { Person, Metrics, Log, Consent, Webhook, Plugin } from '../types';
 import axios from 'axios';
-import { TextField, Button, Typography, Grid, Card, CardContent, Box, Alert, CircularProgress, Chip, Avatar, Divider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, FormControl, InputLabel, List, ListItem, ListItemText, Switch, FormControlLabel } from '@mui/material';
+import { Box, Typography, Card, CardContent, Grid, TextField, Button, Divider, Avatar, Chip, CircularProgress, Alert, List, ListItem, ListItemText, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { LineChart, LineElement, ChartsXAxis, ChartsYAxis, ChartsGrid, ChartsTooltip, ChartsLegend } from '@mui/x-charts';
 import { Dashboard, Person, Search, Delete, Analytics, TrendingUp, AccessTime, People, History, PlayArrow, VerifiedUser, Build, Storage, Assessment, Lock } from '@mui/icons-material';
 
-const AdminDashboard = () => {
+interface Props { }
+const AdminDashboard: React.FC<Props> = () => {
     const [personId, setPersonId] = useState('');
-    const [person, setPerson] = useState(null);
-    const [metrics, setMetrics] = useState(null);
-    const [logs, setLogs] = useState([]);
+    const [person, setPerson] = useState<Person | null>(null);
+    const [metrics, setMetrics] = useState<Metrics | null>(null);
+    const [logs, setLogs] = useState<Log[]>([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [severity, setSeverity] = useState('success');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [actionFilter, setActionFilter] = useState('');
-    const [consentVault, setConsentVault] = useState([]);
-    const [biasReport, setBiasReport] = useState(null);
+    const [consentVault, setConsentVault] = useState<Consent[]>([]);
+    const [biasReport, setBiasReport] = useState<Record<string, number> | null>(null);
     const [indexRebuildMessage, setIndexRebuildMessage] = useState('');
-    const [webhooks, setWebhooks] = useState([]);
-    const [plugins, setPlugins] = useState([]);
-    const [analytics, setAnalytics] = useState(null);
+    const [webhooks, setWebhooks] = useState<Webhook[]>([]);
+    const [plugins, setPlugins] = useState<Plugin[]>([]);
+    const [analytics, setAnalytics] = useState<any | null>(null);
 
     const fetchPerson = async () => {
         if (!personId) return;
@@ -217,7 +219,7 @@ const AdminDashboard = () => {
                                         label="Person ID"
                                         variant="outlined"
                                         value={personId}
-                                        onChange={(e) => setPersonId(e.target.value)}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setPersonId(e.target.value)}
                                         sx={{ mb: 2 }}
                                     />
                                 </Grid>
@@ -825,7 +827,7 @@ const AdminDashboard = () => {
                                         type="date"
                                         InputLabelProps={{ shrink: true }}
                                         value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item xs={12} sm={3}>
@@ -835,7 +837,7 @@ const AdminDashboard = () => {
                                         type="date"
                                         InputLabelProps={{ shrink: true }}
                                         value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item xs={12} sm={3}>
@@ -843,7 +845,7 @@ const AdminDashboard = () => {
                                         <InputLabel>Action</InputLabel>
                                         <Select
                                             value={actionFilter}
-                                            onChange={(e) => setActionFilter(e.target.value)}
+                                            onChange={(e: any) => setActionFilter(e.target.value)}
                                             label="Action"
                                         >
                                             <MenuItem value="">All</MenuItem>

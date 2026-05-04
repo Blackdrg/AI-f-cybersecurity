@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import {
   Box, Typography, Paper, Grid, Card, CardContent,
   Table, TableBody, TableCell, TableHead, TableRow,
-  Chip, IconButton, Tooltip, Button, TextField,
+  Chip, Button, TextField,
   Select, MenuItem, FormControl, InputLabel, Badge,
   Alert, Dialog, DialogTitle, DialogContent,
   DialogActions, Stepper, Step, StepLabel,
-  LinearProgress, List, ListItem, ListItemText,
+  List, ListItem, ListItemText,
   ListItemIcon, Divider, Snackbar, Tabs, Tab
 } from '@mui/material';
 import {
@@ -16,30 +17,60 @@ import {
   Notifications, Settings, Refresh, Search,
   FilterList, BarChart, AccountTree
 } from '@mui/icons-material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import type { Severity, SnackbarState, Alert } from '../types';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip as RechartsTooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts';
 import API from '../services/api';
+
+interface ExtendedAlert extends Alert {
+  type: string;
+  source: string;
+  status: string;
+  affectedEntities: number;
+  confidence: number;
+}
+
+interface Incident {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  severity: string;
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: string;
+  priority: string;
+  affectedSystems: string;
+  relatedAlerts: number;
+  resolutionSteps: string[];
+  rootCause: string;
+  impact: string;
+}
 
 const COLORS = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899'];
 
 export const IncidentAlertDashboard = () => {
-  const [alerts, setAlerts] = useState([]);
-  const [incidents, setIncidents] = useState([]);
+  const [alerts, setAlerts] = useState<ExtendedAlert[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [filterSeverity, setFilterSeverity] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedIncident, setSelectedIncident] = useState(null);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [incidentWorkflowOpen, setIncidentWorkflowOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' as Severity });
 
-  const severityConfig = {
+  const severityConfig: Record<string, { color: string; label: string; icon: ReactNode }> = {
     critical: { color: '#ef4444', label: 'Critical', icon: <ErrorIcon /> },
     high: { color: '#f59e0b', label: 'High', icon: <Warning /> },
     medium: { color: '#3b82f6', label: 'Medium', icon: <Info /> },
     low: { color: '#10b981', label: 'Low', icon: <CheckCircle /> }
   };
 
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     open: '#ef4444',
     investigating: '#f59e0b',
     resolved: '#10b981',
@@ -55,16 +86,13 @@ export const IncidentAlertDashboard = () => {
       fetchIncidents();
     }, 30000);
     return () => clearInterval(interval);
-  }, [filterSeverity, filterStatus]);
+  }, []);
 
   const fetchAlerts = async () => {
     setLoading(true);
     try {
-      // Try to fetch from backend
-      const res = await API.get('/api/alerts/active').catch(() => ({ data: [] }));
+      const res = await API.get('/api/alerts/active').catch(() => ({ data: [] as ExtendedAlert[] }));
       const backendAlerts = res.data || [];
-      
-      // If no backend alerts, use demo data
       const demoAlerts = generateDemoAlerts();
       setAlerts(backendAlerts.length > 0 ? backendAlerts : demoAlerts);
     } catch (err) {
@@ -76,7 +104,7 @@ export const IncidentAlertDashboard = () => {
 
   const fetchIncidents = async () => {
     try {
-      const res = await API.get('/api/incidents').catch(() => ({ data: [] }));
+      const res = await API.get('/api/incidents').catch(() => ({ data: [] as Incident[] }));
       const backendIncidents = res.data || [];
       const demoIncidents = generateDemoIncidents();
       setIncidents(backendIncidents.length > 0 ? backendIncidents : demoIncidents);
@@ -85,14 +113,15 @@ export const IncidentAlertDashboard = () => {
     }
   };
 
-  const generateDemoAlerts = () => {
+  const generateDemoAlerts = (): ExtendedAlert[] => {
     const severities = ['critical', 'high', 'medium', 'low'];
     const types = ['DEEPFAKE_DETECTED', 'SPOOFING_ATTEMPT', 'ANOMALY_DETECTED', 'BIAS_THRESHOLD_EXCEEDED', 'CONFIDENCE_DROPOUT'];
     
     return Array.from({ length: 15 }, (_, i) => ({
       id: `alert_${i + 1}`,
+      title: types[i % types.length],
       type: types[i % types.length],
-      severity: severities[Math.floor(Math.random() * severities.length)],
+      severity: severities[Math.floor(Math.random() * severities.length)] as ExtendedAlert['severity'],
       message: getAlertMessage(types[i % types.length]),
       timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString(),
       confidence: Math.random() * 0.5 + 0.5,
@@ -102,7 +131,7 @@ export const IncidentAlertDashboard = () => {
     }));
   };
 
-  const generateDemoIncidents = () => {
+  const generateDemoIncidents = (): Incident[] => {
     const statuses = ['open', 'investigating', 'resolved', 'escalated'];
     const types = ['Security Breach Attempt', 'Model Drift Detected', 'Spoofing Campaign', 'Bias Anomaly', 'System Performance Degradation'];
     
@@ -124,8 +153,8 @@ export const IncidentAlertDashboard = () => {
     }));
   };
 
-  const getAlertMessage = (type) => {
-    const messages = {
+  const getAlertMessage = (type: string): string => {
+    const messages: Record<string, string> = {
       'DEEPFAKE_DETECTED': 'Deepfake video detected in recognition stream',
       'SPOOFING_ATTEMPT': 'Multiple spoofing attempts from same source',
       'ANOMALY_DETECTED': 'Behavioral anomaly detected in recognition pattern',
@@ -135,8 +164,8 @@ export const IncidentAlertDashboard = () => {
     return messages[type] || 'Unknown alert type';
   };
 
-  const getIncidentDescription = (type) => {
-    const descriptions = {
+  const getIncidentDescription = (type: string): string => {
+    const descriptions: Record<string, string> = {
       'Security Breach Attempt': 'Multiple unauthorized access attempts detected across recognition endpoints',
       'Model Drift Detected': 'Significant performance degradation in model accuracy over past 24 hours',
       'Spoofing Campaign': 'Coordinated spoofing attack using presentation attacks',
@@ -146,8 +175,8 @@ export const IncidentAlertDashboard = () => {
     return descriptions[type] || 'Incident description not available';
   };
 
-  const getRootCause = (type) => {
-    const causes = {
+  const getRootCause = (type: string): string => {
+    const causes: Record<string, string> = {
       'Security Breach Attempt': 'Compromised API credentials',
       'Model Drift Detected': 'Data distribution shift in training data',
       'Spoofing Campaign': 'Sophisticated deepfake tools',
@@ -157,8 +186,8 @@ export const IncidentAlertDashboard = () => {
     return causes[type] || 'Under investigation';
   };
 
-  const getImpact = (type) => {
-    const impacts = {
+  const getImpact = (type: string): string => {
+    const impacts: Record<string, string> = {
       'Security Breach Attempt': 'High - Potential data exposure',
       'Model Drift Detected': 'Medium - Reduced accuracy',
       'Spoofing Campaign': 'Critical - System integrity compromised',
@@ -168,8 +197,8 @@ export const IncidentAlertDashboard = () => {
     return impacts[type] || 'Unknown';
   };
 
-  const generateResolutionSteps = (status) => {
-    const steps = {
+  const generateResolutionSteps = (status: string): string[] => {
+    const steps: Record<string, string[]> = {
       open: ['Incident logged', 'Initial triage completed'],
       investigating: ['Root cause analysis in progress', 'Containment measures applied'],
       resolved: ['Root cause identified', 'Fix implemented', 'System tested'],
@@ -178,12 +207,12 @@ export const IncidentAlertDashboard = () => {
     return steps[status] || [];
   };
 
-  const handleIncidentClick = (incident) => {
+  const handleIncidentClick = (incident: Incident) => {
     setSelectedIncident(incident);
     setIncidentWorkflowOpen(true);
   };
 
-  const handleUpdateStatus = async (incidentId, newStatus) => {
+  const handleUpdateStatus = async (incidentId: string, newStatus: string) => {
     try {
       await API.put(`/api/incidents/${incidentId}/status`, { status: newStatus });
       setIncidents(prev => prev.map(inc => 
@@ -195,7 +224,7 @@ export const IncidentAlertDashboard = () => {
     }
   };
 
-  const handleAcknowledgeAlert = async (alertId) => {
+  const handleAcknowledgeAlert = async (alertId: string) => {
     try {
       await API.put(`/api/alerts/${alertId}/acknowledge`);
       setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'acknowledged' } : a));
@@ -205,14 +234,14 @@ export const IncidentAlertDashboard = () => {
     }
   };
 
-  const filteredAlerts = useMemo(() => {
+  const filteredAlerts = useMemo<ExtendedAlert[]>(() => {
     return alerts.filter(a => 
       (filterSeverity === 'all' || a.severity === filterSeverity) &&
       (filterStatus === 'all' || a.status === filterStatus)
     );
   }, [alerts, filterSeverity, filterStatus]);
 
-  const filteredIncidents = useMemo(() => {
+  const filteredIncidents = useMemo<Incident[]>(() => {
     return incidents.filter(i => 
       (filterSeverity === 'all' || i.severity === filterSeverity) &&
       (filterStatus === 'all' || i.status === filterStatus)
@@ -220,18 +249,18 @@ export const IncidentAlertDashboard = () => {
   }, [incidents, filterSeverity, filterStatus]);
 
   const alertSummary = useMemo(() => {
-    return alerts.reduce((acc, alert) => {
-      acc[alert.severity] = (acc[alert.severity] || 0) + 1;
+    return alerts.reduce<Record<string, number>>((acc, alert) => {
+      acc[alert.severity!] = (acc[alert.severity!] || 0) + 1;
       acc.total = (acc.total || 0) + 1;
       return acc;
     }, {});
   }, [alerts]);
 
-  const incidentSummary = useMemo(() => {
+  const incidentSummary = useMemo<Record<string, number>>(() => {
     return incidents.reduce((acc, incident) => {
       acc[incident.status] = (acc[incident.status] || 0) + 1;
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
   }, [incidents]);
 
   const chartData = Object.entries(alertSummary).filter(([key]) => key !== 'total').map(([severity, count]) => ({
@@ -280,7 +309,7 @@ export const IncidentAlertDashboard = () => {
                 size="small"
                 label="Severity"
                 value={filterSeverity}
-                onChange={(e) => setFilterSeverity(e.target.value)}
+                onChange={(e) => setFilterSeverity(e.target.value as string)}
               >
                 <MenuItem value="all">All Severity</MenuItem>
                 <MenuItem value="critical">Critical</MenuItem>
@@ -296,7 +325,7 @@ export const IncidentAlertDashboard = () => {
                 size="small"
                 label="Status"
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => setFilterStatus(e.target.value as string)}
               >
                 <MenuItem value="all">All Status</MenuItem>
                 <MenuItem value="new">New</MenuItem>

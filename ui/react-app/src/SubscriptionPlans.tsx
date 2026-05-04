@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import type { Plan } from '../types';
 import { Card, CardContent, Typography, Button, Grid, Chip, Alert, CircularProgress } from '@mui/material';
 import { CreditCard, CheckCircle, Star } from '@mui/icons-material';
 import { loadStripe } from '@stripe/stripe-js';
@@ -7,9 +9,9 @@ import { Elements, useStripe, useElements } from '@stripe/react-stripe-js';
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_...');
 
 const SubscriptionPlans = () => {
-  const [plans, setPlans] = useState([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState('');
   const [severity, setSeverity] = useState('success');

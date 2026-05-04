@@ -6,6 +6,8 @@ export interface Face {
   gender?: string;
   behavior?: Behavior;
 }
+export * from './types/index';
+
 
 export interface Match {
   name: string;

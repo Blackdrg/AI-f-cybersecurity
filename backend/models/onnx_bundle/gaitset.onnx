@@ -1,0 +1,4 @@
+# Mock ONNX protobuf bytes for GaitSet model
+# In real production, export from trained PyTorch GaitSet model:
+# torch.onnx.export(gaitset_model, dummy_silhouettes, \"gaitset.onnx\", opset_version=11)
+b'\\x08\\x02\\x12\\x06\\x6f\\x6e\\x6e\\x78\\x0a\\x08\\x0a\\x02\\x38\\x01\\x12\\x03\\x32\\x30\\x31... [truncated dummy ONNX bytes for inference compatibility]

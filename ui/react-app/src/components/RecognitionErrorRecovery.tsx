@@ -18,6 +18,7 @@ import {
   CompareArrows,
   Description
 } from '@mui/icons-material';
+import { Severity } from '../types';
 import API from '../services/api';
 
 const ERROR_CATEGORIES = {
@@ -199,10 +200,10 @@ const RecognitionErrorRecovery = ({
     setDiagnostics({
       total_errors: errors.length,
       max_severity: errors.length > 0 ? 
-        errors.reduce((max, e) => {
+        errors.reduce<Severity>((max, e) => {
           const order = { critical: 4, high: 3, medium: 2, low: 1, info: 0, warning: 2 };
-          return (order[e.severity] || 0) > (order[max] || 0) ? e.severity : max;
-        }, 'info') : 'success',
+          return (order[e.severity as Severity] || 0) > (order[max as Severity] || 0) ? e.severity as Severity : max as Severity;
+        }, 'info' as Severity) : 'success' as Severity,
       error_categories: [...new Set(errors.map(e => e.category))]
     });
 

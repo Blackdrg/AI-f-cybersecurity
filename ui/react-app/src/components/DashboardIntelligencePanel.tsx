@@ -14,6 +14,7 @@ import {
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import API from '../services/api';
+import type { Alert } from '../../types';
 
 interface DashboardIntelligencePanelProps {
   timeframe?: string;
@@ -42,8 +43,8 @@ const DashboardIntelligencePanel: React.FC<DashboardIntelligencePanelProps> = ({
   const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
-   const [alerts, setAlerts] = useState<any[]>([]);
-   const [decisionTrace, setDecisionTrace] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [decisionTrace, setDecisionTrace] = useState<any[]>([]);
    const [historicalTrends, setHistoricalTrends] = useState<any[]>([]);
   const [riskMetrics, setRiskMetrics] = useState<RiskMetrics>({});
   const [drilldownData, setDrilldownData] = useState<{ metric: string; data: any } | null>(null);

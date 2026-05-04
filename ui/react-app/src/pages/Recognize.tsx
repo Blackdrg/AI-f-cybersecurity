@@ -12,6 +12,7 @@ import {
 } from '@mui/icons-material';
 import RecognizeView from './RecognizeView';
 import API from '../services/api';
+import { RecognitionError } from '../types';
 import OperatorWorkflowPanel from '../components/OperatorWorkflowPanel';
 import RecognitionErrorRecovery from '../components/RecognitionErrorRecovery';
 
@@ -39,6 +40,7 @@ function Recognize() {
   });
   const [recognitionError, setRecognitionError] = useState(null);
   const [recoveryAction, setRecoveryAction] = useState(null);
+  const [recognitionError, setRecognitionError] = useState<RecognitionError | null>(null);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];

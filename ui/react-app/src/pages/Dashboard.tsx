@@ -26,6 +26,7 @@ import { OrgSwitcher } from '../components/OrgSwitcher';
 import { AuditTimeline } from '../components/AuditTimeline';
 import { IncidentAlertDashboard } from '../components/IncidentAlertDashboard';
 import { PermissionGuard as RBACGuard, RoleBadge } from '../components/RBACGuard';
+import { SnackbarState } from '../types';
 import { PERMISSIONS } from '../contexts/AuthContext';
 import './Dashboard.css';
 
@@ -35,7 +36,7 @@ const Dashboard = () => {
   const [systemHealth, setSystemHealth] = useState({ status: 'healthy' });
   const [criticalAlerts, setCriticalAlerts] = useState(0);
   const [pendingIncidents, setPendingIncidents] = useState(0);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' as const });
   const [activeTab, setActiveTab] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   

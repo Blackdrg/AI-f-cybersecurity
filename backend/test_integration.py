@@ -1,5 +1,14 @@
 import pytest
-from conftest import test_client, authenticated_client, mock_redis
+import io
+import cv2
+import numpy as np
+from conftest import test_client, authenticated_client, mock_redis, mock_models  # mock_models added if needed
+
+def create_test_image():
+    img = np.zeros((112, 112, 3), dtype=np.uint8)
+    img[40:80, 40:80] = [255, 255, 255]
+    _, buffer = cv2.imencode('.jpg', img)
+    return io.BytesIO(buffer.tobytes())
 
 class TestIntegration:
     def test_database_connection(self, test_client):
