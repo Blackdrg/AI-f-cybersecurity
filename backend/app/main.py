@@ -80,6 +80,10 @@ from .middleware.usage_limiter import UsageLimiter, init_usage_limiter, get_usag
 
 # Get secret from env
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
+# Startup guard: reject default JWT secret in production
+if JWT_SECRET == "dev-secret-change-me" and os.getenv("ENVIRONMENT", "development") in ["production", "prod"]:
+    logger.critical("FATAL: Default JWT secret detected in production environment!")
+    raise RuntimeError("Insecure JWT secret configuration - please set JWT_SECRET environment variable")
 
 # Add middlewares (order matters: auth first, then rate limit)
 app.add_middleware(AuthenticationMiddleware, secret_key=JWT_SECRET)

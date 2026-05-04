@@ -1,4 +1,4 @@
-nimport base64
+import base64
 from cryptography.fernet import Fernet
 from .secrets_manager import secrets_manager
 from typing import Optional

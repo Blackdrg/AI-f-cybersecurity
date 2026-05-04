@@ -44,7 +44,7 @@ from ..services.reliability import ai_model_circuit_breaker, db_circuit_breaker,
 
 
 def recvall(conn, n):
-    \"\"\"Helper to receive exactly n bytes.\"\"\"
+    """Helper to receive exactly n bytes."""
     data = b''
     while len(data) < n:
         packet = conn.recv(n - len(data))
@@ -55,10 +55,10 @@ def recvall(conn, n):
 
 
 def send_request_to_enclave(request_dict):
-    \"\"\"Send encrypted request to TEE enclave via VSOCK.
+    """Send encrypted request to TEE enclave via VSOCK.
     
     Encrypts embedding → VSOCK → Decrypt response.
-    \"\"\"
+    """
     from ..security.encryption_utils import encrypt_request, decrypt_response
     
     encrypted_req = encrypt_request(request_dict)

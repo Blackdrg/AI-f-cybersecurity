@@ -271,10 +271,10 @@ class DeepfakeDetector:
 
 @dataclass
 class SpoofResult(dict):
-    \"\"\"Detection result with dict-like access for backward compatibility.
+    """Detection result with dict-like access for backward compatibility.
     
     Includes 'method' key for test compatibility.
-    \"\"\"
+    """
     is_spoof: bool
     spoof_score: float  # 0 = real, 1 = spoof
     spoof_type: str  # print, replay, mask, deepfake
@@ -283,7 +283,7 @@ class SpoofResult(dict):
     challenge_result: Optional[Dict] = None
 
     def __post_init__(self):
-        \"\"\"Initialize dict contents with 'method' key.\"\"\"
+        """Initialize dict contents with 'method' key."""
         self.update({
             'is_spoof': self.is_spoof,
             'spoof_score': self.spoof_score,

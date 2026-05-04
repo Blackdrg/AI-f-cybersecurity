@@ -517,7 +517,7 @@ class DBClient:
 
     def _load_encryption_key(self) -> bytes:
         # Use centralized secrets vault
-        key = vault.get_encryption_key()
+        key = vault.encryption_key.decode()
         
         # Ensure it's exactly 32 bytes and base64 encoded for Fernet
         import base64

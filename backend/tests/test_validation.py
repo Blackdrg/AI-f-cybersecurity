@@ -1,7 +1,7 @@
 """Tests for behavioral predictor LSTM (10 tests)."""
 
 import pytest
-from backend.app.models.behavioral_predictor import BehavioralPredictor
+from app.models.behavioral_predictor import BehavioralPredictor
 from unittest.mock import patch, MagicMock
 
 class TestBehavioralPredictorLSTM:

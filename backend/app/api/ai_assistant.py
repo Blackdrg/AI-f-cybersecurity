@@ -2,10 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Dict, Any
 import logging
-from backend.app.providers.llm_provider import get_llm_provider
-from backend.app.middleware.auth import get_current_user
-from backend.app.db.db_client import get_db
-from backend.app.services.redis_client import get_redis
+from app.providers import get_llm_provider
+from app.middleware.auth import get_current_user
+from app.db.db_client import get_db
+from app.services.redis_client import get_redis
 from datetime import datetime
 
 router = APIRouter(tags=["ai_assistant"])

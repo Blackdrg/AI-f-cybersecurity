@@ -1,18 +1,25 @@
 """Comprehensive pytest fixtures to unblock all 108 tests (Redis, Stripe, OpenAI, ONNX, pgvector, GPU mocks)."""
 
+import os
+import sys
+from pathlib import Path
+
+# Add backend directory to Python path for imports when running from project root
+backend_dir = Path(__file__).parent.parent.resolve()
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
 import pytest
 import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, patch, ANY
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
-import os
 import fakeredis
-from stripe.test_helpers import StripeMock
 import onnxruntime as ort
 import torch
 import asyncio 
 
-# Import app after mocks to avoid loading real deps
+# Import app after path setup
 from app.main import app
 
 # Real Redis for production-like tests (docker up)

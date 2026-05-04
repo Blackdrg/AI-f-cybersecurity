@@ -30,14 +30,14 @@ class SpoofNet(nn.Module):
 
 
 class SpoofDetector:
-    \"\"\"Production ONNX + PyTorch hybrid spoof/deepfake detector.\"\"\"
+    """Production ONNX + PyTorch hybrid spoof/deepfake detector."""
 
     def __init__(self):
         from . import registry
         self.registry = registry
         self.use_onnx = hasattr(self.registry, 'sessions') and 'spoof_detector' in self.registry.sessions
         self.use_onnx_deepfake = self.use_onnx and 'deepfake_detector' in self.registry.sessions
-        logger.info(f\"SpoofDetector: ONNX={self.use_onnx}, Deepfake ONNX={self.use_onnx_deepfake}\")
+        logger.info(f"SpoofDetector: ONNX={self.use_onnx}, Deepfake ONNX={self.use_onnx_deepfake}")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if not self.use_onnx:
             self.model = SpoofNet().to(self.device)

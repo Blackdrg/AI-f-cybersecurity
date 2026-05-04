@@ -9,3 +9,6 @@ try:
     CRYPTO = True
 except:
     CRYPTO = False
+
+# Re-export vault_manager from vault.py as 'vault' for backward compatibility
+from .vault import vault_manager as vault

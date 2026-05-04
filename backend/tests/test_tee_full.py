@@ -8,9 +8,9 @@ import base64
 import numpy as np
 from unittest.mock import patch, MagicMock
 from cryptography.fernet import Fernet
-from backend.app.security.encryption_utils import encrypt_embedding, get_encryption_key
-from backend.app.security.secrets_manager import SecretsManager
-from backend.app.models.attestation import AttestationVerifier
+from app.security.encryption_utils import encrypt_embedding, get_encryption_key
+from app.security.secrets_manager import SecretsManager
+from app.models.attestation import AttestationVerifier
 from backend.enclave_mock import MockEnclaveService
 
 class TestTEEIntegration:

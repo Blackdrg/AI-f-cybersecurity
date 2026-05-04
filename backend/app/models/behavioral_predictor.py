@@ -44,11 +44,14 @@ class BehavioralPredictor:
         logger.info(f"LSTM Behavioral Predictor loaded on {self.device}, weights: {self.model_path.exists()}")
 
     def _load_lstm(self):
-        "Load pretrained LSTM weights."
+        """Load pretrained LSTM weights."""
         model = LSTMBehaviorNet().to(self.device)
         if self.model_path.exists():
-            model.load_state_dict(torch.load(self.model_path, map_location=self.device))
-            logger.info("Loaded pretrained LSTM weights")
+            try:
+                model.load_state_dict(torch.load(self.model_path, map_location=self.device))
+                logger.info("Loaded pretrained LSTM weights")
+            except Exception as e:
+                logger.warning(f"Failed to load weights from {self.model_path}: {e}. Using random init.")
         else:
             logger.warning("No weights found - random init (train first)")
         model.eval()

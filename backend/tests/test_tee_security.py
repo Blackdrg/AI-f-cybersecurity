@@ -2,8 +2,8 @@ import pytest
 import json
 import base64
 from unittest.mock import Mock, patch
-from backend.app.models.attestation import AttestationVerifier, EnclaveSession
-from backend.app.models.crypto_attestation import CryptoAttestation
+from app.models.attestation import AttestationVerifier, EnclaveSession
+from app.models.crypto_attestation import CryptoAttestation
 
 class TestAttestationVerifier:
     def test_valid_document(self):

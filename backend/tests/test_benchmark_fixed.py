@@ -48,9 +48,9 @@ class TestFaceDetectionBenchmark:
 
         def run_detection():
             response = client.post(
-                \"/api/v1/recognize\",
-                files={\"image\": (\"test.jpg\", img_data.getvalue(), \"image/jpeg\")},
-                data={\"top_k\": 1}
+                "/api/v1/recognize",
+                files={"image": ("test.jpg", img_data.getvalue(), "image/jpeg")},
+                data={"top_k": 1}
             )
             return response.status_code
 
@@ -59,14 +59,14 @@ class TestFaceDetectionBenchmark:
 
     @pytest.mark.infra
     def test_face_embedding_latency(self, benchmark):
-        \"\"\"Benchmark face embedding generation.\"\"\"
+        """Benchmark face embedding generation."""
         img_data = create_test_image()
 
         def run_embedding():
             response = client.post(
-                \"/api/v1/recognize\",
-                files={\"image\": (\"test.jpg\", img_data.getvalue(), \"image/jpeg\")},
-                data={\"top_k\": 1}
+                "/api/v1/recognize",
+                files={"image": ("test.jpg", img_data.getvalue(), "image/jpeg")},
+                data={"top_k": 1}
             )
             return response.status_code
 
@@ -75,16 +75,16 @@ class TestFaceDetectionBenchmark:
 
 
 class TestVectorSearchBenchmark:
-    \"\"\"Benchmark vector search performance.\"\"\"
+    """Benchmark vector search performance."""
     @pytest.mark.infra
     def test_vector_search_latency(self, benchmark):
-        \"\"\"Benchmark vector search latency.\"\"\"
+        """Benchmark vector search latency."""
         img_data = create_test_image()
 
         def run_search():
             response = client.post(
-                \"/api/v1/recognize\",
-                files={\"image\": (\"test.jpg\", img_data.getvalue(), \"image/jpeg\")}
+                "/api/v1/recognize",
+                files={"image": ("test.jpg", img_data.getvalue(), "image/jpeg")}
             )
             return response.status_code
 
@@ -93,15 +93,15 @@ class TestVectorSearchBenchmark:
 
     @pytest.mark.infra
     def test_batch_vector_search(self, benchmark):
-        \"\"\"Benchmark batch vector search.\"\"\"
+        """Benchmark batch vector search."""
         def run_batch_search():
             results = []
             for _ in range(10):
                 img_data = create_test_image()
                 response = client.post(
-                    \"/api/v1/recognize\",
-                    files={\"image\": (\"test.jpg\", img_data.getvalue(), \"image/jpeg\")},
-                    data={\"top_k\": 5}
+                    "/api/v1/recognize",
+                    files={"image": ("test.jpg", img_data.getvalue(), "image/jpeg")},
+                    data={"top_k": 5}
                 )
                 results.append(response.status_code)
             return results

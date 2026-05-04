@@ -1,5 +1,5 @@
 import pytest
-from backend.tests.conftest import test_client, authenticated_client, mock_models, mock_redis
+from conftest import test_client, authenticated_client, mock_redis
 
 class TestIntegration:
     def test_database_connection(self, test_client):

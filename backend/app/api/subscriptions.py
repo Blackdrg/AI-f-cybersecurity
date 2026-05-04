@@ -13,7 +13,7 @@ from ..services.stripe_service import billing_service
 
 @router.post("/subscriptions", response_model=SubscriptionResponse)
 async def create_subscription(subscription: SubscriptionCreate, current_user=Depends(get_current_user)):
-    \"\"\"Create Stripe subscription via checkout.\"\"\"
+    """Create Stripe subscription via checkout."""
     try:
         sub_response = await billing_service.create_subscription(
             current_user["user_id"], 
@@ -26,7 +26,7 @@ async def create_subscription(subscription: SubscriptionCreate, current_user=Dep
 
 @router.get("/subscriptions/me", response_model=SubscriptionResponse)
 async def get_current_subscription(current_user=Depends(get_current_user)):
-    \"\"\"Get current user's active subscription (Stripe + DB sync).\"\"\"
+    """Get current user's active subscription (Stripe + DB sync)."""
 
     db = await get_db()
     sub = await db.get_subscription(current_user["user_id"])
@@ -52,7 +52,7 @@ async def get_current_subscription(current_user=Depends(get_current_user)):
 
 @router.put("/subscriptions/me/cancel")
 async def cancel_subscription(current_user=Depends(get_current_user)):
-    \"\"\"Cancel Stripe subscription.\"\"\"
+    """Cancel Stripe subscription."""
     db = await get_db()
     sub = await db.get_subscription(current_user["user_id"])
     if sub:
@@ -60,12 +60,12 @@ async def cancel_subscription(current_user=Depends(get_current_user)):
             sub["stripe_subscription_id"],
             cancel_at_period_end=True
         )
-        await db.update_subscription(sub["subscription_id"], status=\"cancelled\")
-    return {\"message\": \"Cancellation requested - will complete at period end\"}
+        await db.update_subscription(sub["subscription_id"], status="cancelled")
+    return {"message": "Cancellation requested - will complete at period end"}
 
 @router.get("/subscriptions/history", response_model=List[SubscriptionResponse])
 async def get_subscription_history(current_user=Depends(get_current_user)):
-    \"\"\"Get subscription history for current user.\"\"\"
+    """Get subscription history for current user."""
     db = await get_db()
     subs = await db.get_subscription_history(current_user["user_id"])
 
