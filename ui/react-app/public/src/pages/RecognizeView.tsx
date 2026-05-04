@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Button, Typography, Grid, Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab, Paper, Divider } from '@mui/material';
 import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, BarChart, PieChart } from '@mui/icons-material';
 
-import { Face, RecognitionResult } from '../types';
+import type { Face as FaceType, RecognitionResult } from '../types';
 
 const RecognizeView = () => {
     const [image, setImage] = useState<File | null>(null);
@@ -31,14 +31,14 @@ const RecognizeView = () => {
         }
     };
 
-    const calculateEmotionSummary = (faces: Face[]): EmotionSummary | null => {
+    const calculateEmotionSummary = (faces: FaceType[]) => {
         if (!faces || faces.length === 0) return null;
 
         const emotionCounts: Record<string, number> = {};
         const emotionScores: Record<string, number> = {};
         let totalFaces = faces.length;
 
-        faces.forEach((face: Face) => {
+        faces.forEach((face: FaceType) => {
             if (face.emotion) {
                 const dominant = face.emotion.dominant_emotion;
                 emotionCounts[dominant] = (emotionCounts[dominant] || 0) + 1;
@@ -46,7 +46,7 @@ const RecognizeView = () => {
             }
         });
 
-        const summary: EmotionSummaryItem[] = Object.keys(emotionCounts).map(emotion => ({
+        const summary = Object.keys(emotionCounts).map(emotion => ({
             emotion,
             count: emotionCounts[emotion],
             percentage: (emotionCounts[emotion] / totalFaces) * 100,
@@ -168,7 +168,7 @@ const RecognizeView = () => {
         overlayCanvas.height = video!.videoHeight;
         ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-        streamResults.faces.forEach((face: Face, idx: number) => {
+        streamResults.faces.forEach((face: FaceType, idx: number) => {
             const [x, y, w, h] = face.face_box;
 
             ctx.strokeStyle = face.matches.length > 0 ? '#4caf50' : '#f44336';
@@ -228,8 +228,8 @@ const RecognizeView = () => {
                 Face Recognition
             </Typography>
 
-            <Grid container spacing={3}>
-                <Grid xs={12}>
+            <Grid spacing={3}>
+                <Grid size={{ xs: 12 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 3 }}>
@@ -250,8 +250,8 @@ const RecognizeView = () => {
                             )}
 
                             <form onSubmit={handleSubmit}>
-                                <Grid container spacing={3}>
-                                    <Grid xs={12}>
+                                <Grid spacing={3}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Button variant="contained" component="label" startIcon={<CameraAlt />}>
                                             Upload Image
                                             <input type="file" accept="image/*" hidden onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,7 +260,7 @@ const RecognizeView = () => {
                                             }} />
                                         </Button>
                                     </Grid>
-                                    <Grid xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Button type="submit" variant="contained" fullWidth color="primary" disabled={loading || !image}>
                                             {loading ? <CircularProgress size={24} /> : <Search />}
                                             {loading ? 'Analyzing...' : 'Analyze Image'}
@@ -273,7 +273,7 @@ const RecognizeView = () => {
                 </Grid>
 
                 {message && (
-                    <Grid xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Alert severity={severity} onClose={() => setMessage('')}>
                             {message}
                         </Alert>
@@ -281,7 +281,7 @@ const RecognizeView = () => {
                 )}
 
                 {results && (
-                    <Grid xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h5">Results</Typography>

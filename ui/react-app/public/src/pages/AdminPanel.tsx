@@ -58,13 +58,13 @@ const AdminPanel = () => {
         API.get('/api/analytics/risk-metrics').catch(() => ({data: {}}))
       ]);
       
-      setOrgs(orgsRes.data: any);
-      if (orgsRes.data.length > 0) setActiveOrg(orgsRes.data[0]);
-      setPolicies(policiesRes.data: any);
-      setSystems(systemsRes.data: any);
-      setComplianceData(complianceRes.data: any);
-      setThreats(threatsRes.data: any);
-      setRiskMetrics(riskRes.data: any);
+setOrgs(orgsRes.data);
+       if (orgsRes.data.length > 0) setActiveOrg(orgsRes.data[0]);
+       setPolicies(policiesRes.data);
+       setSystems(systemsRes.data);
+       setComplianceData(complianceRes.data);
+       setThreats(threatsRes.data);
+       setRiskMetrics(riskRes.data);
     } catch (err) {
       console.error("Failed to fetch admin data");
     }
@@ -91,9 +91,9 @@ const AdminPanel = () => {
     }
   };
 
-  const handleTabChange = (event: any, newValue: any) => {
-    setActiveTab(newValue: any);
-  };
+const handleTabChange = (event: any, newValue: any) => {
+     setActiveTab(newValue);
+   };
 
   const renderSystemHealth = () => (
     <Card sx={{ mb: 3 }}>
@@ -449,35 +449,35 @@ const AdminPanel = () => {
       {activeTab === 4 && (
         <Box>
           <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
-            <OperatorWorkflowPanel 
-              recognitionResult={null}
-              onRetry={(adjustments: any) => console.log('Retry requested:', adjustments: any)}
-              onOverride={(data: any) => console.log('Override requested:', data: any)}
-              onEscalate={(data: any) => console.log('Escalation requested:', data: any)}
-            />
+<OperatorWorkflowPanel 
+               recognitionResult={null}
+               onRetry={(adjustments: any) => console.log('Retry requested:', adjustments)}
+               onOverride={(data: any) => console.log('Override requested:', data)}
+               onEscalate={(data: any) => console.log('Escalation requested:', data)}
+             />
           </React.Suspense>
         </Box>
       )}
       {activeTab === 5 && (
         <Box>
           <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
-            <DashboardIntelligencePanel
-              timeframe={intelligenceTimeframe}
-              onTimeframeChange={setIntelligenceTimeframe}
-              onAlertAction={(alert: any, action: any) => console.log('Alert action:', alert: any, action: any)}
-              onDrillDown={(metric, data: any) => console.log('Drill down:', metric, data: any)}
-            />
+<DashboardIntelligencePanel
+               timeframe={intelligenceTimeframe}
+               onTimeframeChange={setIntelligenceTimeframe}
+               onAlertAction={(alert: any, action: any) => console.log('Alert action:', alert, action)}
+               onDrillDown={(metric, data: any) => console.log('Drill down:', metric, data)}
+             />
           </React.Suspense>
         </Box>
       )}
       {activeTab === 6 && (
         <Box>
           <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
-            <EnrichmentPortalPanel
-              personId={activeOrg?.org_id || null}
-              onEnrichmentComplete={(results) => console.log('Enrichment complete:', results)}
-              onAlertAction={(alert: any, action: any) => console.log('Alert action:', alert: any, action: any)}
-            />
+<EnrichmentPortalPanel
+               personId={activeOrg?.org_id || null}
+               onEnrichmentComplete={(results) => console.log('Enrichment complete:', results)}
+               onAlertAction={(alert: any, action: any) => console.log('Alert action:', alert, action)}
+             />
           </React.Suspense>
         </Box>
       )}

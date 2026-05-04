@@ -116,9 +116,9 @@ function BiasReportTab() {
     }
   };
 
-  const handleChangePage = (event: any, newPage: any) => {
-    setPage(newPage: any);
-  };
+const handleChangePage = (event: any, newPage: any) => {
+     setPage(newPage);
+   };
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));

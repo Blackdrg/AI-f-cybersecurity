@@ -108,7 +108,7 @@ function DeepfakeTab() {
   };
 
   const getSeverityColor = (severity: any) => {
-    switch (severity: any) {
+    switch (severity) {
       case 'critical': return '#ef4444';
       case 'high': return '#f59e0b';
       case 'medium': return '#3b82f6';
@@ -240,8 +240,8 @@ function DeepfakeTab() {
                           label={threat.severity}
                           size="small"
                           sx={{
-                            bgcolor: `${getSeverityColor(threat.severity: any)}22`,
-                            color: getSeverityColor(threat.severity: any),
+bgcolor: `${getSeverityColor(threat.severity)}22`,
+                           color: getSeverityColor(threat.severity),
                             fontWeight: 600,
                           }}
                         />
@@ -309,8 +309,8 @@ function DeepfakeTab() {
                 {threats.slice(0, 3).map((t, idx) => (
                   <ListItem key={t.id} sx={{ px: 0, py: 1 }}>
                     <ListItemAvatar>
-                      <Avatar sx={{ width: 32, height: 32, bgcolor: `${getSeverityColor(t.severity: any)}22` }}>
-                        <BugReport sx={{ fontSize: 16, color: getSeverityColor(t.severity: any) }} />
+<Avatar sx={{ width: 32, height: 32, bgcolor: `${getSeverityColor(t.severity)}22` }}>
+                       <BugReport sx={{ fontSize: 16, color: getSeverityColor(t.severity) }} />
                       </Avatar>
                     </ListItemAvatar>
                     <ListItemText
@@ -340,8 +340,8 @@ function DeepfakeTab() {
                   const y = 100 - (t.confidence * 80);
                   return (
                     <g key={t.id}>
-                      <circle cx={x} cy={y} r={6} fill={getSeverityColor(t.severity: any)} />
-                      <line x1={x} y1={100} x2={x} y2={y} stroke={getSeverityColor(t.severity: any)} strokeWidth="1" strokeDasharray="4,4" />
+<circle cx={x} cy={y} r={6} fill={getSeverityColor(t.severity)} />
+                       <line x1={x} y1={100} x2={x} y2={y} stroke={getSeverityColor(t.severity)} strokeWidth="1" strokeDasharray="4,4" />
                     </g>
                   );
                 })}

@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Typography, Paper, Grid, Card, CardContent,
-  Table, TableBody, TableCell, TableHead, TableRow,
-  Chip, LinearProgress, Button,
-  Accordion, AccordionSummary, AccordionDetails, Alert,
-  Tabs, Tab, Badge, CircularProgress, TextField,
+   Accordion, AccordionSummary, AccordionDetails, Alert as MuiAlert,
+   Tabs, Tab, Badge, CircularProgress, TextField,
   Select, MenuItem, FormControl, InputLabel, Stack,
   SelectChangeEvent
 } from '@mui/material';
@@ -14,7 +11,7 @@ import {
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import API from '../services/api';
-import type { Alert } from '../../types';
+import type { Alert as AlertType } from '../types';
 
 interface DashboardIntelligencePanelProps {
   timeframe?: string;
@@ -43,7 +40,7 @@ const DashboardIntelligencePanel: React.FC<DashboardIntelligencePanelProps> = ({
   const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+   const [alerts, setAlerts] = useState<AlertType[]>([]);
   const [decisionTrace, setDecisionTrace] = useState<any[]>([]);
    const [historicalTrends, setHistoricalTrends] = useState<any[]>([]);
   const [riskMetrics, setRiskMetrics] = useState<RiskMetrics>({});
@@ -190,10 +187,10 @@ const DashboardIntelligencePanel: React.FC<DashboardIntelligencePanelProps> = ({
            />
         </Box>
 
-        {alerts.length === 0 ? (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            No active alerts - All systems operational
-          </Alert>
+         {alerts.length === 0 ? (
+           <MuiAlert severity="success" sx={{ mb: 2 }}>
+             No active alerts - All systems operational
+           </MuiAlert>
         ) : (
           <Stack spacing={2}>
             {alerts

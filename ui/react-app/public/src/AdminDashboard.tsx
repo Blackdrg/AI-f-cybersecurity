@@ -1,14 +1,14 @@
 import React, { useState, ChangeEvent } from 'react';
-import type { Person, Metrics, Log, Consent, Webhook, Plugin } from '../types';
+import type { Person as PersonType, Metrics, Log, Consent, Webhook, Plugin } from '../types';
 import axios from 'axios';
-import { Box, Typography, Card, CardContent, Grid, TextField, Button, Divider, Avatar, Chip, CircularProgress, Alert, List, ListItem, ListItemText, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Box, Typography, Card, CardContent, Grid, TextField, Button, Divider, Avatar, Chip, CircularProgress, Alert, List, ListItem, ListItemText, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';
 import { LineChart, LineElement, ChartsXAxis, ChartsYAxis, ChartsGrid, ChartsTooltip, ChartsLegend } from '@mui/x-charts';
 import { Dashboard, Person, Search, Delete, Analytics, TrendingUp, AccessTime, People, History, PlayArrow, VerifiedUser, Build, Storage, Assessment, Lock } from '@mui/icons-material';
 
 interface Props { }
 const AdminDashboard: React.FC<Props> = () => {
     const [personId, setPersonId] = useState('');
-    const [person, setPerson] = useState<Person | null>(null);
+    const [person, setPerson] = useState<PersonType | null>(null);
     const [metrics, setMetrics] = useState<Metrics | null>(null);
     const [logs, setLogs] = useState<Log[]>([]);
     const [loading, setLoading] = useState(false);
@@ -78,7 +78,7 @@ const AdminDashboard: React.FC<Props> = () => {
         setLoading(true);
         setMessage('');
         try {
-            const params = {};
+            const params: Record<string, string> = {};
             if (startDate) params.start_date = startDate;
             if (endDate) params.end_date = endDate;
             if (actionFilter) params.action = actionFilter;
@@ -94,7 +94,7 @@ const AdminDashboard: React.FC<Props> = () => {
         setLoading(false);
     };
 
-    const handlePlayback = (log) => {
+    const handlePlayback = (log: Log) => {
         // Placeholder for event playback
         alert(`Playback for log: ${log.action} at ${log.timestamp}`);
     };
@@ -202,9 +202,9 @@ const AdminDashboard: React.FC<Props> = () => {
                 Admin Dashboard
             </Typography>
 
-            <Grid container spacing={4}>
-                {/* Person Management Section */}
-                <Grid item xs={12} lg={6}>
+             <Grid spacing={4}>
+                 {/* Person Management Section */}
+                 <Grid size={{ xs: 12, lg: 6 }}>
                     <Card sx={{ p: 4, height: '100%' }}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -212,8 +212,8 @@ const AdminDashboard: React.FC<Props> = () => {
                                 Person Management
                             </Typography>
 
-                            <Grid container spacing={2}>
-                                <Grid item xs={12}>
+                             <Grid spacing={2}>
+                                 <Grid size={{ xs: 12 }}>
                                     <TextField
                                         fullWidth
                                         label="Person ID"
@@ -224,7 +224,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                     />
                                 </Grid>
 
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Button
                                         fullWidth
                                         variant="contained"
@@ -250,7 +250,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                     </Button>
                                 </Grid>
 
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Button
                                         fullWidth
                                         variant="outlined"
@@ -317,7 +317,7 @@ const AdminDashboard: React.FC<Props> = () => {
                 </Grid>
 
                 {/* Metrics Section */}
-                <Grid item xs={12} lg={6}>
+                <Grid size={{ xs: 12, lg: 6 }}>
                     <Card sx={{ p: 4, height: '100%' }}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -353,8 +353,8 @@ const AdminDashboard: React.FC<Props> = () => {
                             {metrics && (
                                 <Box>
                                     <Divider sx={{ mb: 2 }} />
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12} sm={6}>
+                                    <Grid spacing={2}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
                                             <Card sx={{
                                                 p: 2,
                                                 background: 'linear-gradient(145deg, rgba(0, 188, 212, 0.1), rgba(255, 64, 129, 0.05))',
@@ -372,7 +372,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                             </Card>
                                         </Grid>
 
-                                        <Grid item xs={12} sm={6}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
                                             <Card sx={{
                                                 p: 2,
                                                 background: 'linear-gradient(145deg, rgba(0, 188, 212, 0.1), rgba(255, 64, 129, 0.05))',
@@ -390,7 +390,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                             </Card>
                                         </Grid>
 
-                                        <Grid item xs={12}>
+                                        <Grid size={{ xs: 12 }}>
                                             <Card sx={{
                                                 p: 2,
                                                 background: 'linear-gradient(145deg, rgba(0, 188, 212, 0.1), rgba(255, 64, 129, 0.05))',
@@ -415,7 +415,7 @@ const AdminDashboard: React.FC<Props> = () => {
                 </Grid>
 
                 {/* Consent and Privacy Management Section */}
-                <Grid item xs={12} lg={6}>
+                <Grid size={{ xs: 12, lg: 6 }}>
                     <Card sx={{ p: 4, height: '100%' }}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -475,7 +475,7 @@ const AdminDashboard: React.FC<Props> = () => {
                 </Grid>
 
                 {/* Model Performance Monitoring Section */}
-                <Grid item xs={12} lg={6}>
+                <Grid size={{ xs: 12, lg: 6 }}>
                     <Card sx={{ p: 4, height: '100%' }}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -514,8 +514,8 @@ const AdminDashboard: React.FC<Props> = () => {
                                     <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
                                         Bias Metrics
                                     </Typography>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12}>
+                                    <Grid spacing={2}>
+                                        <Grid size={{ xs: 12 }}>
                                             <Card sx={{
                                                 p: 2,
                                                 background: 'linear-gradient(145deg, rgba(0, 188, 212, 0.1), rgba(255, 64, 129, 0.05))',
@@ -531,7 +531,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                                 </Typography>
                                             </Card>
                                         </Grid>
-                                        <Grid item xs={12}>
+                                        <Grid size={{ xs: 12 }}>
                                             <Card sx={{
                                                 p: 2,
                                                 background: 'linear-gradient(145deg, rgba(0, 188, 212, 0.1), rgba(255, 64, 129, 0.05))',
@@ -555,7 +555,7 @@ const AdminDashboard: React.FC<Props> = () => {
                 </Grid>
 
                 {/* Vector DB and Index Management Section */}
-                <Grid item xs={12} lg={6}>
+                <Grid size={{ xs: 12, lg: 6 }}>
                     <Card sx={{ p: 4, height: '100%' }}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -601,7 +601,7 @@ const AdminDashboard: React.FC<Props> = () => {
                 </Grid>
 
                 {/* Webhooks and Plugins Management Section */}
-                <Grid item xs={12} lg={6}>
+                <Grid size={{ xs: 12, lg: 6 }}>
                     <Card sx={{ p: 4, mt: 4 }}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -609,8 +609,8 @@ const AdminDashboard: React.FC<Props> = () => {
                                 Webhooks & Plugins Management
                             </Typography>
 
-                            <Grid container spacing={2} sx={{ mb: 3 }}>
-                                <Grid item xs={12} sm={6}>
+                            <Grid spacing={2} sx={{ mb: 3 }}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Button
                                         fullWidth
                                         variant="contained"
@@ -635,7 +635,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                         Fetch Webhooks
                                     </Button>
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Button
                                         fullWidth
                                         variant="contained"
@@ -704,7 +704,7 @@ const AdminDashboard: React.FC<Props> = () => {
                 </Grid>
 
                 {/* Cloud Analytics Section */}
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                     <Card sx={{ p: 4, mt: 4 }}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -740,8 +740,8 @@ const AdminDashboard: React.FC<Props> = () => {
                             {analytics && (
                                 <Box>
                                     <Divider sx={{ mb: 2 }} />
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12} md={6}>
+                                    <Grid spacing={2}>
+                                        <Grid size={{ xs: 12, md: 6 }}>
                                             <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
                                                 Time-Series Metrics (Last 30 Days)
                                             </Typography>
@@ -760,7 +760,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                                 <LineElement type="monotone" dataKey="enrollments" stroke="#82ca9d" />
                                             </LineChart>
                                         </Grid>
-                                        <Grid item xs={12} md={6}>
+                                        <Grid size={{ xs: 12, md: 6 }}>
                                             <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
                                                 Bias Trends
                                             </Typography>
@@ -778,7 +778,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                                 <LineElement type="monotone" dataKey="dpd" stroke="#ff7300" />
                                             </LineChart>
                                         </Grid>
-                                        <Grid item xs={12}>
+                                        <Grid size={{ xs: 12 }}>
                                             <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
                                                 Edge Device Stats
                                             </Typography>
@@ -811,7 +811,7 @@ const AdminDashboard: React.FC<Props> = () => {
                 </Grid>
 
                 {/* Historical Logs Section */}
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                     <Card sx={{ p: 4, mt: 4 }}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -819,8 +819,8 @@ const AdminDashboard: React.FC<Props> = () => {
                                 Historical Logs
                             </Typography>
 
-                            <Grid container spacing={2} sx={{ mb: 3 }}>
-                                <Grid item xs={12} sm={3}>
+                            <Grid spacing={2} sx={{ mb: 3 }}>
+                                <Grid size={{ xs: 12, sm: 3 }}>
                                     <TextField
                                         fullWidth
                                         label="Start Date"
@@ -830,7 +830,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                         onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={3}>
+                                <Grid size={{ xs: 12, sm: 3 }}>
                                     <TextField
                                         fullWidth
                                         label="End Date"
@@ -840,12 +840,12 @@ const AdminDashboard: React.FC<Props> = () => {
                                         onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={3}>
+                                <Grid size={{ xs: 12, sm: 3 }}>
                                     <FormControl fullWidth>
                                         <InputLabel>Action</InputLabel>
                                         <Select
                                             value={actionFilter}
-                                            onChange={(e: any) => setActionFilter(e.target.value)}
+                                            onChange={(e: SelectChangeEvent<string>) => setActionFilter(e.target.value)}
                                             label="Action"
                                         >
                                             <MenuItem value="">All</MenuItem>
@@ -855,7 +855,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                                <Grid item xs={12} sm={3}>
+                                <Grid size={{ xs: 12, sm: 3 }}>
                                     <Button
                                         fullWidth
                                         variant="contained"
@@ -922,7 +922,7 @@ const AdminDashboard: React.FC<Props> = () => {
                 </Grid>
 
                 {message && (
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Alert
                             severity={severity}
                             sx={{

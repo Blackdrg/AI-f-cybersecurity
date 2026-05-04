@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Button, Typography, Grid, Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab, Paper, Divider } from '@mui/material';
 import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, BarChart, PieChart } from '@mui/icons-material';
 
-import { Face, RecognitionResult } from './types';
+import { RecognitionResult } from './types';
 
 const RecognizeView = () => {
     const [image, setImage] = useState<File | null>(null);
@@ -382,8 +382,8 @@ const RecognizeView = () => {
                     Face Recognition
                 </Typography>
 
-            <Grid container spacing={4}>
-                    <Grid item component="div" xs={12}>
+            <Grid spacing={4}>
+                <Grid size={{ xs: 12 }}>
                         <Card sx={{ p: 4 }}>
                             <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
@@ -431,8 +431,8 @@ const RecognizeView = () => {
                             )}
 
                             <form onSubmit={handleSubmit}>
-                                <Grid container spacing={3}>
-                                    <Grid item xs={12}>
+                                <Grid spacing={3}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Box sx={{
                                             border: '2px dashed rgba(0, 188, 212, 0.5)',
                                             borderRadius: '16px',
@@ -471,7 +471,7 @@ const RecognizeView = () => {
                                         </Box>
                                     </Grid>
 
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Button
                                             type="submit"
                                             variant="contained"
@@ -506,7 +506,7 @@ const RecognizeView = () => {
                 </Grid>
 
                 {message && (
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Alert
                                 severity={severity as 'success' | 'error' | 'info' | 'warning'}
                             sx={{
@@ -524,7 +524,7 @@ const RecognizeView = () => {
                 )}
 
                 {(results && results.faces && results.faces.length > 0) || (streamResults && streamResults.faces && streamResults.faces.length > 0) ? (
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Card sx={{ p: 4 }}>
                             <CardContent>
                                 <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -545,12 +545,12 @@ const RecognizeView = () => {
                                                         Emotion Summary Dashboard
                                                     </Typography>
                                                     <Divider sx={{ mb: 2 }} />
-                                                    <Grid container spacing={2}>
+                                                    <Grid spacing={2}>
                                                         {emotionSummary.map((item, idx) => {
                                                             const theme = getEmotionTheme({ dominant_emotion: item.emotion, emotions: { [item.emotion]: item.avgScore } });
                                                             const icon = getEmotionIcon({ dominant_emotion: item.emotion });
                                                             return (
-                                                                <Grid item xs={12} sm={6} md={3} key={idx}>
+                                                                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
                                                                     <Box sx={{
                                                                         p: 2,
                                                                         borderRadius: '12px',
@@ -588,13 +588,13 @@ const RecognizeView = () => {
                                     return null;
                                 })()}
 
-                                <Grid container spacing={3}>
+                                <Grid spacing={3}>
                                     {(webcamActive ? streamResults?.faces || [] : results?.faces || []).map((face, idx) => {
                                         const emotionTheme = getEmotionTheme(face.emotion);
                                         const emotionIcon = getEmotionIcon(face.emotion);
                                         const intensity = emotionTheme.intensity || 0.5;
                                         return (
-                                            <Grid item xs={12} sm={6} md={4} key={idx} sx={{
+                                            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx} sx={{
                                                 transition: 'all 0.3s ease',
                                                 transform: intensity > 0.7 ? 'scale(1.02)' : 'scale(1)',
                                             }}>
@@ -742,7 +742,7 @@ const RecognizeView = () => {
                         </Card>
                     </Grid>
                 ) : webcamActive ? (
-                            <Grid item component="div" xs={12}>
+                        <Grid size={{ xs: 12 }}>
                         <Card sx={{ p: 4 }}>
                             <CardContent sx={{ textAlign: 'center' }}>
                                 <Typography variant="h6" sx={{ color: 'text.secondary' }}>

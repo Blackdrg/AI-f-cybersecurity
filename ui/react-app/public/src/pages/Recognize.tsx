@@ -12,7 +12,7 @@ import {
 } from '@mui/icons-material';
 import RecognizeView from './RecognizeView';
 import API from '../services/api';
-import { RecognitionError } from '../types';
+import { RecognitionError, RecognitionResult } from '../types';
 import OperatorWorkflowPanel from '../components/OperatorWorkflowPanel';
 import RecognitionErrorRecovery from '../components/RecognitionErrorRecovery';
 
@@ -25,11 +25,11 @@ function TabPanel({ children, value, index }) {
 }
 
 function Recognize() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [recognitionResult, setRecognitionResult] = useState(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [recognitionResult, setRecognitionResult] = useState<RecognitionResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [explainableAI, setExplainableAI] = useState(null);
+  const [explainableAI, setExplainableAI] = useState<any>(null);
   const [tabValue, setTabValue] = useState(0);
   const [options, setOptions] = useState({
     enable_spoof_check: true,
@@ -38,11 +38,10 @@ function Recognize() {
     enable_behavior: true,
     threshold: 0.4,
   });
-  const [recognitionError, setRecognitionError] = useState(null);
-  const [recoveryAction, setRecoveryAction] = useState(null);
   const [recognitionError, setRecognitionError] = useState<RecognitionError | null>(null);
+  const [recoveryAction, setRecoveryAction] = useState<any>(null);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
@@ -92,7 +91,7 @@ function Recognize() {
           });
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Recognition failed:', error);
       setRecognitionError({
         type: 'recognition_failed',
@@ -205,18 +204,18 @@ function Recognize() {
           <AccountCircle color="primary" /> Matched Identity
         </Typography>
         <Paper sx={{ p: 2 }}>
-          <Grid container spacing={2}>
-            <Grid xs={12} sm={4}>
+          <Grid spacing={2}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Typography variant="subtitle2" color="text.secondary">Name</Typography>
               <Typography variant="h6">{match.name || 'Anonymous'}</Typography>
             </Grid>
-            <Grid xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Typography variant="subtitle2" color="text.secondary">Person ID</Typography>
               <Typography variant="body2" fontFamily="monospace">
                 {match.person_id}
               </Typography>
             </Grid>
-            <Grid xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Typography variant="subtitle2" color="text-secondary">Match Confidence</Typography>
               <Typography variant="h5" color="primary">
                 {Math.round(match.score * 100)}%
@@ -237,8 +236,8 @@ function Recognize() {
         Recognize identities using multi-modal biometric analysis with explainable AI
       </Typography>
 
-      <Grid container spacing={3}>
-        <Grid xs={12} md={4}>
+      <Grid spacing={3}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -333,7 +332,7 @@ function Recognize() {
                 size="small"
                 fullWidth
                 value={options.threshold}
-                onChange={(e) => setOptions({ ...options, threshold: parseFloat(e.target.value) })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOptions({ ...options, threshold: parseFloat(e.target.value) })}
                 inputProps={{ min: 0, max: 1, step: 0.05 }}
                 sx={{ mb: 1 }}
               />
@@ -360,7 +359,7 @@ function Recognize() {
           </Card>
         </Grid>
 
-         <Grid xs={12} md={8}>
+         <Grid size={{ xs: 12, md: 8 }}>
            {recognitionResult ? (
              <>
                {recognitionError && (
@@ -373,18 +372,18 @@ function Recognize() {
                  </React.Suspense>
                )}
                
-               <React.Suspense fallback={<Box sx={{ p: 2 }}><CircularProgress size={20} /></Box>}>
-                 <OperatorWorkflowPanel
-                   recognitionResult={recognitionResult}
-                   onRetry={(adjustments) => handleRecognize()}
-                   onOverride={(data) => setRecoveryAction(data)}
-                   onEscalate={(data) => setRecoveryAction(data)}
-                 />
-               </React.Suspense>
+                <React.Suspense fallback={<Box sx={{ p: 2 }}><CircularProgress size={20} /></Box>}>
+                  <OperatorWorkflowPanel
+                    recognitionResult={recognitionResult}
+                    onRetry={(adjustments: any) => handleRecognize()}
+                    onOverride={(data: any) => setRecoveryAction(data)}
+                    onEscalate={(data: any) => setRecoveryAction(data)}
+                  />
+                </React.Suspense>
 
-<Tabs
+                <Tabs
                   value={tabValue}
-                  onChange={(e, v) => setTabValue(v)}
+                  onChange={(e: React.SyntheticEvent, v: number) => setTabValue(v)}
                   sx={{ mb: 2, bgcolor: 'background.paper', borderRadius: 1, p: 0.5 }}
                 >
                   <Tab label="Results" />
@@ -416,9 +415,9 @@ function Recognize() {
                         <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <CompareArrows color="primary" /> Factor Contributions
                         </Typography>
-                        <Grid container spacing={2}>
+                        <Grid spacing={2}>
                           {explainableAI.factors.map((factor, idx) => (
-                            <Grid xs={12} sm={6} md={4} key={idx}>
+                            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
                               <Paper sx={{ p: 2, height: '100%' }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                   <Typography variant="subtitle2">{factor.name}</Typography>
@@ -456,20 +455,20 @@ function Recognize() {
                         <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <AccountCircle color="primary" /> Bias Analysis
                         </Typography>
-                        <Grid container spacing={2}>
-                          <Grid xs={12} sm={4}>
+                        <Grid spacing={2}>
+                          <Grid size={{ xs: 12, sm: 4 }}>
                             <Paper sx={{ p: 2, textAlign: 'center' }}>
                               <Typography variant="h4" color="success.main">94.2%</Typography>
                               <Typography variant="caption" color="text.secondary">Overall Fairness</Typography>
                             </Paper>
                           </Grid>
-                          <Grid xs={12} sm={4}>
+                          <Grid size={{ xs: 12, sm: 4 }}>
                             <Paper sx={{ p: 2, textAlign: 'center' }}>
                               <Typography variant="h4" color="info.main">3.2%</Typography>
                               <Typography variant="caption" color="text-secondary">Max Parity Diff</Typography>
                             </Paper>
                           </Grid>
-                          <Grid xs={12} sm={4}>
+                          <Grid size={{ xs: 12, sm: 4 }}>
                             <Paper sx={{ p: 2, textAlign: 'center' }}>
                               <Typography variant="h4" color="warning.main">0.03</Typography>
                               <Typography variant="caption" color="text-secondary">Variance</Typography>
@@ -493,9 +492,9 @@ function Recognize() {
                     <Typography variant="h6" gutterBottom>
                       Biometric Factor Analysis
                     </Typography>
-                    <Grid container spacing={2}>
+                    <Grid spacing={2}>
                       {getFactors().map((factor, idx) => (
-                        <Grid xs={12} key={idx}>
+                        <Grid size={{ xs: 12 }} key={idx}>
                           <Paper sx={{ p: 2 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                               <Box>

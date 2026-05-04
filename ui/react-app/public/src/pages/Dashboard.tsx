@@ -37,7 +37,7 @@ const Dashboard = () => {
   const [criticalAlerts, setCriticalAlerts] = useState(0);
   const [pendingIncidents, setPendingIncidents] = useState(0);
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' as const });
-  const [activeTab: any, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   
   const { 
@@ -61,8 +61,8 @@ const Dashboard = () => {
   const fetchSystemHealth = async () => {
     try {
       const res = await API.get('/api/health').catch(() => null);
-      if (res?.data?.data: any) {
-        setSystemHealth(res.data.data: any);
+if (res?.data?.data) {
+         setSystemHealth(res.data.data);
       } else {
         // Fallback to basic health
         setSystemHealth({ status: 'healthy', production_systems: true });
@@ -101,10 +101,10 @@ const Dashboard = () => {
     }
   };
 
-  const handlePageChange = (newPage: any) => {
-    setActivePage(newPage: any);
-    setActiveTab(0);
-  };
+const handlePageChange = (newPage: any) => {
+     setActivePage(newPage);
+     setActiveTab(0);
+   };
 
   const renderContent = () => {
     switch (activePage) {
@@ -145,7 +145,7 @@ const Dashboard = () => {
       case 'analytics':
         return (
           <RBACGuard requiredPermission={[PERMISSIONS.VIEW_ANALYTICS, PERMISSIONS.VIEW_DASHBOARD]}>
-            <TabAnalyticsView activeTab={activeTab} setActiveTab={setActiveTab: any} />
+            <TabAnalyticsView activeTab={activeTab} setActiveTab={setActiveTab} />
           </RBACGuard>
         );
       case 'compliance':
@@ -173,7 +173,7 @@ const Dashboard = () => {
     }
   };
 
-  const TabAnalyticsView = ({ activeTab: any, setActiveTab }) => (
+  const TabAnalyticsView = ({ activeTab, setActiveTab }) => (
     <Box sx={{ width: '100%', height: '100%' }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} variant="scrollable" scrollButtons="auto">
@@ -382,9 +382,9 @@ const Dashboard = () => {
                 size="small"
                 sx={{
                   ml: 0.5,
-                  bgcolor: `${getTierColor(organization?.subscription_tier: any)}20`,
-                  color: getTierColor(organization?.subscription_tier: any),
-                  border: `1px solid ${getTierColor(organization?.subscription_tier: any)}`,
+bgcolor: `${getTierColor(organization?.subscription_tier)}20`,
+                   color: getTierColor(organization?.subscription_tier),
+                  border: `1px solid ${getTierColor(organization?.subscription_tier)}`,
                   fontSize: '0.65rem',
                   height: 18,
                   borderRadius: 1

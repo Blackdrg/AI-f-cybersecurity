@@ -11,8 +11,8 @@ const EnrollPage = () => {
   const [name, setName] = useState('');
   const [files, setFiles] = useState<any[]>([]);
   const [previews, setPreviews] = useState<any[]>([]);
-  const [consent, setConsent] = useState(false: any);
-  const [isProcessing, setIsProcessing] = useState(false: any);
+  const [consent, setConsent] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState<any>(null);
   const [error, setError] = useState<any>(null);
 
@@ -21,16 +21,16 @@ const EnrollPage = () => {
       const newFiles = Array.from(e.target.files);
       setFiles([...files, ...newFiles]);
       
-      const newPreviews = newFiles.map(file => URL.createObjectURL(file: any));
+      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
       setPreviews([...previews, ...newPreviews]);
     }
   };
 
-  const removeFile = (index: any) => {
-    setFiles(files.filter((_, i) => i !== index: any));
-    URL.revokeObjectURL(previews[index]);
-    setPreviews(previews.filter((_, i) => i !== index: any));
-  };
+const removeFile = (index: any) => {
+     setFiles(files.filter((_, i) => i !== index));
+     URL.revokeObjectURL(previews[index]);
+     setPreviews(previews.filter((_, i) => i !== index));
+   };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -43,22 +43,22 @@ const EnrollPage = () => {
       return;
     }
 
-    setIsProcessing(true: any);
-    setError(null);
+setIsProcessing(true);
+     setError(null);
     setMessage(null);
 
     try {
       const res = await enroll(files, name, consent);
-      setMessage(res.data.message: any);
+      setMessage(res.data.message);
       setName('');
       setFiles([]);
       previews.forEach(p => URL.revokeObjectURL(p));
       setPreviews([]);
-      setConsent(false: any);
+      setConsent(false);
     } catch (err) {
       setError(err.message || "Failed to enroll person");
     } finally {
-      setIsProcessing(false: any);
+      setIsProcessing(false);
     }
   };
 
@@ -73,7 +73,7 @@ const EnrollPage = () => {
                 fullWidth
                 label="Full Name"
                 value={name}
-                onChange={(e: any) => setName(e.target.value: any)}
+                onChange={(e: any) => setName(e.target.value)}
                 required
                 disabled={isProcessing}
               />
@@ -93,7 +93,7 @@ const EnrollPage = () => {
               </Button>
               
               <Grid container spacing={1} sx={{ mt: 1 }}>
-                {previews.map((preview, index: any) => (
+                {previews.map((preview, index) => (
                   <Grid key={index} xs={4} sm={3} md={2}>
                     <Box sx={{ position: 'relative', pt: '100%' }}>
                       <img 
@@ -104,7 +104,7 @@ const EnrollPage = () => {
                       <IconButton 
                         size="small" 
                         sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}
-                        onClick={() => removeFile(index: any)}
+                        onClick={() => removeFile(index)}
                         disabled={isProcessing}
                       >
                         <Delete fontSize="small" color="error" />

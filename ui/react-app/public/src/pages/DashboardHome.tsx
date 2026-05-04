@@ -412,7 +412,7 @@ const DashboardHome = () => {
                           <td>{e.person_name || 'Unknown'}</td>
                           <td><span className="method-badge">{e.method}</span></td>
                           <td><span className="confidence-badge" style={{background: getConfidenceColor(e.confidence)}}>{Math.round(e.confidence * 100)}%</span></td>
-                          <td><span className="risk-badge" style={{background: getRiskColor(e.risk_score: any)}}>{Math.round(e.risk_score * 100)}%</span></td>
+                          <td><span className="risk-badge" style={{background: getRiskColor(e.risk_score)}}>{Math.round(e.risk_score * 100)}%</span></td>
                           <td><span className={`decision-badge ${e.decision}`}>{e.decision}</span></td>
                         </tr>
                       ))}

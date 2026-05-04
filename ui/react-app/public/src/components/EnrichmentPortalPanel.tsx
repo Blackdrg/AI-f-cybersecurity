@@ -447,15 +447,12 @@ const EnrichmentPortalPanel = ({
                 >
                   View Source
                 </Button>
-                <IconButton
-                  size="small"
-                  onClick={() => handleExpand(result.id)}
-                >
-                  <Info color={isExpanded ? "primary" : "action"} />
-                  <Typography variant="caption" sx={{ ml: 0.5 }}>
-                    {isExpanded ? 'Hide' : 'Details'}
-                  </Typography>
-                </IconButton>
+               <IconButton
+                 size="small"
+                 onClick={() => handleExpand(result.id)}
+               >
+                 <Info color={isExpanded ? "primary" : "action"} />
+               </IconButton>
               </Box>
             </Box>
           </Box>
@@ -487,7 +484,7 @@ const EnrichmentPortalPanel = ({
           </Box>
         ) : (
           <Stack spacing={2}>
-            {enrichmentResults.map((result) => renderResultCard(result))}
+            {enrichmentResults.map((result, idx) => renderResultCard(result, idx))}
           </Stack>
         )}
       </CardContent>
@@ -544,7 +541,7 @@ const EnrichmentPortalPanel = ({
   // --- Dynamic Analysis Functions ---
   
   const generateCorrelationAnalysis = (results) => {
-    const entityMap = new Map();
+    const entityMap = new Map<string, { occurrences: number; sources: string[]; riskScore: number }>();
     
     results.forEach(result => {
       if (result.entities) {
@@ -580,12 +577,12 @@ const EnrichmentPortalPanel = ({
     }
     
     return {
-      entities: Array.from(entityMap.entries()).map(([entity, data]) => ({
-        entity,
-        occurrences: data.occurrences,
-        sources: [...new Set(data.sources)],
-        riskScore: data.riskScore
-      })).sort((a, b) => b.riskScore - a.riskScore),
+       entities: Array.from(entityMap.entries()).map(([entity, data]) => ({
+         entity,
+         occurrences: data.occurrences,
+         sources: Array.from(new Set(data.sources)),
+         riskScore: data.riskScore
+       })).sort((a, b) => b.riskScore - a.riskScore),
       correlations: correlatedEntities.sort((a, b) => b.combinedRisk - a.combinedRisk)
     };
   };
@@ -603,12 +600,12 @@ const EnrichmentPortalPanel = ({
       low: results.filter(r => (r.riskScore || 0) < 0.3).length
     };
     
-    const commonTags = {};
-    results.forEach(r => {
-      (r.tags || []).forEach(tag => {
-        commonTags[tag] = (commonTags[tag] || 0) + 1;
-      });
-    });
+     const commonTags: Record<string, number> = {};
+     results.forEach(r => {
+       (r.tags || []).forEach(tag => {
+         commonTags[tag] = (commonTags[tag] || 0) + 1;
+       });
+     });
     
     return {
       totalResults,
