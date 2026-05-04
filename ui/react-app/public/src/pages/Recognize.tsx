@@ -206,17 +206,17 @@ function Recognize() {
         </Typography>
         <Paper sx={{ p: 2 }}>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <Typography variant="subtitle2" color="text.secondary">Name</Typography>
               <Typography variant="h6">{match.name || 'Anonymous'}</Typography>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <Typography variant="subtitle2" color="text.secondary">Person ID</Typography>
               <Typography variant="body2" fontFamily="monospace">
                 {match.person_id}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <Typography variant="subtitle2" color="text-secondary">Match Confidence</Typography>
               <Typography variant="h5" color="primary">
                 {Math.round(match.score * 100)}%
@@ -238,7 +238,7 @@ function Recognize() {
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
+        <Grid xs={12} md={4}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -360,7 +360,7 @@ function Recognize() {
           </Card>
         </Grid>
 
-         <Grid item xs={12} md={8}>
+         <Grid xs={12} md={8}>
            {recognitionResult ? (
              <>
                {recognitionError && (
@@ -418,7 +418,7 @@ function Recognize() {
                         </Typography>
                         <Grid container spacing={2}>
                           {explainableAI.factors.map((factor, idx) => (
-                            <Grid item xs={12} sm={6} md={4} key={idx}>
+                            <Grid xs={12} sm={6} md={4} key={idx}>
                               <Paper sx={{ p: 2, height: '100%' }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                   <Typography variant="subtitle2">{factor.name}</Typography>
@@ -457,19 +457,19 @@ function Recognize() {
                           <AccountCircle color="primary" /> Bias Analysis
                         </Typography>
                         <Grid container spacing={2}>
-                          <Grid item xs={12} sm={4}>
+                          <Grid xs={12} sm={4}>
                             <Paper sx={{ p: 2, textAlign: 'center' }}>
                               <Typography variant="h4" color="success.main">94.2%</Typography>
                               <Typography variant="caption" color="text.secondary">Overall Fairness</Typography>
                             </Paper>
                           </Grid>
-                          <Grid item xs={12} sm={4}>
+                          <Grid xs={12} sm={4}>
                             <Paper sx={{ p: 2, textAlign: 'center' }}>
                               <Typography variant="h4" color="info.main">3.2%</Typography>
                               <Typography variant="caption" color="text-secondary">Max Parity Diff</Typography>
                             </Paper>
                           </Grid>
-                          <Grid item xs={12} sm={4}>
+                          <Grid xs={12} sm={4}>
                             <Paper sx={{ p: 2, textAlign: 'center' }}>
                               <Typography variant="h4" color="warning.main">0.03</Typography>
                               <Typography variant="caption" color="text-secondary">Variance</Typography>
@@ -495,7 +495,7 @@ function Recognize() {
                     </Typography>
                     <Grid container spacing={2}>
                       {getFactors().map((factor, idx) => (
-                        <Grid item xs={12} key={idx}>
+                        <Grid xs={12} key={idx}>
                           <Paper sx={{ p: 2 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                               <Box>

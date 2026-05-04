@@ -9,7 +9,7 @@ import {
 import {
   BugReport, Security, Radar, Warning,
   CheckCircle, Error as ErrorIcon, Timeline,
-  PlayCircle, PlayArrow, Pause, Database, Block
+  PlayCircle, PlayArrow, Pause, Dataset, Block
 } from '@mui/icons-material';
 import API from '../services/api';
 
@@ -107,8 +107,8 @@ function DeepfakeTab() {
     }
   };
 
-  const getSeverityColor = (severity) => {
-    switch (severity) {
+  const getSeverityColor = (severity: any) => {
+    switch (severity: any) {
       case 'critical': return '#ef4444';
       case 'high': return '#f59e0b';
       case 'medium': return '#3b82f6';
@@ -137,7 +137,7 @@ function DeepfakeTab() {
           >
             {isLive ? 'Stop Live' : 'Start Live'}
           </Button>
-          <Button variant="contained" startIcon={<Database />}>
+          <Button variant="contained" startIcon={<Dataset />}>
             Threat Intelligence
           </Button>
         </Box>
@@ -145,7 +145,7 @@ function DeepfakeTab() {
 
       {/* Stats Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: 'error.main', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -158,7 +158,7 @@ function DeepfakeTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -171,7 +171,7 @@ function DeepfakeTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -184,7 +184,7 @@ function DeepfakeTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: 'info.main', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -201,7 +201,7 @@ function DeepfakeTab() {
 
       <Grid container spacing={3}>
         {/* Live Threat Feed */}
-        <Grid item xs={12} lg={8}>
+        <Grid xs={12} lg={8}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -240,8 +240,8 @@ function DeepfakeTab() {
                           label={threat.severity}
                           size="small"
                           sx={{
-                            bgcolor: `${getSeverityColor(threat.severity)}22`,
-                            color: getSeverityColor(threat.severity),
+                            bgcolor: `${getSeverityColor(threat.severity: any)}22`,
+                            color: getSeverityColor(threat.severity: any),
                             fontWeight: 600,
                           }}
                         />
@@ -276,7 +276,7 @@ function DeepfakeTab() {
         </Grid>
 
         {/* Detection Methods */}
-        <Grid item xs={12} lg={4}>
+        <Grid xs={12} lg={4}>
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>Detection Methods</Typography>
@@ -309,8 +309,8 @@ function DeepfakeTab() {
                 {threats.slice(0, 3).map((t, idx) => (
                   <ListItem key={t.id} sx={{ px: 0, py: 1 }}>
                     <ListItemAvatar>
-                      <Avatar sx={{ width: 32, height: 32, bgcolor: `${getSeverityColor(t.severity)}22` }}>
-                        <BugReport sx={{ fontSize: 16, color: getSeverityColor(t.severity) }} />
+                      <Avatar sx={{ width: 32, height: 32, bgcolor: `${getSeverityColor(t.severity: any)}22` }}>
+                        <BugReport sx={{ fontSize: 16, color: getSeverityColor(t.severity: any) }} />
                       </Avatar>
                     </ListItemAvatar>
                     <ListItemText
@@ -340,8 +340,8 @@ function DeepfakeTab() {
                   const y = 100 - (t.confidence * 80);
                   return (
                     <g key={t.id}>
-                      <circle cx={x} cy={y} r={6} fill={getSeverityColor(t.severity)} />
-                      <line x1={x} y1={100} x2={x} y2={y} stroke={getSeverityColor(t.severity)} strokeWidth="1" strokeDasharray="4,4" />
+                      <circle cx={x} cy={y} r={6} fill={getSeverityColor(t.severity: any)} />
+                      <line x1={x} y1={100} x2={x} y2={y} stroke={getSeverityColor(t.severity: any)} strokeWidth="1" strokeDasharray="4,4" />
                     </g>
                   );
                 })}

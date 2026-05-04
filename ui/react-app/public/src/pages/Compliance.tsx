@@ -52,7 +52,7 @@ const Compliance = () => {
       <Typography variant="h4" gutterBottom>Compliance & Privacy</Typography>
       
       <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
+        <Grid xs={12} md={8}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom><Gavel /> Consent Dashboard</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -95,7 +95,7 @@ const Compliance = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid xs={12} md={4}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom><Download /> GDPR Data Export</Typography>
             <Typography variant="body2" sx={{ mb: 2 }}>

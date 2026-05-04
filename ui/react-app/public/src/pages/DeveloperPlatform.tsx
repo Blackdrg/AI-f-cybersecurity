@@ -46,7 +46,7 @@ axios.post(url, data, config)
       <Typography variant="h4" gutterBottom>Developer Platform</Typography>
       
       <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
+        <Grid xs={12} md={8}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom><Code /> API Playground</Typography>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
@@ -93,7 +93,7 @@ axios.post(url, data, config)
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid xs={12} md={4}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom><Description /> Documentation</Typography>
             <List dense>

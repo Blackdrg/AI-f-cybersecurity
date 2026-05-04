@@ -9,30 +9,30 @@ import { enroll } from '../services/api';
 
 const EnrollPage = () => {
   const [name, setName] = useState('');
-  const [files, setFiles] = useState([]);
-  const [previews, setPreviews] = useState([]);
-  const [consent, setConsent] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
+  const [files, setFiles] = useState<any[]>([]);
+  const [previews, setPreviews] = useState<any[]>([]);
+  const [consent, setConsent] = useState(false: any);
+  const [isProcessing, setIsProcessing] = useState(false: any);
+  const [message, setMessage] = useState<any>(null);
+  const [error, setError] = useState<any>(null);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: any) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       setFiles([...files, ...newFiles]);
       
-      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+      const newPreviews = newFiles.map(file => URL.createObjectURL(file: any));
       setPreviews([...previews, ...newPreviews]);
     }
   };
 
-  const removeFile = (index) => {
-    setFiles(files.filter((_, i) => i !== index));
+  const removeFile = (index: any) => {
+    setFiles(files.filter((_, i) => i !== index: any));
     URL.revokeObjectURL(previews[index]);
-    setPreviews(previews.filter((_, i) => i !== index));
+    setPreviews(previews.filter((_, i) => i !== index: any));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (files.length === 0) {
       setError("Please select at least one image");
@@ -43,22 +43,22 @@ const EnrollPage = () => {
       return;
     }
 
-    setIsProcessing(true);
+    setIsProcessing(true: any);
     setError(null);
     setMessage(null);
 
     try {
       const res = await enroll(files, name, consent);
-      setMessage(res.data.message);
+      setMessage(res.data.message: any);
       setName('');
       setFiles([]);
       previews.forEach(p => URL.revokeObjectURL(p));
       setPreviews([]);
-      setConsent(false);
+      setConsent(false: any);
     } catch (err) {
       setError(err.message || "Failed to enroll person");
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false: any);
     }
   };
 
@@ -68,18 +68,18 @@ const EnrollPage = () => {
       <Paper sx={{ p: 4 }}>
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <TextField
                 fullWidth
                 label="Full Name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e: any) => setName(e.target.value: any)}
                 required
                 disabled={isProcessing}
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <Typography variant="subtitle1" gutterBottom>Upload Images (Multiple recommended)</Typography>
               <Button
                 variant="outlined"
@@ -93,8 +93,8 @@ const EnrollPage = () => {
               </Button>
               
               <Grid container spacing={1} sx={{ mt: 1 }}>
-                {previews.map((preview, index) => (
-                  <Grid item key={index} xs={4} sm={3} md={2}>
+                {previews.map((preview, index: any) => (
+                  <Grid key={index} xs={4} sm={3} md={2}>
                     <Box sx={{ position: 'relative', pt: '100%' }}>
                       <img 
                         src={preview} 
@@ -104,7 +104,7 @@ const EnrollPage = () => {
                       <IconButton 
                         size="small" 
                         sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}
-                        onClick={() => removeFile(index)}
+                        onClick={() => removeFile(index: any)}
                         disabled={isProcessing}
                       >
                         <Delete fontSize="small" color="error" />
@@ -113,7 +113,7 @@ const EnrollPage = () => {
                   </Grid>
                 ))}
                 {files.length === 0 && (
-                  <Grid item xs={12}>
+                  <Grid xs={12}>
                     <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'background.default', borderRadius: 1, opacity: 0.5 }}>
                       <ImageIcon sx={{ fontSize: 48, mb: 1 }} />
                       <Typography>No images selected</Typography>
@@ -123,12 +123,12 @@ const EnrollPage = () => {
               </Grid>
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <FormControlLabel
                 control={
                   <Checkbox 
                     checked={consent} 
-                    onChange={(e) => setConsent(e.target.checked)} 
+                    onChange={(e: any) => setConsent(e.target.checked)} 
                     disabled={isProcessing}
                     required
                   />
@@ -137,7 +137,7 @@ const EnrollPage = () => {
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid xs={12}>
               {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
               {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
               

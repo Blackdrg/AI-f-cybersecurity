@@ -229,7 +229,7 @@ const RecognizeView = () => {
             </Typography>
 
             <Grid container spacing={3}>
-                <Grid item xs={12}>
+                <Grid xs={12}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 3 }}>
@@ -251,7 +251,7 @@ const RecognizeView = () => {
 
                             <form onSubmit={handleSubmit}>
                                 <Grid container spacing={3}>
-                                    <Grid item xs={12}>
+                                    <Grid xs={12}>
                                         <Button variant="contained" component="label" startIcon={<CameraAlt />}>
                                             Upload Image
                                             <input type="file" accept="image/*" hidden onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,7 +260,7 @@ const RecognizeView = () => {
                                             }} />
                                         </Button>
                                     </Grid>
-                                    <Grid item xs={12}>
+                                    <Grid xs={12}>
                                         <Button type="submit" variant="contained" fullWidth color="primary" disabled={loading || !image}>
                                             {loading ? <CircularProgress size={24} /> : <Search />}
                                             {loading ? 'Analyzing...' : 'Analyze Image'}
@@ -273,7 +273,7 @@ const RecognizeView = () => {
                 </Grid>
 
                 {message && (
-                    <Grid item xs={12}>
+                    <Grid xs={12}>
                         <Alert severity={severity} onClose={() => setMessage('')}>
                             {message}
                         </Alert>
@@ -281,7 +281,7 @@ const RecognizeView = () => {
                 )}
 
                 {results && (
-                    <Grid item xs={12}>
+                    <Grid xs={12}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h5">Results</Typography>

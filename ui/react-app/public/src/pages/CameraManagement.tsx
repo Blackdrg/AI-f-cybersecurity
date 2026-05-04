@@ -53,7 +53,7 @@ const CameraManagement = () => {
 
       <Grid container spacing={3}>
         {cameras.length > 0 ? cameras.map(camera => (
-          <Grid item xs={12} md={6} lg={4} key={camera.camera_id}>
+          <Grid xs={12} md={6} lg={4} key={camera.camera_id}>
             <Card>
               <Box sx={{ position: 'relative', bgcolor: '#000', pt: '56.25%' }}>
                 <Box 
@@ -91,7 +91,7 @@ const CameraManagement = () => {
             </Card>
           </Grid>
         )) : (
-          <Grid item xs={12}>
+          <Grid xs={12}>
             <Paper sx={{ p: 8, textAlign: 'center', bgcolor: 'background.default', border: '2px dashed #333' }}>
               <CameraAlt sx={{ fontSize: 64, mb: 2, opacity: 0.2 }} />
               <Typography variant="h6" color="text.secondary">No cameras configured</Typography>

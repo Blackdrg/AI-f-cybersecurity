@@ -151,7 +151,7 @@ function SessionsTab() {
 
       {/* Metrics Summary */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: 'primary.main', color: 'white' }}>
             <CardContent>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>Active Sessions</Typography>
@@ -161,7 +161,7 @@ function SessionsTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
             <CardContent>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>Avg Confidence</Typography>
@@ -171,7 +171,7 @@ function SessionsTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
             <CardContent>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>Avg Risk Score</Typography>
@@ -181,7 +181,7 @@ function SessionsTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: 'error.main', color: 'white' }}>
             <CardContent>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>Drift Alerts</Typography>

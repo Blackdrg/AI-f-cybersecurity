@@ -52,7 +52,7 @@ const PersonProfile = ({ personId }) => {
   return (
     <Box>
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
+        <Grid xs={12} md={4}>
           <Paper sx={{ p: 3, textAlign: 'center' }}>
             <Avatar 
               sx={{ width: 120, height: 120, mx: 'auto', mb: 2, bgcolor: 'primary.main' }}
@@ -100,7 +100,7 @@ const PersonProfile = ({ personId }) => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={8}>
+        <Grid xs={12} md={8}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom><AccessTime /> Recognition Timeline</Typography>
             <List>

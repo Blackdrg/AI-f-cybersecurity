@@ -116,8 +116,8 @@ function BiasReportTab() {
     }
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+  const handleChangePage = (event: any, newPage: any) => {
+    setPage(newPage: any);
   };
 
   const handleChangeRowsPerPage = (event) => {
@@ -159,7 +159,7 @@ function BiasReportTab() {
       {biasData && (
         <>
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <Card sx={{ bgcolor: 'primary.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Overall Fairness Score</Typography>
@@ -169,7 +169,7 @@ function BiasReportTab() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Total Assessments</Typography>
@@ -179,7 +179,7 @@ function BiasReportTab() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <Card sx={{ bgcolor: 'info.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Groups Analyzed</Typography>
@@ -189,7 +189,7 @@ function BiasReportTab() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Max Disparity</Typography>
@@ -223,7 +223,7 @@ function BiasReportTab() {
                   <TableBody>
                     {biasData.groups
                       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                      .map((group, idx) => {
+                      .map((group: any, idx: any) => {
                         const parityDiff = group.demographicParityDifference;
                         return (
                           <TableRow key={idx}>
@@ -271,7 +271,7 @@ function BiasReportTab() {
 
           {/* Key Findings */}
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid xs={12} md={6}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>Key Findings</Typography>
@@ -289,7 +289,7 @@ function BiasReportTab() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid xs={12} md={6}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>Metrics Distribution</Typography>

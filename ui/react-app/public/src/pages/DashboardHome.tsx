@@ -72,13 +72,13 @@ const DashboardHome = () => {
     }
   };
 
-  const getRiskColor = (score) => {
+  const getRiskColor = (score: any) => {
     if (score < 0.3) return '#10b981';
     if (score < 0.6) return '#f59e0b';
     return '#ef4444';
   };
 
-  const getConfidenceColor = (score) => {
+  const getConfidenceColor = (score: any) => {
     if (score > 0.8) return '#10b981';
     if (score > 0.5) return '#f59e0b';
     return '#ef4444';
@@ -209,7 +209,7 @@ const DashboardHome = () => {
         <>
           {/* Key Metrics Grid */}
           <Grid container spacing={2} className="metrics-grid">
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid xs={12} sm={6} md={4} lg={2}>
               <Card className="metric-card metric-blue">
                 <div className="metric-icon-box blue">
                   <People />
@@ -219,7 +219,7 @@ const DashboardHome = () => {
                 <Typography className="metric-change positive">+8.2%</Typography>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid xs={12} sm={6} md={4} lg={2}>
               <Card className="metric-card metric-green">
                 <div className="metric-icon-box green">
                   <CameraAlt />
@@ -229,7 +229,7 @@ const DashboardHome = () => {
                 <Typography className="metric-change positive">+12.5%</Typography>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid xs={12} sm={6} md={4} lg={2}>
               <Card className="metric-card metric-purple">
                 <div className="metric-icon-box purple">
                   <Security />
@@ -239,7 +239,7 @@ const DashboardHome = () => {
                 <Typography className="metric-change">{displaySessions.length} locations</Typography>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid xs={12} sm={6} md={4} lg={2}>
               <Card className="metric-card metric-orange">
                 <div className="metric-icon-box orange">
                   <Assessment />
@@ -249,7 +249,7 @@ const DashboardHome = () => {
                 <Typography className="metric-change positive">+0.1%</Typography>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid xs={12} sm={6} md={4} lg={2}>
               <Card className="metric-card metric-cyan">
                 <div className="metric-icon-box cyan">
                   <Timeline />
@@ -259,7 +259,7 @@ const DashboardHome = () => {
                 <Typography className="metric-change positive">Calibrated</Typography>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid xs={12} sm={6} md={4} lg={2}>
               <Card className="metric-card metric-red">
                 <div className="metric-icon-box red">
                   <BugReport />
@@ -273,7 +273,7 @@ const DashboardHome = () => {
 
           {/* Charts Grid */}
           <Grid container spacing={2} className="charts-grid">
-            <Grid item xs={12} lg={6}>
+            <Grid xs={12} lg={6}>
               <Card className="chart-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -291,7 +291,7 @@ const DashboardHome = () => {
                 </div>
               </Card>
             </Grid>
-            <Grid item xs={12} lg={6}>
+            <Grid xs={12} lg={6}>
               <Card className="chart-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -323,7 +323,7 @@ const DashboardHome = () => {
                 </div>
               </Card>
             </Grid>
-            <Grid item xs={12} lg={6}>
+            <Grid xs={12} lg={6}>
               <Card className="chart-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -350,7 +350,7 @@ const DashboardHome = () => {
                 </div>
               </Card>
             </Grid>
-            <Grid item xs={12} lg={6}>
+            <Grid xs={12} lg={6}>
               <Card className="chart-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -384,7 +384,7 @@ const DashboardHome = () => {
 
           {/* Detailed Tables */}
           <Grid container spacing={2} className="bottom-section">
-            <Grid item xs={12} lg={8}>
+            <Grid xs={12} lg={8}>
               <Card className="table-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -412,7 +412,7 @@ const DashboardHome = () => {
                           <td>{e.person_name || 'Unknown'}</td>
                           <td><span className="method-badge">{e.method}</span></td>
                           <td><span className="confidence-badge" style={{background: getConfidenceColor(e.confidence)}}>{Math.round(e.confidence * 100)}%</span></td>
-                          <td><span className="risk-badge" style={{background: getRiskColor(e.risk_score)}}>{Math.round(e.risk_score * 100)}%</span></td>
+                          <td><span className="risk-badge" style={{background: getRiskColor(e.risk_score: any)}}>{Math.round(e.risk_score * 100)}%</span></td>
                           <td><span className={`decision-badge ${e.decision}`}>{e.decision}</span></td>
                         </tr>
                       ))}
@@ -421,7 +421,7 @@ const DashboardHome = () => {
                 </div>
               </Card>
             </Grid>
-            <Grid item xs={12} lg={4}>
+            <Grid xs={12} lg={4}>
               <Card className="table-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -468,7 +468,7 @@ const DashboardHome = () => {
       {activeIntelligenceTab === 'enrichment' && (
         <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
           <EnrichmentPortalPanel
-            onEnrichmentComplete={() => {}}
+            personId="default" onEnrichmentComplete={() => {}}
             onAlertAction={() => {}}
           />
         </React.Suspense>

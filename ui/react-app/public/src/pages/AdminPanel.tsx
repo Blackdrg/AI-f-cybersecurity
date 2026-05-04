@@ -10,7 +10,7 @@ import {
 import { 
   VpnKey, Business, People, Receipt, Shield, Gavel, 
   Security, TrendingUp, BugReport, Key, 
-  Settings, Analytics, Timeline, Brain, History, Article,
+  Settings, Analytics, Timeline, Memory, History, Article,
   Download
 } from '@mui/icons-material';
 import API from '../services/api';
@@ -58,13 +58,13 @@ const AdminPanel = () => {
         API.get('/api/analytics/risk-metrics').catch(() => ({data: {}}))
       ]);
       
-      setOrgs(orgsRes.data);
+      setOrgs(orgsRes.data: any);
       if (orgsRes.data.length > 0) setActiveOrg(orgsRes.data[0]);
-      setPolicies(policiesRes.data);
-      setSystems(systemsRes.data);
-      setComplianceData(complianceRes.data);
-      setThreats(threatsRes.data);
-      setRiskMetrics(riskRes.data);
+      setPolicies(policiesRes.data: any);
+      setSystems(systemsRes.data: any);
+      setComplianceData(complianceRes.data: any);
+      setThreats(threatsRes.data: any);
+      setRiskMetrics(riskRes.data: any);
     } catch (err) {
       console.error("Failed to fetch admin data");
     }
@@ -82,7 +82,7 @@ const AdminPanel = () => {
     }
   };
 
-  const updatePolicy = async (policyId, enabled) => {
+  const updatePolicy = async (policyId: any, enabled: any) => {
     try {
       await API.put(`/api/policies/${policyId}`, { enabled });
       fetchDashboardData();
@@ -91,8 +91,8 @@ const AdminPanel = () => {
     }
   };
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
+  const handleTabChange = (event: any, newValue: any) => {
+    setActiveTab(newValue: any);
   };
 
   const renderSystemHealth = () => (
@@ -103,7 +103,7 @@ const AdminPanel = () => {
         </Typography>
         <Grid container spacing={2}>
           {systems.map((sys) => (
-            <Grid item xs={12} sm={6} md={3} key={sys.id}>
+            <Grid xs={12} sm={6} md={3} key={sys.id}>
               <Paper sx={{ p: 2, bgcolor: 'background.paper' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">{sys.name}</Typography>
@@ -194,7 +194,7 @@ const AdminPanel = () => {
           <Shield color="primary" /> Compliance Status
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
+          <Grid xs={12} md={6}>
             <Paper sx={{ p: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>Overall Compliance Score</Typography>
               <Typography variant="h3" sx={{ color: '#10b981', mb: 1 }}>
@@ -214,7 +214,7 @@ const AdminPanel = () => {
               />
             </Paper>
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid xs={12} md={6}>
             <Paper sx={{ p: 2, height: '100%' }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>Recent Violations</Typography>
               {threats.slice(0, 5).map((t, i) => (
@@ -240,7 +240,7 @@ const AdminPanel = () => {
           <TrendingUp color="primary" /> Risk Analytics
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <Card sx={{ bgcolor: 'error.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="caption">Critical Risks</Typography>
@@ -248,7 +248,7 @@ const AdminPanel = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <Card sx={{ bgcolor: 'warning.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="caption">High Risks</Typography>
@@ -256,7 +256,7 @@ const AdminPanel = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <Card sx={{ bgcolor: 'info.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="caption">Medium Risks</Typography>
@@ -264,7 +264,7 @@ const AdminPanel = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <Card sx={{ bgcolor: 'success.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="caption">Resolved</Typography>
@@ -281,7 +281,7 @@ const AdminPanel = () => {
     <Box>
       <Typography variant="h4" gutterBottom>Admin Dashboard</Typography>
       <Grid container spacing={3}>
-        <Grid item xs={12} md={3}>
+        <Grid xs={12} md={3}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom><Business /> Organizations</Typography>
             <List>
@@ -302,9 +302,9 @@ const AdminPanel = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={9}>
+        <Grid xs={12} md={9}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid xs={12} md={6}>
               <Paper sx={{ p: 2 }}>
                 <Typography variant="h6" gutterBottom><People /> Organization Members</Typography>
                 <Table size="small">
@@ -324,7 +324,7 @@ const AdminPanel = () => {
               </Paper>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid xs={12} md={6}>
               <Paper sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="h6"><VpnKey /> API Keys</Typography>
@@ -342,7 +342,7 @@ const AdminPanel = () => {
               </Paper>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <Paper sx={{ p: 2 }}>
                 <Typography variant="h6" gutterBottom><Receipt /> Billing & Invoices</Typography>
                 <Box sx={{ display: 'flex', gap: 4, mb: 2 }}>
@@ -400,7 +400,7 @@ const AdminPanel = () => {
            <Tab label={<span><Business /> Organizations</span>} />
            <Tab label={<span><Shield /> Policy Engine</span>} />
            <Tab label={<span><Security /> Compliance</span>} />
-           <Tab label={<span><Brain /> Explainable AI</span>} />
+           <Tab label={<span><Memory /> Explainable AI</span>} />
            <Tab label={<span><Timeline /> Operator Workflow</span>} />
            <Tab label={<span><Analytics /> Intelligence</span>} />
            <Tab label={<span><Article /> Enrichment</span>} />
@@ -451,9 +451,9 @@ const AdminPanel = () => {
           <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
             <OperatorWorkflowPanel 
               recognitionResult={null}
-              onRetry={(adjustments) => console.log('Retry requested:', adjustments)}
-              onOverride={(data) => console.log('Override requested:', data)}
-              onEscalate={(data) => console.log('Escalation requested:', data)}
+              onRetry={(adjustments: any) => console.log('Retry requested:', adjustments: any)}
+              onOverride={(data: any) => console.log('Override requested:', data: any)}
+              onEscalate={(data: any) => console.log('Escalation requested:', data: any)}
             />
           </React.Suspense>
         </Box>
@@ -464,8 +464,8 @@ const AdminPanel = () => {
             <DashboardIntelligencePanel
               timeframe={intelligenceTimeframe}
               onTimeframeChange={setIntelligenceTimeframe}
-              onAlertAction={(alert, action) => console.log('Alert action:', alert, action)}
-              onDrillDown={(metric, data) => console.log('Drill down:', metric, data)}
+              onAlertAction={(alert: any, action: any) => console.log('Alert action:', alert: any, action: any)}
+              onDrillDown={(metric, data: any) => console.log('Drill down:', metric, data: any)}
             />
           </React.Suspense>
         </Box>
@@ -476,7 +476,7 @@ const AdminPanel = () => {
             <EnrichmentPortalPanel
               personId={activeOrg?.org_id || null}
               onEnrichmentComplete={(results) => console.log('Enrichment complete:', results)}
-              onAlertAction={(alert, action) => console.log('Alert action:', alert, action)}
+              onAlertAction={(alert: any, action: any) => console.log('Alert action:', alert: any, action: any)}
             />
           </React.Suspense>
         </Box>
@@ -489,13 +489,13 @@ const AdminPanel = () => {
                 <BugReport /> Deepfake & Anti-Spoof
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
+                <Grid xs={12} md={4}>
                   <Paper sx={{ p: 2, bgcolor: 'error.light' }}>
                     <Typography variant="h6" sx={{ color: 'white' }}>{threats.length} Active Threats</Typography>
                     <Typography variant="body2" sx={{ color: 'white', opacity: 0.8 }}>Blocked in last 24h</Typography>
                   </Paper>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid xs={12} md={4}>
                   <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>Detection Sensitivity</Typography>
                     <Select fullWidth size="small" defaultValue="high">
@@ -505,7 +505,7 @@ const AdminPanel = () => {
                     </Select>
                   </Paper>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid xs={12} md={4}>
                   <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>3D Mask Detection</Typography>
                     <FormControlLabel control={<Switch defaultChecked />} label="Enable geometric analysis" />
@@ -522,19 +522,19 @@ const AdminPanel = () => {
             <CardContent>
               <Typography variant="h6" gutterBottom><Key /> Identity Tokens</Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
+                <Grid xs={12} sm={4}>
                   <Paper sx={{ p: 2, textAlign: 'center' }}>
                     <Typography variant="h4" color="primary">1,247</Typography>
                     <Typography variant="body2" color="text.secondary">Active Tokens</Typography>
                   </Paper>
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid xs={12} sm={4}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'white' }}>
                     <Typography variant="h4">2,156</Typography>
                     <Typography variant="body2">DIDs Created</Typography>
                   </Paper>
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid xs={12} sm={4}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light', color: 'white' }}>
                     <Typography variant="h4">48</Typography>
                     <Typography variant="body2">Revoked Today</Typography>
@@ -551,7 +551,7 @@ const AdminPanel = () => {
             <CardContent>
               <Typography variant="h6" gutterBottom><Settings /> Console Settings</Typography>
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid xs={12} md={6}>
                   <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>System Mode</Typography>
                     <FormControlLabel
@@ -566,7 +566,7 @@ const AdminPanel = () => {
                     />
                   </Paper>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid xs={12} md={6}>
                   <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>Forensic Verification</Typography>
                     <Button variant="contained" startIcon={<History />} fullWidth sx={{ mb: 2 }}>

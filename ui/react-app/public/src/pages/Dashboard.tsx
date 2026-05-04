@@ -37,7 +37,7 @@ const Dashboard = () => {
   const [criticalAlerts, setCriticalAlerts] = useState(0);
   const [pendingIncidents, setPendingIncidents] = useState(0);
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' as const });
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab: any, setActiveTab] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   
   const { 
@@ -61,8 +61,8 @@ const Dashboard = () => {
   const fetchSystemHealth = async () => {
     try {
       const res = await API.get('/api/health').catch(() => null);
-      if (res?.data?.data) {
-        setSystemHealth(res.data.data);
+      if (res?.data?.data: any) {
+        setSystemHealth(res.data.data: any);
       } else {
         // Fallback to basic health
         setSystemHealth({ status: 'healthy', production_systems: true });
@@ -101,8 +101,8 @@ const Dashboard = () => {
     }
   };
 
-  const handlePageChange = (newPage) => {
-    setActivePage(newPage);
+  const handlePageChange = (newPage: any) => {
+    setActivePage(newPage: any);
     setActiveTab(0);
   };
 
@@ -110,25 +110,25 @@ const Dashboard = () => {
     switch (activePage) {
       case 'dashboard':
         return (
-          <RBACGuard requiredPermissions={[PERMISSIONS.VIEW_DASHBOARD]}>
+          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_DASHBOARD]}>
             <DashboardHome />
           </RBACGuard>
         );
       case 'enroll':
         return (
-          <RBACGuard requiredPermissions={[PERMISSIONS.ENROLL_IDENTITY]}>
+          <RBACGuard requiredPermission={[PERMISSIONS.ENROLL_IDENTITY]}>
             <EnrollPage />
           </RBACGuard>
         );
       case 'recognize':
         return (
-          <RBACGuard requiredPermissions={[PERMISSIONS.VIEW_RECOGNITIONS]}>
+          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_RECOGNITIONS]}>
             <RecognizePage />
           </RBACGuard>
         );
       case 'admin':
         return (
-          <RBACGuard requiredPermissions={[PERMISSIONS.MANAGE_USERS]}>
+          <RBACGuard requiredPermission={[PERMISSIONS.MANAGE_USERS]}>
             <AdminPanel />
           </RBACGuard>
         );
@@ -138,19 +138,19 @@ const Dashboard = () => {
         );
       case 'person-profile':
         return (
-          <RBACGuard requiredPermissions={[PERMISSIONS.VIEW_IDENTITIES]}>
+          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_IDENTITIES]}>
             <PersonProfile personId={null} />
           </RBACGuard>
         );
       case 'analytics':
         return (
-          <RBACGuard requiredPermissions={[PERMISSIONS.VIEW_ANALYTICS, PERMISSIONS.VIEW_DASHBOARD]}>
-            <TabAnalyticsView activeTab={activeTab} setActiveTab={setActiveTab} />
+          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_ANALYTICS, PERMISSIONS.VIEW_DASHBOARD]}>
+            <TabAnalyticsView activeTab={activeTab} setActiveTab={setActiveTab: any} />
           </RBACGuard>
         );
       case 'compliance':
         return (
-          <RBACGuard requiredPermissions={[PERMISSIONS.VIEW_COMPLIANCE]}>
+          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_COMPLIANCE]}>
             <Compliance />
           </RBACGuard>
         );
@@ -158,13 +158,13 @@ const Dashboard = () => {
         return <DeveloperPlatform />;
       case 'audit':
         return (
-          <RBACGuard requiredPermissions={[PERMISSIONS.VIEW_AUDIT_LOGS]}>
+          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_AUDIT_LOGS]}>
             <AuditTimeline orgId={organization?.org_id} />
           </RBACGuard>
         );
       case 'incidents':
         return (
-          <RBACGuard requiredPermissions={[PERMISSIONS.MANAGE_INCIDENTS, PERMISSIONS.VIEW_ALERTS]}>
+          <RBACGuard requiredPermission={[PERMISSIONS.MANAGE_INCIDENTS, PERMISSIONS.VIEW_ALERTS]}>
             <IncidentAlertDashboard />
           </RBACGuard>
         );
@@ -173,7 +173,7 @@ const Dashboard = () => {
     }
   };
 
-  const TabAnalyticsView = ({ activeTab, setActiveTab }) => (
+  const TabAnalyticsView = ({ activeTab: any, setActiveTab }) => (
     <Box sx={{ width: '100%', height: '100%' }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} variant="scrollable" scrollButtons="auto">
@@ -382,9 +382,9 @@ const Dashboard = () => {
                 size="small"
                 sx={{
                   ml: 0.5,
-                  bgcolor: `${getTierColor(organization?.subscription_tier)}20`,
-                  color: getTierColor(organization?.subscription_tier),
-                  border: `1px solid ${getTierColor(organization?.subscription_tier)}`,
+                  bgcolor: `${getTierColor(organization?.subscription_tier: any)}20`,
+                  color: getTierColor(organization?.subscription_tier: any),
+                  border: `1px solid ${getTierColor(organization?.subscription_tier: any)}`,
                   fontSize: '0.65rem',
                   height: 18,
                   borderRadius: 1
@@ -505,7 +505,7 @@ const Dashboard = () => {
   );
 };
 
-const getTierColor = (tier) => {
+const getTierColor = (tier: any) => {
   const colors = {
     free: '#64748b',
     pro: '#3b82f6',
