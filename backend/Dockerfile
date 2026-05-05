@@ -29,8 +29,11 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY app ./app
+COPY models/download_models.py /app/models/download_models.py
+COPY models/onnx_bundle /app/models/onnx_bundle
 
-RUN mkdir -p /app/models /app/data
+RUN mkdir -p /app/models /app/data && \
+    cd /app/models && python download_models.py --docker 2>&1 | tail -20
 
 LABEL org.opencontainers.image.title="AI-F Backend CPU" \
     org.opencontainers.image.version="1.0"

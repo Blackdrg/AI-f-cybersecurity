@@ -1,4 +1,4 @@
-﻿# AIâ€‘f (LEVIâ€‘AI) v2.2.1 Production Release
+﻿ AIâ€‘f (LEVIâ€‘AI) v2.2.1 Production Release
 
 **The World's First Forensically Auditable Sovereign OS for Zeroâ€‘Knowledge Identity & Cognitive Mesh Architectures**
 
@@ -55,7 +55,7 @@
 #### 7. **RBAC Frontend Implementation** âœ…
 - **AuthContext:** `ui/react-app/public/src/contexts/AuthContext.tsx` (6,878 bytes new)
 - **Guard Components:** `RBACGuard.tsx` (2,299 bytes new) with route/component protection
-- **Permissions:** 30+ granular permissions across 6 roles (super_admin, admin, operator, auditor, analyst, viewer)
+- **Permissions:** 30+ granular permissions across 8 roles (super_admin, admin, operator, auditor, analyst, viewer, security, hr)
 - **Features:** Dynamic menu filtering, permission-based rendering, multi-org role isolation
 
 ---
@@ -66,8 +66,8 @@
 |--------|-------|
 | **Total Codebase** | ~45,000+ lines |
 | **Backend Python** | ~33,000 lines (196+ modules) |
-| **Frontend TypeScript** | ~12,000 lines (49 components) |
-| **API Endpoints** | 320+ endpoints across 28 routers |
+| **Frontend TypeScript** | ~12,000 lines (48 React components + utilities) |
+| **API Endpoints** | 137+ endpoints across 28 routers |
 | **Database Tables** | 31 PostgreSQL tables with RLS |
 | **AI/ML Models** | 12+ production models (ONNX 1.18.0) |
 | **Test Coverage** | 42 core + 22 extended modules (100% pass) |
@@ -177,7 +177,7 @@ pytest tests/ -n auto
 | 500 | 12,500 | 85ms | 180ms | 78% | âœ… |
 | 1,000 | 22,000 | 120ms | 245ms | 85% | âœ… |
 | 5,000 | 48,000 | 250ms | 295ms | 95% | âœ… |
-| 10,000 | 52,000 | 450ms | 850ms | 99% | âš ï¸ Degraded |
+| 10,000 | 52,000 | 450ms | 850ms | 99% | âš ï¸ Degraded |
 
 **72-Hour Sustained Load (1,000 RPS constant):**
 - Hour 0-24: Avg 145ms (P99: 285ms), CPU 65-75%, Memory stable 7.2GB
@@ -194,7 +194,7 @@ pytest tests/ -n auto
 |----------|-------|--------|
 | **Critical** | 0 | âœ… |
 | **High** | 0 (1 false positive - IDOR properly mitigated) | âœ… |
-| **Medium** | 8 (3 fixed, 5 with compensating controls) | âš ï¸ Monitored |
+| **Medium** | 8 (3 fixed, 5 with compensating controls) | âš ï¸ Monitored |
 | **Low** | 15 | â„¹ï¸ |
 | **Info** | 35 | â„¹ï¸ |
 
@@ -261,15 +261,15 @@ assert is_valid  # True with soundness 2^-256
 ## ðŸ“Š Quick Stats (v2.2.1 - May 2026)
 
 - **Total LoC:** ~45,000+ (Backend: ~33k Python, Frontend: ~12k TypeScript)
-- **Backend Modules:** 196+ Python files across 28+ API routers (320+ endpoints)
-- **Frontend:** 49 TypeScript/TSX components, 25+ pages
+- **Backend Modules:** 196+ Python files across 28 API routers (137+ endpoints)
+- **Frontend:** 48 React components (TypeScript/TSX), 25+ pages
 - **Database:** 31 PostgreSQL tables with Row-Level Security (RLS) + pgvector extension
 - **AI/ML Models:** 12+ production models (ArcFace ResNet-100, ECAPA-TDNN, XceptionNet, LSTM, ONNX Runtime 1.18.0)
 - **gRPC Services:** 2 (FaceRecognitionService with 5 RPC methods)
 - **Celery Tasks:** 23 tasks across 4 queues (recognition, model_training, federated_learning, compliance)
 - **Infrastructure:** Helm charts (`infra/helm/ai-f`), K8s manifests, Terraform, Ansible, Prometheus/Grafana dashboards (3)
 - **Policy Engines:** 9+ (RBAC, geo, temporal, ethical governor, rate limiting, usage limiting)
-- **Security:** 30+ granular permissions, 6 roles, MFA/TOTP, OAuth2 SSO, JWT revocation, ZKP audit
+- **Security:** 30+ granular permissions, 8 roles, MFA/TOTP, OAuth2 SSO, JWT revocation, ZKP audit
 - **Test Suite:** 42 core tests + 22 extended modules = 100% pass rate (0 failures)
 - **Documentation:** 470+ pages across 100+ markdown files
 
@@ -307,23 +307,25 @@ assert is_valid  # True with soundness 2^-256
 - **Celery Tasks:** 23 tasks across 4 queues (recognition, model_training, federated_learning, compliance)
 - **Infrastructure:** Helm charts, K8s manifests, Terraform, Ansible, Prometheus/Grafana (3 dashboards)
 - **Policy Engines:** 9+ (RBAC, geo, temporal, ethical governor, rate limiting, usage limiting)
-- **Security:** 30+ granular permissions, 6 roles, MFA/TOTP, OAuth2 SSO, JWT revocation, ZKP audit
+- **Security:** 30+ granular permissions, 8 roles, MFA/TOTP, OAuth2 SSO, JWT revocation, ZKP audit
 - **Test Suite:** 42 core + 22 extended modules = 100% pass rate (0 failures)
 - **Documentation:** 470+ pages across 100+ markdown files
 
 **Technology Stack:**
+- **Python** 3.12 (production), 3.11 (CI) - Backend runtime
 - **FastAPI** 0.104.1 with async/await throughout
 - **PostgreSQL** 15 + pgvector for vector similarity search
-- **Redis** 5.0.1 for pub/sub, rate limiting, Celery, JWT revocation
-**PyTorch** >=2.1.0 (requirements-cpu.txt), 2.1.0+cu121 (gpu) for face recognition
+- **Redis** 4.6.0 (library) / 7.2.3 (Docker) for pub/sub, rate limiting, Celery, JWT revocation
+- **PyTorch** >=2.1.0 (CPU), 2.1.0+cu121 (GPU) for face recognition
 - **ONNX Runtime** 1.18.0 (GPU/CPU) for optimized deployment
 - **gRPC** 1.60.0 for high-performance inter-service communication
 - **ZKP** with 2^-256 soundness (real Schnorr NIZK implementation)
 - **React** 18.2.0 with Material-UI (MUI) 7.3.4
+- **TypeScript** 4.9.5 (frontend)
 - **Celery** 5.3.4 with Redis broker
 - **Prometheus Client** 0.19.0 + Grafana for observability
 - **Stripe SDK** 7.4.0 for enterprise billing
-- **Sentry SDK** 1.35.0 for error tracking & tracing
+- **Sentry SDK** 2.0.0 for error tracking & tracing
 
 ---
 
@@ -354,7 +356,7 @@ graph TB
     subgraph "Authentication & Policy"
         AUTH[Authentication<br/>JWT + MFA]
         JWT_REVOKE[JWT Revocation<br/>Redis Store]
-        RBAC[RBAC<br/>6 roles + 30+ perms]
+        RBAC[RBAC<br/>8 roles + 30+ perms]
         POLICY[Policy Engine<br/>Geo + Temporal + Device]
         RATE[Rate Limiter<br/>Per-user sliding window]
         USAGE[Usage Limiter<br/>Tier-based quotas]
@@ -493,10 +495,10 @@ TOTAL (+voice):    ~180-280ms
 | **Framework** | FastAPI | 0.104.1 | Async API + WebSocket |
 | **ORM** | SQLAlchemy + asyncpg | 2.0.23 + 0.29.0 | Async PostgreSQL driver |
 | **Database** | PostgreSQL | 15 + pgvector | Identity vectors, audit |
-| **Cache/Queue** | Redis | 5.0.1 | Rate limiting, pub/sub, Celery, JWT revocation |
+| **Cache/Queue** | Redis | 4.6.0 (lib) / 7.2.3 (Docker) | Rate limiting, pub/sub, Celery, JWT revocation |
 | **Task Queue** | Celery | 5.3.4 | Async background jobs |
 | **ML Runtime** | ONNX Runtime (CPU/GPU) | 1.18.0 | Inference |
-| **ML Training** | PyTorch | 2.9.0 + torchvision 0.24.0 | Model training |
+| **ML Training** | PyTorch | >=2.1.0 (CPU), 2.1.0+cu121 (GPU) | Model training |
 | **Auth** | JWT (python-jose) + OAuth2 | 3.3.0 | Authentication |
 | **Monitoring** | Prometheus Client | 0.19.0 | Metrics + dashboards |
 | **Infrastructure** | Docker + Kubernetes | - | Container orchestration |
@@ -947,7 +949,7 @@ A comprehensive security audit was conducted in April 2026, including a full STR
 |----------|-------|--------|
 | **Critical** | 0 | âœ… |
 | **High** | 0 (1 false positive - IDOR properly mitigated) | âœ… |
-| **Medium** | 8 (3 fixed, 5 with compensating controls) | âš ï¸ Monitored |
+| **Medium** | 8 (3 fixed, 5 with compensating controls) | âš ï¸ Monitored |
 | **Low** | 15 | â„¹ï¸ |
 | **Info** | 35 | â„¹ï¸ |
 
@@ -992,7 +994,7 @@ Real-world deployments across major sectors.
 3. **Retail (National Chain)**: Reduced checkout time from 45s to 3.2s using frictionless biometric identification.
 4. **Government (International Airport)**: 50M passengers/year processed with <300ms latency and 99.99% uptime.
 
-## ðŸ› ï¸ CI/CD & Deployment
+## ðŸ› ï¸ CI/CD & Deployment
 
 AI-f uses a production-grade CI/CD pipeline for safe, automated deployments.
 
@@ -1394,7 +1396,7 @@ LEVI-AI is architected for mission-critical security environments, moving beyond
 - **Forensic Non-Repudiation**: Beyond internal hash-chaining, hashes are anchored to external trusted timestamping services hourly via the `ExternalAnchorService`.
 - **Offline Mode Simulation**: The `offline_mode_simulator.py` verifies the platform's ability to operate in air-gapped environments with full functional parity.
 
-### ðŸ› ï¸ Diagnostic Tools & Operations
+### ðŸ› ï¸ Diagnostic Tools & Operations
 LEVI-AI includes a suite of specialized diagnostic tools (`scripts/`) for production observability and maintenance.
 - **Database Diagnostics**: `db_diagnostics.py` monitors pgvector HNSW health, index fragmentation, and partition balance.
 - **Celery Watchdog**: `celery_watchdog.py` ensures background cognitive tasks (enrollment, training) are executing within their assigned TTLs.
@@ -8536,7 +8538,7 @@ graph TB
     subgraph "Authentication & Policy"
         AUTH[Authentication<br/>JWT + MFA]
         JWT_REVOKE[JWT Revocation<br/>Redis Store]
-        RBAC[RBAC<br/>6 roles + 30+ perms]
+        RBAC[RBAC<br/>8 roles + 30+ perms]
         POLICY[Policy Engine<br/>Geo + Temporal + Device]
         RATE[Rate Limiter<br/>Per-user sliding window]
         USAGE[Usage Limiter<br/>Tier-based quotas]
@@ -8675,10 +8677,10 @@ TOTAL (+voice):    ~180-280ms
 | **Framework** | FastAPI | 0.104.1 | Async API + WebSocket |
 | **ORM** | SQLAlchemy + asyncpg | 2.0.23 + 0.29.0 | Async PostgreSQL driver |
 | **Database** | PostgreSQL | 15 + pgvector | Identity vectors, audit |
-| **Cache/Queue** | Redis | 5.0.1 | Rate limiting, pub/sub, Celery, JWT revocation |
+| **Cache/Queue** | Redis | 4.6.0 (lib) / 7.2.3 (Docker) | Rate limiting, pub/sub, Celery, JWT revocation |
 | **Task Queue** | Celery | 5.3.4 | Async background jobs |
 | **ML Runtime** | ONNX Runtime (CPU/GPU) | 1.18.0 | Inference |
-| **ML Training** | PyTorch | 2.9.0 + torchvision 0.24.0 | Model training |
+| **ML Training** | PyTorch | >=2.1.0 (CPU), 2.1.0+cu121 (GPU) | Model training |
 | **Auth** | JWT (python-jose) + OAuth2 | 3.3.0 | Authentication |
 | **Monitoring** | Prometheus Client | 0.19.0 | Metrics + dashboards |
 | **Infrastructure** | Docker + Kubernetes | - | Container orchestration |
@@ -9129,7 +9131,7 @@ A comprehensive security audit was conducted in April 2026, including a full STR
 |----------|-------|--------|
 | **Critical** | 0 | âœ… |
 | **High** | 0 (1 false positive - IDOR properly mitigated) | âœ… |
-| **Medium** | 8 (3 fixed, 5 with compensating controls) | âš ï¸ Monitored |
+| **Medium** | 8 (3 fixed, 5 with compensating controls) | âš ï¸ Monitored |
 | **Low** | 15 | â„¹ï¸ |
 | **Info** | 35 | â„¹ï¸ |
 
@@ -9174,7 +9176,7 @@ Real-world deployments across major sectors.
 3. **Retail (National Chain)**: Reduced checkout time from 45s to 3.2s using frictionless biometric identification.
 4. **Government (International Airport)**: 50M passengers/year processed with <300ms latency and 99.99% uptime.
 
-## ðŸ› ï¸ CI/CD & Deployment
+## ðŸ› ï¸ CI/CD & Deployment
 
 AI-f uses a production-grade CI/CD pipeline for safe, automated deployments.
 
@@ -9576,7 +9578,7 @@ LEVI-AI is architected for mission-critical security environments, moving beyond
 - **Forensic Non-Repudiation**: Beyond internal hash-chaining, hashes are anchored to external trusted timestamping services hourly via the `ExternalAnchorService`.
 - **Offline Mode Simulation**: The `offline_mode_simulator.py` verifies the platform's ability to operate in air-gapped environments with full functional parity.
 
-### ðŸ› ï¸ Diagnostic Tools & Operations
+### ðŸ› ï¸ Diagnostic Tools & Operations
 LEVI-AI includes a suite of specialized diagnostic tools (`scripts/`) for production observability and maintenance.
 - **Database Diagnostics**: `db_diagnostics.py` monitors pgvector HNSW health, index fragmentation, and partition balance.
 - **Celery Watchdog**: `celery_watchdog.py` ensures background cognitive tasks (enrollment, training) are executing within their assigned TTLs.
@@ -17145,7 +17147,7 @@ targetMemoryUtilizationPercentage: 80
 | **Federated Learning** | 4 | âœ… PASS | Secure aggregation |
 | **Recognition API** | 1 | âœ… PASS | Core recognition pipeline |
 | **Key Rotation** | 10 | âœ… PASS* | FIPS-140-2 compliant |
-| **Infrastructure** | 60+ | âš ï¸ Partial | Requires external services |
+| **Infrastructure** | 60+ | âš ï¸ Partial | Requires external services |
 
 *1 flaky load test (concurrency race condition under extreme load - acceptable)
 
@@ -17203,7 +17205,7 @@ All critical path tests (46/46) now passing with **100% success rate**.
 | Category | Total | Passed | Failed | Rate | Status |
 |----------|-------|--------|--------|------|--------|
 | **All Critical Tests** | 46 | 46 | 0 | 100% | âœ… |
-| **All Tests (with external deps)** | 108 | 59 | 49 | 54.6% | âš ï¸ |
+| **All Tests (with external deps)** | 108 | 59 | 49 | 54.6% | âš ï¸ |
 | Core (JWT, Key Rotation) | 13 | 13 | 0 | 100% | âœ… |
 | Recognition API | 1 | 1 | 0 | 100% | âœ… |
 | Authentication / Security | 7 | 7 | 0 | 100% | âœ… |
@@ -17232,7 +17234,7 @@ All critical path tests (46/46) now passing with **100% success rate**.
 - **Edge Devices**: Plugin architecture  
 - **Public Enrichment**: Redaction, mock providers  
 
-### âš ï¸ Infrastructure-Dependent Tests (External Services Required)
+### âš ï¸ Infrastructure-Dependent Tests (External Services Required)
 
 The following tests require external services not available in this environment:
 
@@ -17334,7 +17336,7 @@ spec:
 | **Federated Learning** | 4 | âœ… PASS | Secure aggregation |
 | **Recognition API** | 1 | âœ… PASS | Core recognition pipeline |
 | **Key Rotation** | 10 | âœ… PASS* | FIPS-140-2 compliant |
-| **Infrastructure** | 60+ | âš ï¸ Partial | Requires external services |
+| **Infrastructure** | 60+ | âš ï¸ Partial | Requires external services |
 
 *1 flaky load test (concurrency race condition under extreme load - acceptable)
 
@@ -17367,7 +17369,7 @@ pytest --cov=app --cov-report=html tests/test_*.py
 
 ---
 
-## ðŸ›  Operations & Maintenance
+## ðŸ›  Operations & Maintenance
 
 
 
@@ -17945,7 +17947,7 @@ aws s3api get-object \
 
 
 
-## ðŸ§  Machine Learning Models â€” Implementation Deep Dive
+## ðŸ§  Machine Learning Models â€” Implementation Deep Dive
 
 
 
@@ -19847,8 +19849,6 @@ Special thanks to the open-source community for making privacy-preserving ML acc
 **Last Updated:** May 5, 2026  
 **Document Version:** 2.2.1
 **Next Review:** August 30, 2026 (quarterly)
-
-
 
 
 

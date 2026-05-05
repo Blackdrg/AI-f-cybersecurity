@@ -27,6 +27,11 @@ class ModelRegistry:
             "spoof_detector": "spoof_detector.onnx",
             "deepfake_detector": "deepfake_detector.onnx",
             "face_reconstructor": "face_reconstructor.onnx",
+            "face_embedding": "insightface_buffalo_l.onnx",
+            "face_detection": "retinaface.onnx",
+            "xception_spoof": "xceptionnet_spoof_detector.onnx",
+            "behavioral_predictor": "behavioral_predictor.onnx",
+            "gait_analyzer": "gaitset.onnx",
         }
         
         for name, onnx_file in onnx_files.items():
@@ -38,9 +43,11 @@ class ModelRegistry:
                 except Exception as e:
                     logger.error(f"Failed to load {onnx_path}: {e}")
         
-        # Symlink bundles
-        (ONNX_BUNDLE_PATH / "insightface_buffalo_l").exists() or logger.info("InsightFace bundle ready")
-        (ONNX_BUNDLE_PATH / "speechbrain_voxceleb").exists() or logger.info("SpeechBrain bundle ready")
+            else:
+                logger.debug(f"ONNX model not found: {onnx_path}")
+
+        loaded_count = len(self.sessions)
+        logger.info(f"Loaded {loaded_count} ONNX models from bundle: {ONNX_BUNDLE_PATH}")
     
     def infer_onnx(self, model_name: str, input_data: np.ndarray) -> np.ndarray:
         """Run ONNX inference with preprocessing/normalization."""
