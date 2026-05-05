@@ -65,7 +65,10 @@ class MockPaymentProvider(PaymentProvider):
         return {
             "session_id": session_id,
             "url": f"/payment/success?session_id={session_id}",
-            "is_mock": True
+            "is_mock": True,
+            "user_id": user_id,
+            "plan_id": plan_id,
+            "amount": amount
         }
 
     async def get_health_status(self) -> str:

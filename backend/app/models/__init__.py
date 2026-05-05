@@ -9,7 +9,8 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # Production ONNX bundle path (docker /models/onnx_bundle)
-ONNX_BUNDLE_PATH = Path("/models/onnx_bundle") if os.getenv("IN_DOCKER") else Path(__file__).parent / ".." / "models" / "onnx_bundle"
+import os
+ONNX_BUNDLE_PATH = Path("/models/onnx_bundle") if os.getenv("IN_DOCKER") else Path(__file__).parent.parent.parent / "models" / "onnx_bundle"
 
 class ModelRegistry:
     def __init__(self):

@@ -7,6 +7,7 @@ import os
 import sys
 import fakeredis
 import asgi_lifespan
+from asgi_lifespan import LifespanManager
 from httpx import AsyncClient
 import asyncio
 
@@ -33,7 +34,7 @@ from app.main import app
 
 @pytest.fixture(scope='function')
 async def test_client():
-    async with asgi_lifespan.run(app):
+    async with LifespanManager(app):
         async with AsyncClient(app=app, base_url='http://test') as client:
             yield client
 

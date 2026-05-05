@@ -4,6 +4,7 @@ import stripe
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 import logging
+from fastapi import HTTPException
 from ..db.db_client import get_db
 from ..schemas import SubscriptionResponse, PaymentResponse
 

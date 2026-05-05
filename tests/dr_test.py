@@ -3,6 +3,7 @@
 import subprocess
 import time
 import pytest
+import os
 
 def test_backup_restore():
     """Test pgvector backup + restore RTO <30min."""

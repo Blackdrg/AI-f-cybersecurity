@@ -1,7 +1,7 @@
 """Tests for Stripe webhook handling in payments module"""
 import pytest
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from fastapi.testclient import TestClient
 from app.main import app
 
@@ -50,10 +50,10 @@ class TestPaymentsWebhook:
             }
             
             # Mock the database calls
-            with patch('app.db.db_client.get_db') as mock_get_db:
+            with patch('app.api.payments.get_db') as mock_get_db:
                 mock_db = MagicMock()
-                mock_db.create_subscription = MagicMock()
-                mock_db.log_payment = MagicMock()
+                mock_db.create_subscription = AsyncMock()
+                mock_db.log_payment = AsyncMock()
                 mock_get_db.return_value = mock_db
                 
                 response = client.post(
@@ -92,10 +92,12 @@ class TestPaymentsWebhook:
     @pytest.mark.asyncio
     async def test_invalid_signature(self):
         """Test that invalid signatures are rejected."""
+        import stripe
+        
         payload = json.dumps({"type": "checkout.session.completed"}).encode()
         
         with patch('stripe.Webhook.construct_event') as mock_construct:
-            mock_construct.side_effect = Exception("Signature verification failed")
+            mock_construct.side_effect = stripe.error.SignatureVerificationError("Invalid signature", "bad", "secret")
             
             response = client.post(
                 "/api/payments/webhook",
@@ -130,10 +132,10 @@ class TestPaymentsWebhook:
             mock_construct.return_value = json.loads(payload.decode())
             
             # Mock the database calls
-            with patch('app.db.db_client.get_db') as mock_get_db:
+            with patch('app.api.payments.get_db') as mock_get_db:
                 mock_db = MagicMock()
-                mock_db.create_subscription = MagicMock()
-                mock_db.log_payment = MagicMock()
+                mock_db.create_subscription = AsyncMock()
+                mock_db.log_payment = AsyncMock()
                 mock_get_db.return_value = mock_db
                 
                 response = client.post(
@@ -170,9 +172,10 @@ class TestPaymentsWebhook:
             mock_construct.return_value = json.loads(payload.decode())
             
             # Mock the database calls
-            with patch('app.db.db_client.get_db') as mock_get_db:
+            with patch('app.api.payments.get_db') as mock_get_db:
                 mock_db = MagicMock()
-                mock_db.deactivate_subscription = MagicMock()
+                mock_db.deactivate_subscription = AsyncMock()
+                mock_db.get_user_by_stripe_customer = AsyncMock(return_value={"user_id": "cus_123"})
                 mock_get_db.return_value = mock_db
                 
                 response = client.post(
@@ -208,9 +211,9 @@ class TestPaymentsWebhook:
             mock_construct.return_value = json.loads(payload.decode())
             
             # Mock the database calls
-            with patch('app.db.db_client.get_db') as mock_get_db:
+            with patch('app.api.payments.get_db') as mock_get_db:
                 mock_db = MagicMock()
-                mock_db.mark_payment_failed = MagicMock()
+                mock_db.mark_payment_failed = AsyncMock()
                 mock_get_db.return_value = mock_db
                 
                 response = client.post(
@@ -250,7 +253,7 @@ class TestPaymentsWebhook:
             )
             
             assert response.status_code == 200
-            assert response.json()["status"] == "success"
+            assert response.json()["status"] == "ignored"
             assert response.json()["event_type"] == "some.random.event"
             # Note: In the actual implementation, unhandled events return {"status": "ignored", "event_type": event_type}
             # But our current implementation always returns success for handled patterns

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, Response
+from fastapi.responses import JSONResponse
 from typing import List, Optional
 from ..schemas import PaymentCreate, PaymentResponse
 from ..db.db_client import get_db
@@ -6,6 +7,10 @@ from ..security import get_current_user
 from ..providers import get_payment_provider, PaymentProvider
 from datetime import datetime
 import uuid
+import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -40,7 +45,7 @@ async def stripe_webhook(request: Request):
     
     if not signature:
         logger.warning("Webhook called without Stripe signature")
-        return {"status": "error", "detail": "Missing signature"}, 400
+        return JSONResponse(content={"status": "error", "detail": "Missing signature"}, status_code=400)
     
     # Verify webhook signature (CRITICAL for security)
     try:
@@ -50,10 +55,10 @@ async def stripe_webhook(request: Request):
         )
     except ValueError:
         logger.error("Invalid webhook payload")
-        return {"status": "error", "detail": "Invalid payload"}, 400
+        return JSONResponse(content={"status": "error", "detail": "Invalid payload"}, status_code=400)
     except stripe.error.SignatureVerificationError:
         logger.error("Invalid webhook signature")
-        return {"status": "error", "detail": "Invalid signature"}, 400
+        return JSONResponse(content={"status": "error", "detail": "Invalid signature"}, status_code=400)
     
     db = await get_db()
     event_type = event.get("type")
@@ -163,7 +168,7 @@ async def stripe_webhook(request: Request):
     except Exception as e:
         logger.error(f"Webhook processing failed for {event_type}: {e}", exc_info=True)
         # Return 500 to trigger retry
-        return {"status": "error", "detail": "Processing failed"}, 500
+        return JSONResponse(content={"status": "error", "detail": "Processing failed"}, status_code=500)
     
     return {"status": "success", "event_type": event_type}
 
@@ -197,12 +202,13 @@ async def generate_invoice(payment_id: str, current_user=Depends(get_current_use
 
     # Generate PDF (Mocking the byte stream for now)
     # In production, use reportlab or fpdf
+    customer_name = current_user.get('name') or current_user.get('user_id', 'Unknown')
     invoice_content = f"""
     LEVI-AI ENTERPRISE INVOICE
     --------------------------
     Invoice ID: {payment_id}
     Date: {payment['created_at']}
-    Customer: {current_user['name']}
+    Customer: {customer_name}
     Amount: {payment['amount']} {payment['currency']}
     Status: {payment['status']}
     

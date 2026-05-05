@@ -36,10 +36,17 @@ async def stripe_webhook(
     """
     payload = await request.body()
     sig_header = x_stripe_signature
+    
+    if not sig_header:
+        raise HTTPException(status_code=400, detail="Missing signature")
+    
     from ..services.stripe_service import stripe, billing_service
-    event = stripe.Webhook.construct_event(
-        payload, sig_header, stripe.webhook_secret
-    )
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, stripe.webhook_secret
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid signature: {str(e)}")
     
     response = await billing_service.handle_webhook(event)
     

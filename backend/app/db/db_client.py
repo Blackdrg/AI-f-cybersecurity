@@ -42,7 +42,9 @@ class DBClient:
             'persons': {},
             'embeddings': {},
             'consent_logs': {},
-            'audit_log': []
+            'audit_log': [],
+            'users': {},
+            'support_tickets': {}
         }
         
         # Initialize read replicas if provided
@@ -966,6 +968,16 @@ class DBClient:
 
     # SaaS Database Methods
     async def create_user(self, user_id: str, email: str, name: str, subscription_tier: str = "free") -> bool:
+        if self.pool is None:
+            # In-memory implementation
+            self._in_memory_db['users'][user_id] = {
+                'user_id': user_id,
+                'email': email,
+                'name': name,
+                'subscription_tier': subscription_tier,
+                'created_at': datetime.utcnow()
+            }
+            return True
         async with self.pool.acquire() as conn:
             await conn.execute("""
                 INSERT INTO users (user_id, email, name, subscription_tier, created_at)
@@ -974,6 +986,9 @@ class DBClient:
         return True
 
     async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+        if self.pool is None:
+            # In-memory implementation
+            return self._in_memory_db['users'].get(user_id)
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM users WHERE user_id = $1", user_id)
             return dict(row) if row else None
@@ -1210,6 +1225,19 @@ class DBClient:
 
     # Support Tickets
     async def create_ticket(self, ticket_id: str, user_id: str, subject: str, description: str, priority: str = "medium") -> bool:
+        if self.pool is None:
+            # In-memory implementation
+            self._in_memory_db['support_tickets'][ticket_id] = {
+                'ticket_id': ticket_id,
+                'user_id': user_id,
+                'subject': subject,
+                'description': description,
+                'priority': priority,
+                'status': 'open',
+                'created_at': datetime.utcnow(),
+                'updated_at': datetime.utcnow()
+            }
+            return True
         async with self.pool.acquire() as conn:
             await conn.execute("""
                 INSERT INTO support_tickets (ticket_id, user_id, subject, description, priority, status, created_at, updated_at)
@@ -1218,6 +1246,13 @@ class DBClient:
         return True
 
     async def get_tickets(self, user_id: str) -> List[Dict[str, Any]]:
+        if self.pool is None:
+            # In-memory implementation
+            tickets = [ticket for ticket in self._in_memory_db['support_tickets'].values() 
+                      if ticket['user_id'] == user_id]
+            # Sort by created_at descending
+            tickets.sort(key=lambda x: x['created_at'], reverse=True)
+            return tickets
         async with self.pool.acquire() as conn:
             rows = await conn.fetch("""
                 SELECT * FROM support_tickets WHERE user_id = $1 ORDER BY created_at DESC
@@ -1225,6 +1260,9 @@ class DBClient:
             return [dict(row) for row in rows]
 
     async def get_ticket(self, ticket_id: str) -> Optional[Dict[str, Any]]:
+        if self.pool is None:
+            # In-memory implementation
+            return self._in_memory_db['support_tickets'].get(ticket_id)
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM support_tickets WHERE ticket_id = $1", ticket_id)
             return dict(row) if row else None
@@ -1346,6 +1384,17 @@ class DBClient:
             return [dict(row) for row in rows]
 
     async def update_ticket(self, ticket_id: str, description: Optional[str] = None, priority: Optional[str] = None) -> bool:
+        if self.pool is None:
+            # In-memory implementation
+            if ticket_id in self._in_memory_db['support_tickets']:
+                ticket = self._in_memory_db['support_tickets'][ticket_id]
+                if description is not None:
+                    ticket['description'] = description
+                if priority is not None:
+                    ticket['priority'] = priority
+                ticket['updated_at'] = datetime.utcnow()
+                return True
+            return False
         async with self.pool.acquire() as conn:
             if description:
                 await conn.execute("UPDATE support_tickets SET description = $1, updated_at = NOW() WHERE ticket_id = $2", description, ticket_id)
@@ -1354,6 +1403,12 @@ class DBClient:
         return True
 
     async def delete_ticket(self, ticket_id: str) -> bool:
+        if self.pool is None:
+            # In-memory implementation
+            if ticket_id in self._in_memory_db['support_tickets']:
+                del self._in_memory_db['support_tickets'][ticket_id]
+                return True
+            return False
         async with self.pool.acquire() as conn:
             await conn.execute("DELETE FROM support_tickets WHERE ticket_id = $1", ticket_id)
         return True

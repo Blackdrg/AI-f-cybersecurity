@@ -149,6 +149,8 @@ async def enroll_person(
 
         embeddings = []
         voice_embeddings = []
+        person_id = str(uuid.uuid4())
+        consent_record = {"consent_record_id": str(uuid.uuid4()), "consent": consent_bool, "timestamp": time.time()}
         age = None
         gender = None
 

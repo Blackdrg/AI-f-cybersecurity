@@ -28,7 +28,9 @@ class TestStripeWebhooks:
             headers={"Content-Type": "application/json"}
         )
         
-        assert response.status_code == 401
+        # Should return 400 for missing signature
+        assert response.status_code == 400
+        assert "Missing signature" in response.json()["detail"]
 
     def test_valid_signature_accepted(self):
         """Test that valid signatures are accepted."""

@@ -4,6 +4,7 @@ from ..schemas import SubscriptionResponse, SubscriptionCreate
 from ..db.db_client import get_db
 from ..security import get_current_user
 import uuid
+import stripe
 from datetime import datetime, timedelta
 from fastapi import HTTPException
 

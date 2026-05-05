@@ -68,14 +68,15 @@ class BehavioralPredictor:
             features[-1] = gaze_data.get('gaze_focus', 0.5)
         return torch.tensor(features, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(self.device)
 
-    def predict_behavior(self, emotion_data: Dict[str, Any], gaze_data=None) -> Dict[str, Any]:
-        self.emotion_history.append(emotion_data)
-        if gaze_data:
-            self.gaze_history.append(gaze_data)
-        
+    def predict_behavior(self, emotion_data: Dict[str, Any], gaze_data=None, update_history: bool = True) -> Dict[str, Any]:
+        if update_history:
+            self.emotion_history.append(emotion_data)
+            if gaze_data:
+                self.gaze_history.append(gaze_data)
+         
         if len(self.emotion_history) < 3:
             return self._fallback_prediction(emotion_data)
-        
+         
         sequence = []
         for hist in list(self.emotion_history)[-self.sequence_length:]:
             seq_tensor = self._emotion_to_tensor(hist, self.gaze_history[-1] if self.gaze_history else None)
@@ -123,11 +124,18 @@ class BehavioralPredictor:
 
     def predict_with_temporal(self, emotion_sequence: List[Dict], gaze_sequence=None):
         seq_len = min(len(emotion_sequence), self.sequence_length)
+        # Update history with the full sequence
+        for i in range(-seq_len, 0):
+            idx = len(emotion_sequence) + i
+            self.emotion_history.append(emotion_sequence[idx])
+            if gaze_sequence and idx < len(gaze_sequence):
+                self.gaze_history.append(gaze_sequence[idx])
+        
         sequence = [self._emotion_to_tensor(emotion_sequence[i], gaze_sequence[i] if gaze_sequence and i < len(gaze_sequence) else None) for i in range(-seq_len, 0)]
         seq_tensor = torch.cat(sequence, dim=1).to(self.device)
         with torch.no_grad():
             behavior_vector = self.lstm_model(seq_tensor).cpu().numpy()[0]
-        return self.predict_behavior(emotion_sequence[-1])
+        return self.predict_behavior(emotion_sequence[-1], gaze_sequence[-1] if gaze_sequence and len(gaze_sequence) > 0 else None, update_history=False)
 
     def reset(self):
         self.emotion_history.clear()

@@ -21,7 +21,7 @@ USING hnsw (embedding vector_cosine_ops)
 WHERE org_id = '00000000-0000-0000-0000-000000000000'::uuid; -- Template per-org
 
 -- IVFFlat fallback for cold vectors
-CREATE INDEX IF NOT NOT EXISTS embeddings_ivfflat_idx ON embeddings 
+CREATE INDEX IF NOT EXISTS embeddings_ivfflat_idx ON embeddings 
 USING ivfflat (embedding vector_l2_ops) WITH (lists = 1000);
 
 -- FAISS hybrid sync trigger (Redis → pgvector)

@@ -102,7 +102,7 @@ def test_get_current_user(auth_headers):
     assert data["email"] == test_user.email
 
 
-def test_create_subscription(auth_headers):
+def test_create_subscription(auth_headers, admin_headers):
     """Test creating a subscription."""
     # Create user first
     user_response = client.post(
@@ -152,7 +152,8 @@ def test_create_payment(auth_headers):
     token = create_token(user_id, "viewer")
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = client.post("/api/payments", json=payment_data, headers=headers)
+    # The endpoint is actually /api/payments/create-session
+    response = client.post("/api/payments/create-session", json=payment_data, headers=headers)
     # Might return 400/401 due to Stripe not being configured
     assert response.status_code in [200, 400, 401]
     if response.status_code == 200:
@@ -172,7 +173,8 @@ def test_get_usage(auth_headers):
     token = create_token(user_id, "viewer")
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = client.get("/api/usage", headers=headers)
+    # The usage endpoint is actually /api/usage/current
+    response = client.get("/api/usage/current", headers=headers)
     # Should work since usage endpoint doesn't require DB
     assert response.status_code == 200
     data = response.json()
@@ -212,7 +214,8 @@ def test_create_support_ticket(auth_headers):
     token = create_token(user_id, "viewer")
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = client.post("/api/support", json=ticket_data, headers=headers)
+    # The support endpoint is actually /api/support/tickets
+    response = client.post("/api/support/tickets", json=ticket_data, headers=headers)
     # Should work since support doesn't require external services
     assert response.status_code == 200
     data = response.json()
@@ -232,7 +235,8 @@ def test_get_support_tickets(auth_headers):
     token = create_token(user_id, "viewer")
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = client.get("/api/support", headers=headers)
+    # The support endpoint is actually /api/support/tickets
+    response = client.get("/api/support/tickets", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)

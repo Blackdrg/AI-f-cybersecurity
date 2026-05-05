@@ -17,10 +17,11 @@ class GaitAnalyzer:
         self._model_loaded = False
         # Lazy-load ONNX on first use to avoid import-time failure
         try:
-            onnx_path = 'models/onnx_bundle/gaitset.onnx'
-            if Path(__file__).parent.parent.parent / onnx_path:
-                self.session = ort.InferenceSession(onnx_path)
+            onnx_path = Path(__file__).parent.parent.parent / "models" / "onnx_bundle" / "gaitset.onnx"
+            if onnx_path.exists():
+                self.session = ort.InferenceSession(str(onnx_path))
                 self._model_loaded = True
+                logger.info(f"GaitSet ONNX loaded from {onnx_path}")
         except Exception as e:
             logger.warning(f"GaitSet ONNX not loaded: {e}. Using Hu moments fallback.")
 

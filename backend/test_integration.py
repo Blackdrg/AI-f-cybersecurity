@@ -2,7 +2,7 @@ import pytest
 import io
 import cv2
 import numpy as np
-from conftest import test_client, authenticated_client, mock_redis, mock_models  # mock_models added if needed
+from conftest import test_client, authenticated_client, mock_redis
 
 def create_test_image():
     img = np.zeros((112, 112, 3), dtype=np.uint8)
