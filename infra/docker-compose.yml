@@ -10,14 +10,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init_pgvector.sql:/docker-entrypoint-initdb.d/01-pgvector.sql
-      - ../backend/scripts/init_pgvector.sql:/docker-entrypoint-initdb.d/01-pgvector.sql
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -d face_recognition -tAc \"SELECT 1\""]
       interval: 10s
@@ -73,7 +65,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - insightface_models:/root/.insightface/models\n      - ../backend/models/onnx_bundle:/models/onnx_bundle:ro
+      - insightface_models:/root/.insightface/models
+      - ../backend/models/onnx_bundle:/models/onnx_bundle:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -153,22 +146,16 @@ services:
         condition: service_healthy
       backend:
         condition: service_started
-      enclave:\n        condition: service_started
+      enclave:
+        condition: service_started
 
   faiss:
-    image: faiss/faiss:gpu
+    image: faiss/faiss:latest
     command: faiss_index_server /faiss/index --host 0.0.0.0 --port 50051 --enable-grpc
     volumes:
       - faiss_index:/faiss/index
     ports:
       - "50051:50051"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     depends_on:
       - backend
 
