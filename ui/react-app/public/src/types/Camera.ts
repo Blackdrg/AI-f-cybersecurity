@@ -1,9 +1,10 @@
 export interface Camera {
-  id: string;
+  camera_id: string;
+  org_id: string;
   name: string;
   rtsp_url: string;
   location?: string;
-  status: 'active' | 'inactive' | 'error';
-  org_id?: string;
+  status: 'online' | 'offline' | 'error';
+  created_at: any;
 }
 

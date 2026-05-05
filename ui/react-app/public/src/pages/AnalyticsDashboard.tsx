@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from 'react';
+
+interface Metrics {
+  recognition_count: number;
+  avg_latency_ms: number;
+  [key: string]: any;
+}
 import { 
   Box, Typography, Grid, Paper, Card, CardContent, 
   CircularProgress, List, ListItem, ListItemText, ListItemIcon, Tabs, Tab 
@@ -13,7 +19,7 @@ import API from '../services/api';
 import DashboardIntelligencePanel from '../components/DashboardIntelligencePanel';
 
 const AnalyticsDashboard = () => {
-  const [metrics, setMetrics] = useState(null);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   useEffect(() => {
@@ -52,7 +58,7 @@ const AnalyticsDashboard = () => {
           <Typography variant="h4" gutterBottom>System Analytics</Typography>
           
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card>
                 <CardContent>
                   <Typography color="text.secondary" variant="caption">Daily Recognitions</Typography>
@@ -63,7 +69,7 @@ const AnalyticsDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card>
                 <CardContent>
                   <Typography color="text.secondary" variant="caption">Avg. Confidence</Typography>
@@ -74,7 +80,7 @@ const AnalyticsDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card>
                 <CardContent>
                   <Typography color="text.secondary" variant="caption">False Accept Rate (FAR)</Typography>
@@ -85,7 +91,7 @@ const AnalyticsDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card>
                 <CardContent>
                   <Typography color="text.secondary" variant="caption">Avg. Latency</Typography>
@@ -99,7 +105,7 @@ const AnalyticsDashboard = () => {
           </Grid>
 
           <Grid container spacing={3}>
-            <Grid xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>Recognition Volume (Last 7 Days)</Typography>
                 <Box sx={{ height: 300 }}>
@@ -112,7 +118,7 @@ const AnalyticsDashboard = () => {
               </Paper>
             </Grid>
             
-            <Grid xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper sx={{ p: 3, height: '100%' }}>
                 <Typography variant="h6" gutterBottom>Top Active Cameras</Typography>
                  <List>
@@ -132,7 +138,7 @@ const AnalyticsDashboard = () => {
               </Paper>
             </Grid>
 
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom><Map /> Detection Heatmap (Spatial)</Typography>
                 <Box 

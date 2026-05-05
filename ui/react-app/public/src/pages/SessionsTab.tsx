@@ -11,9 +11,32 @@ import {
 } from '@mui/icons-material';
 import API from '../services/api';
 
+interface Session {
+  id: string;
+  person_name: string;
+  person_id: string;
+  device_id: string;
+  start_time: string;
+  last_active: string;
+  confidence: number;
+  risk_score: number;
+  location: string;
+  behaviors: {
+    walking_speed: number;
+    posture: number;
+  };
+}
+
+interface Metrics {
+  total_active: number;
+  avg_confidence: number;
+  avg_risk: number;
+  drift_alerts: number;
+}
+
 function SessionsTab() {
-  const [sessions, setSessions] = useState([]);
-  const [metrics, setMetrics] = useState({});
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [metrics, setMetrics] = useState<Metrics>({ total_active: 0, avg_confidence: 0, avg_risk: 0, drift_alerts: 0 });
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -100,13 +123,13 @@ function SessionsTab() {
     }
   };
 
-  const getRiskColor = (score) => {
+  const getRiskColor = (score: number) => {
     if (score < 0.2) return '#10b981';
     if (score < 0.5) return '#f59e0b';
     return '#ef4444';
   };
 
-  const getConfidenceColor = (score) => {
+  const getConfidenceColor = (score: number) => {
     if (score > 0.9) return '#10b981';
     if (score > 0.7) return '#f59e0b';
     return '#ef4444';
@@ -151,7 +174,7 @@ function SessionsTab() {
 
       {/* Metrics Summary */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'primary.main', color: 'white' }}>
             <CardContent>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>Active Sessions</Typography>
@@ -161,7 +184,7 @@ function SessionsTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
             <CardContent>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>Avg Confidence</Typography>
@@ -171,7 +194,7 @@ function SessionsTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
             <CardContent>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>Avg Risk Score</Typography>
@@ -181,7 +204,7 @@ function SessionsTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'error.main', color: 'white' }}>
             <CardContent>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>Drift Alerts</Typography>

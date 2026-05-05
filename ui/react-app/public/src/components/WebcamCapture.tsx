@@ -3,12 +3,20 @@ import { Box, Button, Typography, Paper, CircularProgress } from '@mui/material'
 import Webcam from 'react-webcam';
 import { CameraAlt, Upload, Refresh } from '@mui/icons-material';
 
-const WebcamCapture = ({ onCapture, isProcessing }) => {
-  const webcamRef = useRef(null);
-  const [imgSrc, setImgSrc] = useState(null);
+interface WebcamCaptureProps {
+  onCapture: (file: File) => void;
+  isProcessing: boolean;
+}
+
+const WebcamCapture: React.FC<WebcamCaptureProps> = ({ onCapture, isProcessing }) => {
+  const webcamRef = useRef<Webcam>(null);
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
 
   const capture = useCallback(() => {
-    const imageSrc = webcamRef.current.getScreenshot();
+    const current = webcamRef.current;
+    if (!current) return;
+    const imageSrc = current.getScreenshot();
+    if (!imageSrc) return;
     setImgSrc(imageSrc);
     
     // Convert base64 to File object
@@ -18,7 +26,7 @@ const WebcamCapture = ({ onCapture, isProcessing }) => {
         const file = new File([blob], "webcam.jpg", { type: "image/jpeg" });
         onCapture(file);
       });
-  }, [webcamRef, onCapture]);
+  }, [onCapture]);
 
   const retake = () => {
     setImgSrc(null);

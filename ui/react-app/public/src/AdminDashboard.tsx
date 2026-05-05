@@ -1,5 +1,5 @@
 import React, { useState, ChangeEvent } from 'react';
-import type { Person as PersonType, Metrics, Log, Consent, Webhook, Plugin } from '../types';
+import type { Person as PersonType, Metrics, Log, Consent, Webhook, Plugin } from './types';
 import axios from 'axios';
 import { Box, Typography, Card, CardContent, Grid, TextField, Button, Divider, Avatar, Chip, CircularProgress, Alert, List, ListItem, ListItemText, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';
 import { LineChart, LineElement, ChartsXAxis, ChartsYAxis, ChartsGrid, ChartsTooltip, ChartsLegend } from '@mui/x-charts';
@@ -13,7 +13,7 @@ const AdminDashboard: React.FC<Props> = () => {
     const [logs, setLogs] = useState<Log[]>([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
-    const [severity, setSeverity] = useState('success');
+    const [severity, setSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [actionFilter, setActionFilter] = useState('');
@@ -748,7 +748,11 @@ const AdminDashboard: React.FC<Props> = () => {
                                             <LineChart
                                                 width={500}
                                                 height={300}
-                                                data={analytics.time_series}
+                                                series={[
+                                                    { data: analytics.time_series.map((d: any) => d.recognitions), label: 'Recognitions', color: '#8884d8' },
+                                                    { data: analytics.time_series.map((d: any) => d.enrollments), label: 'Enrollments', color: '#82ca9d' },
+                                                ]}
+                                                xAxis={[{ scaleType: 'point', data: analytics.time_series.map((d: any) => d.date) }]}
                                                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                                             >
                                                 <ChartsGrid />
@@ -756,8 +760,6 @@ const AdminDashboard: React.FC<Props> = () => {
                                                 <ChartsYAxis />
                                                 <ChartsTooltip />
                                                 <ChartsLegend />
-                                                <LineElement type="monotone" dataKey="recognitions" stroke="#8884d8" />
-                                                <LineElement type="monotone" dataKey="enrollments" stroke="#82ca9d" />
                                             </LineChart>
                                         </Grid>
                                         <Grid size={{ xs: 12, md: 6 }}>
@@ -767,7 +769,10 @@ const AdminDashboard: React.FC<Props> = () => {
                                             <LineChart
                                                 width={500}
                                                 height={300}
-                                                data={analytics.bias_trends}
+                                                series={[
+                                                    { data: analytics.bias_trends.map((d: any) => d.dpd), label: 'DPD', color: '#ff7300' },
+                                                ]}
+                                                xAxis={[{ scaleType: 'point', data: analytics.bias_trends.map((d: any) => d.date) }]}
                                                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                                             >
                                                 <ChartsGrid />
@@ -775,7 +780,6 @@ const AdminDashboard: React.FC<Props> = () => {
                                                 <ChartsYAxis />
                                                 <ChartsTooltip />
                                                 <ChartsLegend />
-                                                <LineElement type="monotone" dataKey="dpd" stroke="#ff7300" />
                                             </LineChart>
                                         </Grid>
                                         <Grid size={{ xs: 12 }}>
@@ -792,7 +796,7 @@ const AdminDashboard: React.FC<Props> = () => {
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
-                                                        {analytics.device_stats.map((device, index) => (
+                                                        {analytics.device_stats.map((device: { device_id: string; status: string; last_seen: string }, index: number) => (
                                                             <TableRow key={index}>
                                                                 <TableCell>{device.device_id}</TableCell>
                                                                 <TableCell>{device.status}</TableCell>

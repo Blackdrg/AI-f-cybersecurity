@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import type { Plan } from '../types';
+import type { Plan } from './types';
 import { Card, CardContent, Typography, Button, Grid, Chip, Alert, CircularProgress } from '@mui/material';
 import { CreditCard, CheckCircle, Star } from '@mui/icons-material';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, useStripe, useElements } from '@stripe/react-stripe-js';
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_...');
+interface SubscriptionMessage {
+  message: string;
+  severity: 'error' | 'success' | 'info' | 'warning';
+}
 
 const SubscriptionPlans = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [message, setMessage] = useState('');
-  const [severity, setSeverity] = useState('success');
-  const stripe = useStripe();
-  const elements = useElements();
+  const [subscriptionMessage, setSubscriptionMessage] = useState<SubscriptionMessage>({ message: '', severity: 'success' });
 
   useEffect(() => {
     fetchPlans();
@@ -26,15 +24,14 @@ const SubscriptionPlans = () => {
     try {
       const response = await axios.get('/api/plans');
       setPlans(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch plans');
-      setMessage('Failed to load subscription plans');
-      setSeverity('error');
+      setSubscriptionMessage({ message: 'Failed to load subscription plans', severity: 'error' });
     }
     setLoading(false);
   };
 
-  const handleSubscribe = async (plan) => {
+  const handleSubscribe = async (plan: Plan) => {
     setSelectedPlan(plan);
     setProcessing(true);
     try {
@@ -45,17 +42,20 @@ const SubscriptionPlans = () => {
       });
 
       // Redirect to Stripe Checkout
-      const result = await stripe.redirectToCheckout({ sessionId: paymentResponse.data.session_id });
-
-      if (result.error) {
-        // If redirectToCheckout fails (e.g., due to a network error)
-        setMessage(result.error.message);
-        setSeverity('error');
+      const stripe = (window as any).Stripe;
+      if (stripe) {
+        const { error } = await stripe.redirectToCheckout({
+          sessionId: paymentResponse.data.session_id
+        });
+        if (error) {
+          setSubscriptionMessage({ message: error.message || 'Payment failed', severity: 'error' });
+        }
+      } else {
+        setSubscriptionMessage({ message: 'Stripe is not available', severity: 'error' });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment failed');
-      setMessage('Payment failed. Please try again.');
-      setSeverity('error');
+      setSubscriptionMessage({ message: 'Payment failed. Please try again.', severity: 'error' });
     } finally {
       setProcessing(false);
     }
@@ -73,7 +73,7 @@ const SubscriptionPlans = () => {
 
       <Grid container spacing={3}>
         {plans.map((plan) => (
-          <Grid item xs={12} md={4} key={plan.plan_id}>
+          <Grid size={{ xs: 12, md: 4 }} key={plan.plan_id}>
             <Card elevation={3} style={{ height: '100%', position: 'relative' }}>
               {plan.name === 'Enterprise' && (
                 <Chip
@@ -124,9 +124,9 @@ const SubscriptionPlans = () => {
         ))}
       </Grid>
 
-      {message && (
-        <Alert severity={severity} style={{ marginTop: '20px' }}>
-          {message}
+      {subscriptionMessage.message && (
+        <Alert severity={subscriptionMessage.severity} style={{ marginTop: '20px' }}>
+          {subscriptionMessage.message}
         </Alert>
       )}
     </div>

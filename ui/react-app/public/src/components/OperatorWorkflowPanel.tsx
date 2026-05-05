@@ -1,32 +1,63 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Grid, Paper, Card, CardContent,
-  Button, IconButton, Tooltip, Badge, CircularProgress,
-  LinearProgress, Chip, Alert, Dialog, DialogTitle,
-  DialogContent, DialogActions, Tabs, Tab, List, ListItem,
-  ListItemText, ListItemIcon, Divider, TextField, Select,
-  MenuItem, FormControlLabel, Switch, Accordion, AccordionSummary,
-  AccordionDetails, Stepper, Step, StepLabel, StepContent,
-  Table, TableBody, TableCell, TableHead, TableRow
+  Box, Typography, Grid, Paper,
+  Button, Chip, Alert, Dialog, DialogTitle,
+  DialogContent, DialogActions, List, ListItem,
+  ListItemText, ListItemIcon, TextField,
+  Stepper, Step, StepLabel, StepContent
 } from '@mui/material';
 import {
-  Refresh, Retry, HelpOutline, CheckCircle,
-  Error, Warning, Build, psychology, Timeline,
-  TrendingUp, People, Security, Memory, AutoAwesome,
-  ArrowForward, Settings, History, CompareArrows,
-  Insights, BugReport, Download, Upload, Visibility
+  Refresh, Replay, HelpOutline, CheckCircle,
+  Error, Warning, Psychology, Timeline,
+  Settings, History, Visibility, BugReport
 } from '@mui/icons-material';
-import API from '../services/api';
 
-const OperatorWorkflowPanel = ({ recognitionResult, onRetry, onOverride, onEscalate }) => {
+interface RecognitionResult {
+  faces?: Array<{
+    score?: number;
+    spoof_score?: number;
+    identity?: string;
+  }>;
+}
+
+interface Action {
+  type: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+}
+
+interface DecisionEntry {
+  action: string;
+  timestamp: string;
+  confidence?: number;
+  decision?: string;
+  reason?: string;
+  target?: string;
+}
+
+interface OperatorWorkflowPanelProps {
+  recognitionResult: RecognitionResult | null;
+  onRetry?: (adjustments: object) => Promise<void>;
+  onOverride?: (data: { reason: string; operatorId: string }) => Promise<void>;
+  onEscalate?: (data: { level: string; context: DecisionEntry[] }) => Promise<void>;
+}
+
+const OperatorWorkflowPanel: React.FC<OperatorWorkflowPanelProps> = ({ 
+  recognitionResult, 
+  onRetry, 
+  onOverride, 
+  onEscalate 
+}) => {
   const [activeStep, setActiveStep] = useState(0);
   const [workflowState, setWorkflowState] = useState('idle');
   const [retryCount, setRetryCount] = useState(0);
   const [overrideReason, setOverrideReason] = useState('');
   const [isOverrideDialogOpen, setIsOverrideDialogOpen] = useState(false);
-  const [decisionHistory, setDecisionHistory] = useState([]);
-  const [recommendedActions, setRecommendedActions] = useState([]);
-  const [suggestedThreshold, setSuggestedThreshold] = useState(null);
+  const [decisionHistory, setDecisionHistory] = useState<DecisionEntry[]>([]);
+  const [recommendedActions, setRecommendedActions] = useState<Action[]>([]);
+  const [suggestedThreshold, setSuggestedThreshold] = useState<number | null>(null);
 
   useEffect(() => {
     if (recognitionResult) {
@@ -38,8 +69,8 @@ const OperatorWorkflowPanel = ({ recognitionResult, onRetry, onOverride, onEscal
     if (!recognitionResult?.faces?.[0]) return;
 
     const face = recognitionResult.faces[0];
-    const actions = [];
-    const history = [];
+    const actions: Action[] = [];
+    const history: DecisionEntry[] = [];
 
     // Check confidence levels
     if (face.score && face.score < 0.6) {
@@ -47,7 +78,7 @@ const OperatorWorkflowPanel = ({ recognitionResult, onRetry, onOverride, onEscal
         type: 'retry',
         title: 'Retry Recognition',
         description: 'Low confidence score. Consider retrying with better image quality.',
-        icon: <Retry />,
+        icon: <Replay />,
         priority: 'high'
       });
     }
@@ -89,8 +120,8 @@ const OperatorWorkflowPanel = ({ recognitionResult, onRetry, onOverride, onEscal
     history.push({
       action: 'initial_recognition',
       timestamp: new Date().toISOString(),
-      confidence: face.score,
-      decision: face.score > 0.5 ? 'allow' : 'review'
+      confidence: face.score ?? 0,
+      decision: (face.score ?? 0) > 0.5 ? 'allow' : 'review'
     });
     setDecisionHistory(history);
   };
@@ -146,7 +177,7 @@ const OperatorWorkflowPanel = ({ recognitionResult, onRetry, onOverride, onEscal
     }
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = (priority: string): 'error' | 'warning' | 'info' | 'default' => {
     switch (priority) {
       case 'critical': return 'error';
       case 'high': return 'warning';
@@ -165,7 +196,7 @@ const OperatorWorkflowPanel = ({ recognitionResult, onRetry, onOverride, onEscal
     <Paper sx={{ p: 3, height: '100%' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <psychology color="primary" />
+          <Psychology color="primary" />
           Operator Workflow
         </Typography>
         <Chip
@@ -194,7 +225,7 @@ const OperatorWorkflowPanel = ({ recognitionResult, onRetry, onOverride, onEscal
         <Typography variant="subtitle2" gutterBottom>Recommended Actions</Typography>
         <Grid container spacing={1}>
           {recommendedActions.map((action, idx) => (
-            <Grid item xs={12} key={idx}>
+            <Grid size={{ xs: 12 }} key={idx}>
               <Paper
                 sx={{
                   p: 2,
@@ -253,7 +284,7 @@ const OperatorWorkflowPanel = ({ recognitionResult, onRetry, onOverride, onEscal
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         <Button
           variant="contained"
-          startIcon={<Retry />}
+          startIcon={<Replay />}
           onClick={() => handleRetry()}
           disabled={workflowState === 'retrying'}
           fullWidth

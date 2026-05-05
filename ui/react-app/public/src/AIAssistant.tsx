@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
 import { TextField, Button, Typography, Paper, Box, Avatar, CircularProgress, Alert } from '@mui/material';
 import { Send, SmartToy } from '@mui/icons-material';
 
+interface Message {
+    role: 'user' | 'assistant';
+    content: string;
+    model?: string;
+}
+
 const AIAssistant = () => {
     const [query, setQuery] = useState('');
-    const [conversation, setConversation] = useState([]);
+    const [conversation, setConversation] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!query.trim()) return;
 
@@ -17,12 +23,12 @@ const AIAssistant = () => {
         setError('');
 
         // Add user message to conversation
-        const userMessage = { role: 'user', content: query };
+        const userMessage: Message = { role: 'user', content: query };
         setConversation(prev => [...prev, userMessage]);
 
         try {
             const response = await axios.post('/api/ai/assistant', { query });
-            const aiMessage = {
+            const aiMessage: Message = {
                 role: 'assistant',
                 content: response.data.response,
                 model: response.data.model_used

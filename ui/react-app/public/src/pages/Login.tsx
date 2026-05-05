@@ -1,23 +1,28 @@
 import React, { useState } from 'react';
 import { Box, Paper, TextField, Button, Typography, Container, Avatar, Alert } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';
-import { login } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { login as apiLogin } from '../services/api';
 
-const LoginPage = ({ onLogin }) => {
+const LoginPage: React.FC = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoggingIn(true);
     setError(null);
     try {
-      const res = await login(email, password);
-      onLogin(res.user);
-    } catch (err) {
-      setError(err.message || "Login failed");
+      const res = await apiLogin(email, password);
+      await login(res.user, res.organizations || []);
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      setError((err as Error).message || "Login failed");
     } finally {
       setIsLoggingIn(false);
     }
@@ -27,15 +32,16 @@ const LoginPage = ({ onLogin }) => {
     setIsLoggingIn(true);
     setError(null);
     try {
-      const email = process.env.REACT_APP_DEMO_EMAIL;
-      const password = process.env.REACT_APP_DEMO_PASSWORD;
-      if (!email || !password) {
+      const demoEmail = process.env.REACT_APP_DEMO_EMAIL;
+      const demoPassword = process.env.REACT_APP_DEMO_PASSWORD;
+      if (!demoEmail || !demoPassword) {
         throw new Error("Demo credentials not configured");
       }
-      const res = await login(email, password);
-      onLogin(res.user);
-    } catch (err) {
-      setError(err.message || "Demo login failed");
+      const res = await apiLogin(demoEmail, demoPassword);
+      await login(res.user, res.organizations || []);
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      setError((err as Error).message || "Demo login failed");
     } finally {
       setIsLoggingIn(false);
     }

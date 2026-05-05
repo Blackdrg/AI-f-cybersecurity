@@ -29,17 +29,55 @@ const EnrichmentPortalPanel = React.lazy(() =>
   import('../components/EnrichmentPortalPanel').catch(() => ({ default: () => <Box>Component unavailable</Box> }))
 );
 
+interface Organization {
+  org_id: string;
+  name: string;
+  subscription_tier: string;
+}
+
+interface System {
+  id: string;
+  name: string;
+  status: string;
+  uptime: number;
+}
+
+interface Policy {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  enabled: boolean;
+}
+
+interface Threat {
+  type: string;
+  severity: string;
+  timestamp: string;
+}
+
+interface RiskMetrics {
+  critical: number;
+  high: number;
+  medium: number;
+  resolved: number;
+}
+
+interface ComplianceData {
+  overallScore: number;
+}
+
 const AdminPanel = () => {
-  const [orgs, setOrgs] = useState([]);
-  const [activeOrg, setActiveOrg] = useState(null);
+  const [orgs, setOrgs] = useState<Organization[]>([]);
+  const [activeOrg, setActiveOrg] = useState<Organization | null>(null);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [activeTab, setActiveTab] = useState(0);
-  const [policies, setPolicies] = useState([]);
-  const [systems, setSystems] = useState([]);
-  const [complianceData, setComplianceData] = useState({});
-  const [threats, setThreats] = useState([]);
-  const [riskMetrics, setRiskMetrics] = useState({});
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [systems, setSystems] = useState<System[]>([]);
+  const [complianceData, setComplianceData] = useState<ComplianceData>({} as ComplianceData);
+  const [threats, setThreats] = useState<Threat[]>([]);
+  const [riskMetrics, setRiskMetrics] = useState<RiskMetrics>({} as RiskMetrics);
   const [darkMode, setDarkMode] = useState(true);
   const [intelligenceTimeframe, setIntelligenceTimeframe] = useState('24h');
 
@@ -103,7 +141,7 @@ const handleTabChange = (event: any, newValue: any) => {
         </Typography>
         <Grid container spacing={2}>
           {systems.map((sys) => (
-            <Grid xs={12} sm={6} md={3} key={sys.id}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={sys.id}>
               <Paper sx={{ p: 2, bgcolor: 'background.paper' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">{sys.name}</Typography>
@@ -194,7 +232,7 @@ const handleTabChange = (event: any, newValue: any) => {
           <Shield color="primary" /> Compliance Status
         </Typography>
         <Grid container spacing={2}>
-          <Grid xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Paper sx={{ p: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>Overall Compliance Score</Typography>
               <Typography variant="h3" sx={{ color: '#10b981', mb: 1 }}>
@@ -214,7 +252,7 @@ const handleTabChange = (event: any, newValue: any) => {
               />
             </Paper>
           </Grid>
-          <Grid xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Paper sx={{ p: 2, height: '100%' }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>Recent Violations</Typography>
               {threats.slice(0, 5).map((t, i) => (
@@ -240,7 +278,7 @@ const handleTabChange = (event: any, newValue: any) => {
           <TrendingUp color="primary" /> Risk Analytics
         </Typography>
         <Grid container spacing={2}>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ bgcolor: 'error.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="caption">Critical Risks</Typography>
@@ -248,7 +286,7 @@ const handleTabChange = (event: any, newValue: any) => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ bgcolor: 'warning.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="caption">High Risks</Typography>
@@ -256,7 +294,7 @@ const handleTabChange = (event: any, newValue: any) => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ bgcolor: 'info.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="caption">Medium Risks</Typography>
@@ -264,7 +302,7 @@ const handleTabChange = (event: any, newValue: any) => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ bgcolor: 'success.light', color: 'white' }}>
               <CardContent>
                 <Typography variant="caption">Resolved</Typography>
@@ -281,30 +319,33 @@ const handleTabChange = (event: any, newValue: any) => {
     <Box>
       <Typography variant="h4" gutterBottom>Admin Dashboard</Typography>
       <Grid container spacing={3}>
-        <Grid xs={12} md={3}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom><Business /> Organizations</Typography>
             <List>
               {orgs.map(org => (
                 <ListItem 
-                  button 
                   key={org.org_id} 
-                  selected={activeOrg?.org_id === org.org_id}
                   onClick={() => setActiveOrg(org)}
+                  sx={{ 
+                    cursor: 'pointer',
+                    bgcolor: activeOrg?.org_id === org.org_id ? 'action.selected' : 'transparent',
+                    '&:hover': { bgcolor: 'action.hover' }
+                  }}
                 >
                   <ListItemText primary={org.name} secondary={org.subscription_tier} />
                 </ListItem>
               ))}
-              <ListItem button>
+              <ListItem sx={{ cursor: 'pointer' }}>
                 <ListItemText primary="+ Create New Org" sx={{ color: 'primary.main' }} />
               </ListItem>
             </List>
           </Paper>
         </Grid>
 
-        <Grid xs={12} md={9}>
+        <Grid size={{ xs: 12, md: 9 }}>
           <Grid container spacing={3}>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Paper sx={{ p: 2 }}>
                 <Typography variant="h6" gutterBottom><People /> Organization Members</Typography>
                 <Table size="small">
@@ -324,7 +365,7 @@ const handleTabChange = (event: any, newValue: any) => {
               </Paper>
             </Grid>
 
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Paper sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="h6"><VpnKey /> API Keys</Typography>
@@ -342,7 +383,7 @@ const handleTabChange = (event: any, newValue: any) => {
               </Paper>
             </Grid>
 
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Paper sx={{ p: 2 }}>
                 <Typography variant="h6" gutterBottom><Receipt /> Billing & Invoices</Typography>
                 <Box sx={{ display: 'flex', gap: 4, mb: 2 }}>
@@ -451,9 +492,9 @@ const handleTabChange = (event: any, newValue: any) => {
           <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
 <OperatorWorkflowPanel 
                recognitionResult={null}
-               onRetry={(adjustments: any) => console.log('Retry requested:', adjustments)}
-               onOverride={(data: any) => console.log('Override requested:', data)}
-               onEscalate={(data: any) => console.log('Escalation requested:', data)}
+               onRetry={async (adjustments: any) => console.log('Retry requested:', adjustments)}
+               onOverride={async (data: any) => console.log('Override requested:', data)}
+               onEscalate={async (data: any) => console.log('Escalation requested:', data)}
              />
           </React.Suspense>
         </Box>
@@ -475,7 +516,7 @@ const handleTabChange = (event: any, newValue: any) => {
           <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
 <EnrichmentPortalPanel
                personId={activeOrg?.org_id || null}
-               onEnrichmentComplete={(results) => console.log('Enrichment complete:', results)}
+               onEnrichmentComplete={async (results: any) => console.log('Enrichment complete:', results)}
                onAlertAction={(alert: any, action: any) => console.log('Alert action:', alert, action)}
              />
           </React.Suspense>
@@ -488,14 +529,14 @@ const handleTabChange = (event: any, newValue: any) => {
               <Typography variant="h6" gutterBottom>
                 <BugReport /> Deepfake & Anti-Spoof
               </Typography>
-              <Grid container spacing={2}>
-                <Grid xs={12} md={4}>
+                <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <Paper sx={{ p: 2, bgcolor: 'error.light' }}>
                     <Typography variant="h6" sx={{ color: 'white' }}>{threats.length} Active Threats</Typography>
                     <Typography variant="body2" sx={{ color: 'white', opacity: 0.8 }}>Blocked in last 24h</Typography>
                   </Paper>
                 </Grid>
-                <Grid xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>Detection Sensitivity</Typography>
                     <Select fullWidth size="small" defaultValue="high">
@@ -505,7 +546,7 @@ const handleTabChange = (event: any, newValue: any) => {
                     </Select>
                   </Paper>
                 </Grid>
-                <Grid xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>3D Mask Detection</Typography>
                     <FormControlLabel control={<Switch defaultChecked />} label="Enable geometric analysis" />
@@ -522,19 +563,19 @@ const handleTabChange = (event: any, newValue: any) => {
             <CardContent>
               <Typography variant="h6" gutterBottom><Key /> Identity Tokens</Typography>
               <Grid container spacing={2}>
-                <Grid xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <Paper sx={{ p: 2, textAlign: 'center' }}>
                     <Typography variant="h4" color="primary">1,247</Typography>
                     <Typography variant="body2" color="text.secondary">Active Tokens</Typography>
                   </Paper>
                 </Grid>
-                <Grid xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'white' }}>
                     <Typography variant="h4">2,156</Typography>
                     <Typography variant="body2">DIDs Created</Typography>
                   </Paper>
                 </Grid>
-                <Grid xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light', color: 'white' }}>
                     <Typography variant="h4">48</Typography>
                     <Typography variant="body2">Revoked Today</Typography>
@@ -551,7 +592,7 @@ const handleTabChange = (event: any, newValue: any) => {
             <CardContent>
               <Typography variant="h6" gutterBottom><Settings /> Console Settings</Typography>
               <Grid container spacing={3}>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>System Mode</Typography>
                     <FormControlLabel
@@ -566,7 +607,7 @@ const handleTabChange = (event: any, newValue: any) => {
                     />
                   </Paper>
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>Forensic Verification</Typography>
                     <Button variant="contained" startIcon={<History />} fullWidth sx={{ mb: 2 }}>

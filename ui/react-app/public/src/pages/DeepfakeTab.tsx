@@ -13,9 +13,32 @@ import {
 } from '@mui/icons-material';
 import API from '../services/api';
 
+interface DeepfakeThreat {
+  id: string;
+  type: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  confidence: number;
+  target: string;
+  source_ip: string;
+  timestamp: string;
+  method: string;
+  artifacts: string[];
+  action: 'blocked' | 'challenged' | 'denied' | 'flagged';
+}
+
+interface DeepfakeStats {
+  total_threats?: number;
+  blocked?: number;
+  challenged?: number;
+  denied?: number;
+  flagged?: number;
+  detection_rate?: number;
+  false_positive_rate?: number;
+}
+
 function DeepfakeTab() {
-  const [threats, setThreats] = useState([]);
-  const [stats, setStats] = useState({});
+  const [threats, setThreats] = useState<DeepfakeThreat[]>([]);
+  const [stats, setStats] = useState<DeepfakeStats>({});
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
@@ -145,7 +168,7 @@ function DeepfakeTab() {
 
       {/* Stats Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'error.main', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -158,7 +181,7 @@ function DeepfakeTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -171,7 +194,7 @@ function DeepfakeTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -184,7 +207,7 @@ function DeepfakeTab() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card sx={{ bgcolor: 'info.main', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -201,7 +224,7 @@ function DeepfakeTab() {
 
       <Grid container spacing={3}>
         {/* Live Threat Feed */}
-        <Grid xs={12} lg={8}>
+        <Grid size={{ xs: 12, lg: 8 }}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -276,7 +299,7 @@ bgcolor: `${getSeverityColor(threat.severity)}22`,
         </Grid>
 
         {/* Detection Methods */}
-        <Grid xs={12} lg={4}>
+        <Grid size={{ xs: 12, lg: 4 }}>
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>Detection Methods</Typography>

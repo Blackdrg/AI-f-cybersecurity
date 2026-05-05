@@ -5,13 +5,13 @@ import { PersonAdd, CloudUpload, CheckCircle, Error } from '@mui/icons-material'
 
 const EnrollmentForm = () => {
     const [name, setName] = useState('');
-    const [images, setImages] = useState(null);
+    const [images, setImages] = useState<FileList | null>(null);
     const [consent, setConsent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
-    const [severity, setSeverity] = useState('success');
+    const [severity, setSeverity] = useState<'success' | 'error'>('success');
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!images || !consent) return;
 
@@ -30,7 +30,7 @@ const EnrollmentForm = () => {
             });
             setMessage(`Enrolled successfully: ${response.data.person_id}`);
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             const errorMessage = error.response?.data?.detail || 'Enrollment failed';
             setMessage(errorMessage);
             setSeverity('error');
@@ -46,24 +46,24 @@ const EnrollmentForm = () => {
             </Typography>
 
             <Grid container spacing={4}>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                     <Card sx={{ p: 3 }}>
                         <CardContent>
                             <form onSubmit={handleSubmit}>
                                 <Grid container spacing={3}>
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <TextField
                                             fullWidth
                                             label="Full Name"
                                             variant="outlined"
                                             value={name}
-                                            onChange={(e) => setName(e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                                             required
                                             sx={{ mb: 2 }}
                                         />
                                     </Grid>
 
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Box sx={{
                                             border: '2px dashed rgba(0, 188, 212, 0.5)',
                                             borderRadius: '16px',
@@ -74,7 +74,7 @@ const EnrollmentForm = () => {
                                             '&:hover': {
                                                 borderColor: '#00bcd4',
                                                 background: 'linear-gradient(145deg, rgba(0, 188, 212, 0.05), rgba(0, 188, 212, 0.02))',
-                                            }
+                                            },
                                         }}>
                                             <input
                                                 accept="image/*"
@@ -82,7 +82,7 @@ const EnrollmentForm = () => {
                                                 id="image-upload"
                                                 multiple
                                                 type="file"
-                                                onChange={(e) => setImages(e.target.files)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setImages(e.target.files)}
                                             />
                                             <label htmlFor="image-upload">
                                                 <IconButton component="span" sx={{ fontSize: '3rem', color: '#00bcd4' }}>
@@ -103,12 +103,12 @@ const EnrollmentForm = () => {
                                         </Box>
                                     </Grid>
 
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <FormControlLabel
                                             control={
                                                 <Checkbox
                                                     checked={consent}
-                                                    onChange={(e) => setConsent(e.target.checked)}
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConsent(e.target.checked)}
                                                     color="primary"
                                                     sx={{
                                                         '& .MuiSvgIcon-root': {
@@ -126,7 +126,7 @@ const EnrollmentForm = () => {
                                         />
                                     </Grid>
 
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Button
                                             type="submit"
                                             variant="contained"
@@ -161,7 +161,7 @@ const EnrollmentForm = () => {
                 </Grid>
 
                 {message && (
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Alert
                             severity={severity}
                             sx={{

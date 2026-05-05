@@ -9,7 +9,27 @@ import { AccountCircle, TrendingUp, Analytics } from '@mui/icons-material';
 import API from '../services/api';
 
 function BiasReportTab() {
-  const [biasData, setBiasData] = useState(null);
+  interface BiasData {
+    summary: {
+      totalAssessments: number;
+      overallFairnessScore: number;
+      groupsAnalyzed: number;
+    };
+    groups: GroupData[];
+  }
+  
+  interface GroupData {
+    group: string;
+    groupSize: number;
+    truePositiveRate: number;
+    falsePositiveRate: number;
+    trueNegativeRate: number;
+    falseNegativeRate: number;
+    accuracy: number;
+    demographicParityDifference: number;
+  }
+
+  const [biasData, setBiasData] = useState<BiasData | null>(null);
   const [timeframe, setTimeframe] = useState('30d');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -116,11 +136,11 @@ function BiasReportTab() {
     }
   };
 
-const handleChangePage = (event: any, newPage: any) => {
-     setPage(newPage);
-   };
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
 
-  const handleChangeRowsPerPage = (event) => {
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
@@ -159,7 +179,7 @@ const handleChangePage = (event: any, newPage: any) => {
       {biasData && (
         <>
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ bgcolor: 'primary.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Overall Fairness Score</Typography>
@@ -169,7 +189,7 @@ const handleChangePage = (event: any, newPage: any) => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Total Assessments</Typography>
@@ -179,7 +199,7 @@ const handleChangePage = (event: any, newPage: any) => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ bgcolor: 'info.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Groups Analyzed</Typography>
@@ -189,7 +209,7 @@ const handleChangePage = (event: any, newPage: any) => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Max Disparity</Typography>
@@ -271,7 +291,7 @@ const handleChangePage = (event: any, newPage: any) => {
 
           {/* Key Findings */}
           <Grid container spacing={2}>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>Key Findings</Typography>
@@ -289,7 +309,7 @@ const handleChangePage = (event: any, newPage: any) => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>Metrics Distribution</Typography>

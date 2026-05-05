@@ -9,7 +9,24 @@ import {
   Analytics, AccountCircle, BarChart
 } from '@mui/icons-material';
 
-const ExplainableAIPanel = ({ explanation }) => {
+interface Factor {
+  name: string;
+  contribution: number;
+  confidence: number;
+}
+
+interface Explanation {
+  summary?: string;
+  factors?: Factor[];
+  metrics?: Record<string, unknown>;
+  decisions?: Record<string, unknown>;
+}
+
+interface ExplainableAIPanelProps {
+  explanation?: Explanation;
+}
+
+const ExplainableAIPanel: React.FC<ExplainableAIPanelProps> = ({ explanation }) => {
   if (!explanation) {
     return (
       <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
@@ -42,8 +59,8 @@ const ExplainableAIPanel = ({ explanation }) => {
             <ShowChart color="primary" /> Factor Contributions
           </Typography>
           <Grid container spacing={2}>
-            {factors?.map((factor, idx) => (
-              <Grid item xs={12} sm={6} md={4} key={idx}>
+            {factors?.map((factor: Factor, idx: number) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
                 <Paper sx={{ p: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="subtitle2">{factor.name}</Typography>
@@ -85,7 +102,7 @@ const ExplainableAIPanel = ({ explanation }) => {
             <FilterCenterFocus color="primary" /> Visual Attribution Map
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Paper sx={{ 
                 p: 1, 
                 height: 200, 
@@ -132,7 +149,7 @@ const ExplainableAIPanel = ({ explanation }) => {
                 </Typography>
               </Paper>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper sx={{ p: 2, height: '100%' }}>
                 <Typography variant="subtitle2" gutterBottom>Key Regions</Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -166,8 +183,8 @@ const ExplainableAIPanel = ({ explanation }) => {
             <CompareArrows color="primary" /> Counterfactual Analysis
           </Typography>
           <Grid container spacing={2}>
-            {["Better lighting (+20%)", "Optimal angle (15\u00b0)", "Higher resolution", "No glasses"].map((scenario, idx) => (
-              <Grid item xs={12} sm={6} key={idx}>
+            {["Better lighting (+20%)", "Optimal angle (15°)", "Higher resolution", "No glasses"].map((scenario: string, idx: number) => (
+              <Grid size={{ xs: 12, sm: 6 }} key={idx}>
                 <Paper sx={{ p: 2, bgcolor: 'action.hover' }}>
                   <Typography variant="body2" color="text.secondary">
                     If {scenario.toLowerCase()}...
@@ -192,7 +209,7 @@ const ExplainableAIPanel = ({ explanation }) => {
             <AccountCircle color="primary" /> Bias Detection
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Paper sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>Demographic Fairness</Typography>
                 <Table size="small">
@@ -223,7 +240,7 @@ const ExplainableAIPanel = ({ explanation }) => {
                 </Table>
               </Paper>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Paper sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>Equalized Odds</Typography>
                 <Box sx={{ mt: 2 }}>

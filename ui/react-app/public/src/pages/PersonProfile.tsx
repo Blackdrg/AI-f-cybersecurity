@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Paper, Grid, Avatar, 
   List, ListItem, ListItemText, ListItemIcon,
-  Divider, Chip, CircularProgress
+  Divider, Chip, CircularProgress, Button
 } from '@mui/material';
 import { 
   AccessTime, CameraAlt, LocationOn, 
@@ -10,10 +10,23 @@ import {
   MergeType, CallSplit
 } from '@mui/icons-material';
 import API from '../services/api';
+import { Person } from '../types';
 
-const PersonProfile = ({ personId }) => {
-  const [person, setPerson] = useState(null);
-  const [timeline, setTimeline] = useState([]);
+interface RecognitionEvent {
+  event_id: string;
+  camera_name: string;
+  camera_location: string;
+  timestamp: string;
+  confidence_score: number;
+}
+
+interface PersonProfileProps {
+  personId: string;
+}
+
+const PersonProfile = ({ personId }: PersonProfileProps) => {
+  const [person, setPerson] = useState<Person | null>(null);
+  const [timeline, setTimeline] = useState<RecognitionEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
 
@@ -37,7 +50,7 @@ const PersonProfile = ({ personId }) => {
     }
   };
 
-  const handleMerge = async (targetId) => {
+  const handleMerge = async (targetId: string) => {
     try {
       await API.post(`/api/identities/merge?source_id=${personId}&target_id=${targetId}`);
       // Refresh or redirect
@@ -52,7 +65,7 @@ const PersonProfile = ({ personId }) => {
   return (
     <Box>
       <Grid container spacing={3}>
-        <Grid xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 3, textAlign: 'center' }}>
             <Avatar 
               sx={{ width: 120, height: 120, mx: 'auto', mb: 2, bgcolor: 'primary.main' }}
@@ -62,8 +75,8 @@ const PersonProfile = ({ personId }) => {
             <Typography variant="h5">{person.name || 'Unknown'}</Typography>
             <Typography color="text.secondary" gutterBottom>ID: {person.person_id.slice(0, 8)}</Typography>
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 1 }}>
-              <Chip label={person.gender || 'Unknown'} size="small" />
-              <Chip label={`${person.age || '?'} years`} size="small" />
+            <Chip label={(person as any).gender || 'Unknown'} size="small" />
+            <Chip label={`${(person as any).age || '?'} years`} size="small" />
             </Box>
             <Divider sx={{ my: 3 }} />
             <List dense>
@@ -100,7 +113,7 @@ const PersonProfile = ({ personId }) => {
           </Paper>
         </Grid>
 
-        <Grid xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom><AccessTime /> Recognition Timeline</Typography>
             <List>

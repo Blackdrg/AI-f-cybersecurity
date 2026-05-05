@@ -26,7 +26,7 @@ interface AppContentProps {
 }
 
 function AppContent(): JSX.Element {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
     <Box sx={{ minHeight: '100vh' }}>
@@ -36,7 +36,7 @@ function AppContent(): JSX.Element {
         user.role === 'admin' && !localStorage.getItem('setup_complete') ? (
           <SetupWizard onComplete={() => localStorage.setItem('setup_complete', 'true')} />
         ) : (
-          <Dashboard onLogout={logout} user={user} />
+          <Dashboard />
         )
       )}
     </Box>

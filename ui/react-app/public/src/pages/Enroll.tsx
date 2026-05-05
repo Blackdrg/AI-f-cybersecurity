@@ -9,14 +9,14 @@ import { enroll } from '../services/api';
 
 const EnrollPage = () => {
   const [name, setName] = useState('');
-  const [files, setFiles] = useState<any[]>([]);
-  const [previews, setPreviews] = useState<any[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [consent, setConsent] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [message, setMessage] = useState<any>(null);
-  const [error, setError] = useState<any>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFileChange = (e: any) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       setFiles([...files, ...newFiles]);
@@ -26,13 +26,13 @@ const EnrollPage = () => {
     }
   };
 
-const removeFile = (index: any) => {
-     setFiles(files.filter((_, i) => i !== index));
-     URL.revokeObjectURL(previews[index]);
-     setPreviews(previews.filter((_, i) => i !== index));
-   };
+  const removeFile = (index: number) => {
+    setFiles(files.filter((_, i) => i !== index));
+    URL.revokeObjectURL(previews[index]);
+    setPreviews(previews.filter((_, i) => i !== index));
+  };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (files.length === 0) {
       setError("Please select at least one image");
@@ -43,8 +43,8 @@ const removeFile = (index: any) => {
       return;
     }
 
-setIsProcessing(true);
-     setError(null);
+    setIsProcessing(true);
+    setError(null);
     setMessage(null);
 
     try {
@@ -55,7 +55,7 @@ setIsProcessing(true);
       previews.forEach(p => URL.revokeObjectURL(p));
       setPreviews([]);
       setConsent(false);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Failed to enroll person");
     } finally {
       setIsProcessing(false);
@@ -68,18 +68,18 @@ setIsProcessing(true);
       <Paper sx={{ p: 4 }}>
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Full Name"
                 value={name}
-                onChange={(e: any) => setName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                 required
                 disabled={isProcessing}
               />
             </Grid>
             
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle1" gutterBottom>Upload Images (Multiple recommended)</Typography>
               <Button
                 variant="outlined"
@@ -94,7 +94,7 @@ setIsProcessing(true);
               
               <Grid container spacing={1} sx={{ mt: 1 }}>
                 {previews.map((preview, index) => (
-                  <Grid key={index} xs={4} sm={3} md={2}>
+                  <Grid size={{ xs: 4, sm: 3, md: 2 }} key={index}>
                     <Box sx={{ position: 'relative', pt: '100%' }}>
                       <img 
                         src={preview} 
@@ -113,7 +113,7 @@ setIsProcessing(true);
                   </Grid>
                 ))}
                 {files.length === 0 && (
-                  <Grid xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'background.default', borderRadius: 1, opacity: 0.5 }}>
                       <ImageIcon sx={{ fontSize: 48, mb: 1 }} />
                       <Typography>No images selected</Typography>
@@ -123,21 +123,21 @@ setIsProcessing(true);
               </Grid>
             </Grid>
             
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <FormControlLabel
                 control={
-                  <Checkbox 
-                    checked={consent} 
-                    onChange={(e: any) => setConsent(e.target.checked)} 
-                    disabled={isProcessing}
-                    required
-                  />
+                   <Checkbox 
+                     checked={consent} 
+                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConsent(e.target.checked)} 
+                     disabled={isProcessing}
+                     required
+                   />
                 }
                 label="I consent to the collection and processing of my biometric data for identification purposes. ✅"
               />
             </Grid>
             
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
               {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
               

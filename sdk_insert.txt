@@ -1,0 +1,65 @@
+---
+
+## 📦 Client SDKs
+
+Official client SDKs for seamless integration.
+
+### Python SDK
+
+**Package:** `backend/sdk/python/` + `backend/sdk/python/ai_f_sdk/`
+
+**Installation:**
+```bash
+pip install ai-f-sdk
+```
+
+**Quick Start:**
+```python
+from ai_f_sdk import FaceRecognitionClient
+
+client = FaceRecognitionClient(
+    base_url="https://api.example.com",
+    token=jwt_token
+)
+
+person_id = await client.enroll(
+    name="John Doe",
+    images=[img1, img2, img3],
+    voice_files=[voice1],
+    consent=True
+)
+
+result = await client.recognize(
+    image=query_image,
+    top_k=5,
+    threshold=0.7,
+    enable_spoof_check=True
+)
+```
+
+**Features:** Type-safe, async/await, auto-retry, rate limiting, ZKP support, connection pooling
+
+**Structure:**
+```
+ai_f_sdk/
+├── __init__.py       # Main client
+├── client.py        # HTTP + WebSocket
+├── exceptions.py    # SDK exceptions
+├── models.py       # Pydantic models
+└── utils.py        # Helpers (image encoding, ZKP)
+```
+
+### Node.js SDK (Planned)
+
+**Location:** `backend/sdk/nodejs/` - Promise-based API, browser + Node, WebSocket streaming.
+
+### Go SDK (Planned)
+
+**Location:** `backend/sdk/go/` - Native Go client with context, gRPC-first design.
+
+**SDK Development Guidelines:**
+1. Reference OpenAPI spec at `/api/openapi.json`
+2. Bearer token auth with client-side refresh
+3. Respect `X-RateLimit-Remaining`; exponential backoff on 429
+4. Map HTTP status to language exceptions
+5. WebSocket binary frames for streaming

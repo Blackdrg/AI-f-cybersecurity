@@ -7,9 +7,10 @@ import {
 } from '@mui/material';
 import { CameraAlt, VideocamOff, Add, Settings, Delete } from '@mui/icons-material';
 import API from '../services/api';
+import { Camera } from '../types';
 
 const CameraManagement = () => {
-  const [cameras, setCameras] = useState([]);
+  const [cameras, setCameras] = useState<Camera[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCamera, setNewCamera] = useState({ name: '', rtsp_url: '', location: '' });
 
@@ -53,7 +54,7 @@ const CameraManagement = () => {
 
       <Grid container spacing={3}>
         {cameras.length > 0 ? cameras.map(camera => (
-          <Grid xs={12} md={6} lg={4} key={camera.camera_id}>
+          <Grid size={{ xs: 12, md: 6, lg: 4 }} key={camera.camera_id}>
             <Card>
               <Box sx={{ position: 'relative', bgcolor: '#000', pt: '56.25%' }}>
                 <Box 
@@ -91,7 +92,7 @@ const CameraManagement = () => {
             </Card>
           </Grid>
         )) : (
-          <Grid xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Paper sx={{ p: 8, textAlign: 'center', bgcolor: 'background.default', border: '2px dashed #333' }}>
               <CameraAlt sx={{ fontSize: 64, mb: 2, opacity: 0.2 }} />
               <Typography variant="h6" color="text.secondary">No cameras configured</Typography>

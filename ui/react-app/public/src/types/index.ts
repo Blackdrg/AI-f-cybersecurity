@@ -8,7 +8,5 @@ export * from './Plan';
 export * from './RecognitionResult';
 export * from './Webhook';
 export * from './Plugin';
-// Existing
-export * from '../types';
-export type { Severity, SnackbarState, RecognitionError, ErrorState } from './Snackbar';
+export * from './Snackbar';
 

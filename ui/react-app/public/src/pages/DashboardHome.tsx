@@ -33,7 +33,7 @@ const DashboardHome = () => {
   const [threats, setThreats] = useState([]);
   const [timeframe, setTimeframe] = useState('24h');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [activeIntelligenceTab, setActiveIntelligenceTab] = useState('overview');
   const [selectedRecognition, setSelectedRecognition] = useState(null);
 
@@ -65,8 +65,8 @@ const DashboardHome = () => {
       }
       
       setError(null);
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -209,7 +209,7 @@ const DashboardHome = () => {
         <>
           {/* Key Metrics Grid */}
           <Grid container spacing={2} className="metrics-grid">
-            <Grid xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <Card className="metric-card metric-blue">
                 <div className="metric-icon-box blue">
                   <People />
@@ -219,7 +219,7 @@ const DashboardHome = () => {
                 <Typography className="metric-change positive">+8.2%</Typography>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <Card className="metric-card metric-green">
                 <div className="metric-icon-box green">
                   <CameraAlt />
@@ -229,7 +229,7 @@ const DashboardHome = () => {
                 <Typography className="metric-change positive">+12.5%</Typography>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <Card className="metric-card metric-purple">
                 <div className="metric-icon-box purple">
                   <Security />
@@ -239,7 +239,7 @@ const DashboardHome = () => {
                 <Typography className="metric-change">{displaySessions.length} locations</Typography>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <Card className="metric-card metric-orange">
                 <div className="metric-icon-box orange">
                   <Assessment />
@@ -249,7 +249,7 @@ const DashboardHome = () => {
                 <Typography className="metric-change positive">+0.1%</Typography>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <Card className="metric-card metric-cyan">
                 <div className="metric-icon-box cyan">
                   <Timeline />
@@ -259,7 +259,7 @@ const DashboardHome = () => {
                 <Typography className="metric-change positive">Calibrated</Typography>
               </Card>
             </Grid>
-            <Grid xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <Card className="metric-card metric-red">
                 <div className="metric-icon-box red">
                   <BugReport />
@@ -273,7 +273,7 @@ const DashboardHome = () => {
 
           {/* Charts Grid */}
           <Grid container spacing={2} className="charts-grid">
-            <Grid xs={12} lg={6}>
+            <Grid size={{ xs: 12, lg: 6 }}>
               <Card className="chart-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -291,7 +291,7 @@ const DashboardHome = () => {
                 </div>
               </Card>
             </Grid>
-            <Grid xs={12} lg={6}>
+            <Grid size={{ xs: 12, lg: 6 }}>
               <Card className="chart-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -323,7 +323,7 @@ const DashboardHome = () => {
                 </div>
               </Card>
             </Grid>
-            <Grid xs={12} lg={6}>
+            <Grid size={{ xs: 12, lg: 6 }}>
               <Card className="chart-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -350,7 +350,7 @@ const DashboardHome = () => {
                 </div>
               </Card>
             </Grid>
-            <Grid xs={12} lg={6}>
+            <Grid size={{ xs: 12, lg: 6 }}>
               <Card className="chart-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -384,7 +384,7 @@ const DashboardHome = () => {
 
           {/* Detailed Tables */}
           <Grid container spacing={2} className="bottom-section">
-            <Grid xs={12} lg={8}>
+            <Grid size={{ xs: 12, lg: 8 }}>
               <Card className="table-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -421,7 +421,7 @@ const DashboardHome = () => {
                 </div>
               </Card>
             </Grid>
-            <Grid xs={12} lg={4}>
+            <Grid size={{ xs: 12, lg: 4 }}>
               <Card className="table-card">
                 <div className="card-header">
                   <div className="card-title">
@@ -479,9 +479,9 @@ const DashboardHome = () => {
         <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
           <OperatorWorkflowPanel
             recognitionResult={selectedRecognition}
-            onRetry={() => fetchDashboardData()}
-            onOverride={() => {}}
-            onEscalate={() => {}}
+            onRetry={async () => fetchDashboardData()}
+            onOverride={async () => {}}
+            onEscalate={async () => {}}
           />
         </React.Suspense>
       )}

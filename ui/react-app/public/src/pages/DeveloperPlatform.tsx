@@ -46,7 +46,7 @@ axios.post(url, data, config)
       <Typography variant="h4" gutterBottom>Developer Platform</Typography>
       
       <Grid container spacing={3}>
-        <Grid xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom><Code /> API Playground</Typography>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
@@ -93,20 +93,20 @@ axios.post(url, data, config)
           </Paper>
         </Grid>
 
-        <Grid xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom><Description /> Documentation</Typography>
             <List dense>
-              <ListItem button>
+              <ListItem component="button">
                 <ListItemText primary="Authentication Guide" secondary="How to use Bearer tokens" />
               </ListItem>
-              <ListItem button>
+              <ListItem component="button">
                 <ListItemText primary="API Reference" secondary="Full list of endpoints" />
               </ListItem>
-              <ListItem button>
+              <ListItem component="button">
                 <ListItemText primary="SDK Installation" secondary="Python, JS, Go" />
               </ListItem>
-              <ListItem button>
+              <ListItem component="button">
                 <ListItemText primary="Rate Limits" secondary="Understanding quotas" />
               </ListItem>
             </List>

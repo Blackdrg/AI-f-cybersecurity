@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-   Accordion, AccordionSummary, AccordionDetails, Alert as MuiAlert,
-   Tabs, Tab, Badge, CircularProgress, TextField,
+  Accordion, AccordionSummary, AccordionDetails, Alert as MuiAlert,
+  Tabs, Tab, Badge, CircularProgress, TextField,
   Select, MenuItem, FormControl, InputLabel, Stack,
-  SelectChangeEvent
+  SelectChangeEvent,
+  // Missing imports added below
+  Card, CardContent, Box, Typography, Paper, Chip, Button,
+  Table, TableHead, TableRow, TableCell, TableBody,
+  Grid, LinearProgress
 } from '@mui/material';
 import {
   Timeline, Warning, TrendingUp, FilterList,
@@ -212,7 +216,7 @@ const DashboardIntelligencePanel: React.FC<DashboardIntelligencePanelProps> = ({
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                     <Box>
                       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        {alert.title || alert.type}
+                        {alert.title || 'Unknown Alert'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         {alert.message}
@@ -259,7 +263,7 @@ const DashboardIntelligencePanel: React.FC<DashboardIntelligencePanelProps> = ({
                     <Box sx={{ mt: 1 }}>
                       <Typography variant="caption" color="text.secondary">
                         Impact: {alert.metrics.affected_users || 0} users | 
-                        Confidence: {(alert.confidence * 100 || 0).toFixed(1)}%
+                        Confidence: {((alert.confidence ?? 0) * 100).toFixed(1)}%
                       </Typography>
                     </Box>
                   )}
