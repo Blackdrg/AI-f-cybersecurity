@@ -57,7 +57,18 @@ class ModelRegistry:
         session = self.sessions[model_name]
         inputs = {session.get_inputs()[0].name: input_data.astype(np.float32)}
         outputs = session.run(None, inputs)
-        return outputs[0][0]  # Squeeze batch/single output
+        output = outputs[0]
+        # Handle both scalar and array outputs
+        if isinstance(output, np.ndarray):
+            if output.ndim == 0:
+                return output
+            elif output.ndim == 1 and len(output) == 1:
+                return output[0]
+            elif output.ndim >= 2:
+                return output[0]  # Squeeze batch dim only
+            return output
+        # Scalar float/int
+        return output
 
 # Global production registry
 registry = ModelRegistry()

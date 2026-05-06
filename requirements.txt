@@ -29,5 +29,5 @@ scikit-learn>=1.4.0
 torch>=2.2.0
 torchvision>=0.17.0
 facenet-pytorch>=2.5.3
-insightface>=0.7.3
+# # insightface>=0.7.3  # Requires MSVC on Windows/Python 3.11; use ONNX models (export offline on Linux/Python 3.10)  # Requires MSVC on Windows/Python 3.11; use ONNX models (export offline on Linux/Python 3.10)
 onnxruntime-gpu>=1.17.0

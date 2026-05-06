@@ -21,6 +21,7 @@ class ChatResponse(BaseModel):
     response: str
     usage: Dict[str, int]
     status: str
+    model_used: str
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_completion(
@@ -70,7 +71,12 @@ async def chat_completion(
         )
 
         logger.info(f"AI chat for user {user['user_id']}: {len(request.messages)} msgs, {request.max_tokens} tokens")
-        return ChatResponse(response=response, usage=usage, status="success")
+        return ChatResponse(
+            response=response,
+            usage=usage,
+            status="success",
+            model_used=request.model
+        )
 
     except Exception as e:
         logger.error(f"AI chat error for {user['user_id']}: {e}")

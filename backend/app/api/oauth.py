@@ -108,6 +108,12 @@ async def oauth_callback(provider: str, request: Request):
     # Issue our platform's JWT token
     token = create_token(user_id=user_id, role='viewer')
     
-    # Redirect to frontend with token
+    # Get frontend URL and set cookie securely
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-    return RedirectResponse(f"{frontend_url}/auth/success?token={token}")
+    
+    # Redirect with token in httpOnly cookie (production mode)
+    redirect_response = RedirectResponse(url=f"{frontend_url}/auth/success")
+    from ..security import set_auth_cookie
+    set_auth_cookie(redirect_response, token, max_age=3600)
+    
+    return redirect_response

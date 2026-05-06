@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from typing import List
 from ..schemas import UserCreate, UserResponse
 from ..db.db_client import get_db
-from ..security import get_current_user, create_token
+from ..security import get_current_user, create_token, set_auth_cookie, clear_auth_cookie
 import uuid
 import os
 from datetime import datetime
@@ -75,6 +75,13 @@ async def delete_user(current_user=Depends(get_current_user)):
     return {"message": "User deleted successfully"}
 
 
+@router.post("/auth/logout")
+async def logout(response: Response):
+    """Logout and clear JWT cookie."""
+    clear_auth_cookie(response)
+    return {"message": "Successfully logged out"}
+
+
 @router.post("/auth/login")
 async def login(response: Response, email: str, password: str = ""):
     """Login and get JWT token.
@@ -105,15 +112,8 @@ async def login(response: Response, email: str, password: str = ""):
     if USE_HTTP_ONLY_COOKIE:
         # Production: Set httpOnly cookie for true XSS protection
         # Cookie is HttpOnly (not accessible to JavaScript), Secure (HTTPS only), SameSite=strict
-        response.set_cookie(
-            key="auth_token",
-            value=token,
-            httponly=True,  # Not accessible to JavaScript - true XSS protection
-            secure=True,   # HTTPS only
-            samesite="strict",  # CSRF protection
-            max_age=3600,  # 1 hour - matches JWT expiry
-            path="/",
-        )
+        set_auth_cookie(response, token, max_age=3600)
+        
         # Return info that httpOnly cookie is being used
         return {
             "access_token": "",

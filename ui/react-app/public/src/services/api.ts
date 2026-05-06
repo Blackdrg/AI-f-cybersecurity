@@ -27,10 +27,13 @@ const API: AxiosInstance = axios.create({
 API.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // In production with httpOnly cookie, the browser automatically sends the cookie
-    // We only need to handle the Authorization header fallback for legacy/API clients
-    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // No token in localStorage - relying on httpOnly cookie for XSS protection
+    // Dev mode fallback kept for backward compatibility
+    if (process.env.NODE_ENV === 'development') {
+      const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -54,31 +57,23 @@ API.interceptors.response.use(
 export const login = async (email: string, password: string): Promise<any> => {
   const res = await API.post(`/api/auth/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
 
-  // Check if server sets httpOnly cookie (production mode)
-  const useHttpOnlyCookie = res.headers['http-only-cookie'] === 'true' ||
-    res.data.use_http_only_cookie === true;
-
-  if (useHttpOnlyCookie) {
-    // Production: Token is in httpOnly cookie, not accessible to JavaScript
-    // No token storage needed - browser handles cookie automatically
+  // In production, httpOnly cookie is set automatically - no client-side token storage
+  if (res.data.use_http_only_cookie === true) {
+    // Production mode: Token is in httpOnly cookie, not accessible to JavaScript
     console.info('Using httpOnly cookie for auth (production mode)');
   } else if (res.data.access_token) {
-  // Development/legacy: Store token in sessionStorage (XSS resistant)
-  // sessionStorage is cleared on tab close, unlike localStorage
+    // Development mode: Store token in sessionStorage (less persistent than localStorage)
     sessionStorage.setItem("token", res.data.access_token);
-    sessionStorage.setItem("user", JSON.stringify(res.data.user));
-
-    // Also store in localStorage for backwards compatibility during transition
     localStorage.setItem("user", JSON.stringify(res.data.user));
   }
   return res.data;
 };
 
-// Logout function to clear tokens
+// Logout function to clear tokens and httpOnly cookie
 export const logout = () => {
   sessionStorage.removeItem("token");
-  sessionStorage.removeItem("user");
   localStorage.removeItem("user");
+  API.post('/api/auth/logout', {}, { withCredentials: true }).catch(() => {});
 };
 
 export const recognize = async (file: File, options: Record<string, any> = {}): Promise<any> => {

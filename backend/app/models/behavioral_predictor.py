@@ -95,6 +95,7 @@ class BehavioralPredictor:
         confidence = min(len(self.emotion_history) / self.sequence_length, 1.0)
         
         return {
+            'behavior': dominant,  # backwards compat
             'dominant_behavior': dominant,
             'behaviors': behaviors,
             'model_type': 'lstm_production',
@@ -112,8 +113,10 @@ class BehavioralPredictor:
         aggression = emotions.get('angry', 0) + emotions.get('disgust', 0)
         engagement = emotions.get('happy', 0) + emotions.get('surprise', 0)
         behaviors = {'fatigue': min(1.0, fatigue), 'aggression': min(1.0, aggression), 'engagement': min(1.0, engagement)}
+        dominant = max(behaviors, key=behaviors.get)
         return {
-            'dominant_behavior': max(behaviors, key=behaviors.get),
+            'behavior': dominant,  # backwards compat
+            'dominant_behavior': dominant,
             'behaviors': behaviors,
             'model_type': 'lstm_production',
             'lstm_status': 'implemented',

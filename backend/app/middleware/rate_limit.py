@@ -13,6 +13,8 @@ from typing import Optional, Callable, Tuple
 import logging
 import json
 
+from backend.app.security import get_encrypted_redis_client
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +28,7 @@ class RedisRateLimiter:
         self._mock_mode = redis_url == "redis://mock:6379"
 
     async def ensure_connected(self):
-        """Lazy connection establishment"""
+        """Lazy connection establishment with encrypted Redis"""
         if self.client is None:
             async with self._init_lock:
                 if self.client is None:
@@ -34,7 +36,7 @@ class RedisRateLimiter:
                         self.client = MockRedisClient()
                     else:
                         try:
-                            self.client = await redis.from_url(self.redis_url, decode_responses=True)
+                            self.client = await get_encrypted_redis_client(self.redis_url)
                         except Exception:
                             self.client = MockRedisClient()
 

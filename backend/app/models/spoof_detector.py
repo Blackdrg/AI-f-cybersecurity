@@ -67,8 +67,9 @@ class SpoofDetector:
         face_tensor = torch.from_numpy(face_resized).permute(2, 0, 1).float().unsqueeze(0) / 255.0
         
         if self.use_onnx:
-            # ONNX SpoofNet inference
-            spoof_prob = float(self.registry.infer_onnx('spoof_detector', face_tensor.numpy())[0])
+            # ONNX SpoofNet inference - infer_onnx returns scalar for single output models
+            output = self.registry.infer_onnx('spoof_detector', face_tensor.numpy())
+            spoof_prob = float(output[0]) if isinstance(output, np.ndarray) and output.ndim > 0 else float(output)
         else:
             # PyTorch fallback
             face_tensor = face_tensor.to(self.device)
@@ -95,7 +96,8 @@ class SpoofDetector:
         if self.use_onnx_deepfake:
             deepfake_tensor = cv2.resize(face_roi, (224, 224))
             deepfake_tensor = torch.from_numpy(deepfake_tensor).permute(2, 0, 1).float().unsqueeze(0) / 255.0
-            deepfake_prob = float(self.registry.infer_onnx('deepfake_detector', deepfake_tensor.numpy())[0])
+            output = self.registry.infer_onnx('deepfake_detector', deepfake_tensor.numpy())
+            deepfake_prob = float(output[0]) if isinstance(output, np.ndarray) and output.ndim > 0 else float(output)
         
         # Weighted: spoof 40%, deepfake 30%, heuristic 15%, LBP 15%
         lbp_score = self._compute_lbp_score(face_roi)

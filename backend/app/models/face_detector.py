@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import logging
+import os
 
 try:
     from insightface.app import FaceAnalysis
@@ -14,18 +15,58 @@ from .face_reconstructor import FaceReconstructor
 
 logger = logging.getLogger(__name__)
 
+# Model cache directory
+MODEL_CACHE_DIR = os.getenv('MODEL_CACHE_DIR', os.path.join(os.path.dirname(__file__), '../../../models/weights'))
+
+
+def _check_model_weights() -> bool:
+    """Check if actual model weights are available (not just mock)."""
+    if not INSIGHTFACE_AVAILABLE:
+        return False
+    
+    # Check for buffalo_l model files
+    buffalo_path = os.path.join(MODEL_CACHE_DIR, 'buffalo_l', 'det_10g.onnx')
+    arcface_path = os.path.join(MODEL_CACHE_DIR, 'w600k_r50.onnx')
+    
+    has_detector = os.path.exists(buffalo_path) or os.path.exists(os.path.join(MODEL_CACHE_DIR, 'buffalo_l.zip'))
+    has_embedder = os.path.exists(arcface_path)
+    
+    return has_detector or has_embedder
+
 
 class FaceDetector:
     def __init__(self):
-        if INSIGHTFACE_AVAILABLE:
+        self.has_real_weights = _check_model_weights()
+        
+        if INSIGHTFACE_AVAILABLE and self.has_real_weights:
             try:
-                self.app = FaceAnalysis(name='buffalo_l')
+                # Try to load from model cache directory
+                model_path = os.path.join(MODEL_CACHE_DIR, 'buffalo_l')
+                if os.path.exists(model_path):
+                    self.app = FaceAnalysis(name=model_path, root=MODEL_CACHE_DIR)
+                else:
+                    self.app = FaceAnalysis(name='buffalo_l')
+                
                 self.app.prepare(ctx_id=0, det_size=(640, 640))
+                logger.info("✓ FaceDetector: Using production InsightFace model (buffalo_l)")
             except Exception as e:
-                logger.warning(f"Failed to load InsightFace: {e}. Using mock detection.")
+                logger.warning(f"FaceDetector: Failed to load InsightFace model: {e}")
+                logger.warning("FaceDetector: Falling back to mock detection")
                 self.app = None
-        else:
+                self.has_real_weights = False
+        elif INSIGHTFACE_AVAILABLE and not self.has_real_weights:
+            logger.warning("=" * 70)
+            logger.warning("CRITICAL: FaceDetector initialized with MOCK weights")
+            logger.warning("Model weights not found in: " + MODEL_CACHE_DIR)
+            logger.warning("System CANNOT perform actual face recognition")
+            logger.warning("Run: python scripts/download_models.py")
+            logger.warning("=" * 70)
             self.app = None
+        else:
+            logger.warning("FaceDetector: InsightFace not installed. Using mock detection.")
+            logger.warning("Install: pip install insightface")
+            self.app = None
+        
         self.spoof_detector = SpoofDetector()
         self.reconstructor = FaceReconstructor()
 

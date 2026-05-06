@@ -123,31 +123,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedOrg = localStorage.getItem('organization');
-    const orgs = localStorage.getItem('organizations');
-    
-    if (storedUser) {
+    // Check auth state without reading token from localStorage (httpOnly cookie)
+    const checkAuth = async () => {
       try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        
-        if (orgs) {
-          const parsedOrgs = JSON.parse(orgs);
-          setOrganizations(parsedOrgs);
-          
-          if (storedOrg) {
-            const parsedOrg = JSON.parse(storedOrg);
-            setOrganization(parsedOrg);
-          } else if (parsedOrgs.length > 0) {
-            setOrganization(parsedOrgs[0]);
+        const res = await fetch('http://localhost:8000/api/users/me', {
+          credentials: 'include',  // Required for httpOnly cookies
+        });
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+          // Get orgs from local storage only (not auth-sensitive)
+          const storedOrgs = localStorage.getItem('organizations');
+          const storedOrg = localStorage.getItem('organization');
+          if (storedOrgs) {
+            const parsedOrgs = JSON.parse(storedOrgs);
+            setOrganizations(parsedOrgs);
+            if (storedOrg) {
+              const parsedOrg = JSON.parse(storedOrg);
+              setOrganization(parsedOrg);
+            } else if (parsedOrgs.length > 0) {
+              setOrganization(parsedOrgs[0]);
+            }
           }
         }
       } catch (e) {
-        console.error("Failed to parse stored auth data", e);
+        console.error("Auth check failed", e);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+    checkAuth();
   }, []);
 
   const hasPermission = useMemo(() => (permission: string): boolean => {
@@ -175,7 +180,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setOrganization(defaultOrg);
       localStorage.setItem('organization', JSON.stringify(defaultOrg));
     }
-    localStorage.setItem('user', JSON.stringify(userData));
+    // Non-auth data only in localStorage (httpOnly cookie handles auth)
     localStorage.setItem('organizations', JSON.stringify(orgsData));
   }, []);
 
@@ -183,12 +188,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     setOrganization(null);
     setOrganizations([]);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
     localStorage.removeItem('organization');
     localStorage.removeItem('organizations');
-    // Refresh to clear state and redirect to login via App.js
-    window.location.reload();
+    // Call backend logout to clear httpOnly cookie
+    fetch('http://localhost:8000/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    }).finally(() => {
+      window.location.reload();
+    });
   }, []);
 
   const value = useMemo(() => ({

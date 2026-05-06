@@ -188,8 +188,8 @@ def test_ai_assistant(auth_headers):
 
     response = client.post("/api/ai_assistant",
                            json=query_data, headers=auth_headers)
-    # AI assistant might return 404 if OpenAI isn't configured
-    assert response.status_code in [200, 404, 400, 401]
+    # AI assistant might return 404 if OpenAI isn't configured, or 403 if subscription required
+    assert response.status_code in [200, 403, 404, 400, 401]
     if response.status_code == 200:
         data = response.json()
         assert "response" in data

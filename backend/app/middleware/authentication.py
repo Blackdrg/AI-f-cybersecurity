@@ -9,6 +9,8 @@ import logging
 import redis.asyncio as redis
 from typing import Optional
 
+from backend.app.security import get_encrypted_redis_client
+
 logger = logging.getLogger(__name__)
 
 PUBLIC_PATHS = {"/health", "/api/health", "/api/version", "/docs", "/openapi.json", "/redoc", "/api/webhooks/stripe", "/api/webhooks/biometric-event"}
@@ -17,12 +19,18 @@ class MockRevocationStore:
     """Mock Redis store for tests and degraded operation."""
     def __init__(self):
         self.data = {}
+        self._call_log = []
     
     async def ping(self):
         return True
     
     async def setex(self, key, ttl, value):
-        self.data[key] = value
+        # Simulate encryption for consistency
+        if isinstance(value, str):
+            self.data[key] = value
+        else:
+            self.data[key] = str(value)
+        self._call_log.append(('setex', key, ttl))
     
     async def exists(self, key):
         return 1 if key in self.data else 0
@@ -31,7 +39,14 @@ class MockRevocationStore:
         return self.data.get(key)
     
     async def ttl(self, key):
-        return 3600 if key in self.data else -2
+        if key in self.data:
+            # Return remaining TTL (simplified)
+            return 3600
+        return -2
+    
+    async def delete(self, key):
+        if key in self.data:
+            del self.data[key]
     
     def pipeline(self):
         return MockPipeline(self)
@@ -71,13 +86,15 @@ class DistributedJWTRevocationStore:
         if self._initialized or self.client is not None:
             return
         try:
-            self.client = await redis.from_url(self.redis_url, decode_responses=True)
+            # Use encrypted Redis client for at-rest encryption
+            self.client = await get_encrypted_redis_client(self.redis_url)
             await self.client.ping()
             self._initialized = True
-            logger.info("JWT revocation store connected to Redis")
+            logger.info("JWT revocation store connected to Redis (encrypted)")
         except Exception as e:
             logger.warning("Redis connection failed: " + str(e))
-    
+            self.client = None
+      
     async def _ensure_client(self):
         if self._initialized and self.client is not None:
             return
@@ -86,9 +103,10 @@ class DistributedJWTRevocationStore:
             self._initialized = True
             return
         try:
-            self.client = await redis.from_url(self.redis_url, decode_responses=True)
+            self.client = await get_encrypted_redis_client(self.redis_url)
             await self.client.ping()
             self._initialized = True
+            logger.info("JWT revocation store connected to Redis (encrypted)")
         except Exception as e:
             logger.warning("Redis connection failed: " + str(e) + "; using mock mode.")
             self.client = MockRevocationStore()
