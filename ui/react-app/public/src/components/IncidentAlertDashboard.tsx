@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import {
-  Box, Typography, Paper, Grid, Card, CardContent,
+import { Box, Typography, Paper,  Card, CardContent,
   Table, TableBody, TableCell, TableHead, TableRow,
   Chip, Button, TextField,
   Select, MenuItem, FormControl, InputLabel, Badge,
   Alert, Dialog, DialogTitle, DialogContent,
   DialogActions, Stepper, Step, StepLabel,
   List, ListItem, ListItemText,
-  ListItemIcon, Divider, Snackbar, Tabs, Tab
-} from '@mui/material';
+  ListItemIcon, Divider, Snackbar, Tabs, Tab } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   Warning, Error as ErrorIcon, CheckCircle,
   Info, BugReport, Security, Timeline, Flag,
@@ -17,15 +16,12 @@ import {
   Notifications, Settings, Refresh, Search,
   FilterList, BarChart, AccountTree
 } from '@mui/icons-material';
-import type { Severity, SnackbarState, Alert } from '../types';
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip as RechartsTooltip, ResponsiveContainer,
-  PieChart, Pie, Cell
-} from 'recharts';
+import type { Severity, SnackbarState, Alert as AlertType } from '../types';
+import * as Recharts from 'recharts';
+const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } = Recharts as any;
 import API from '../services/api';
 
-interface ExtendedAlert extends Alert {
+interface ExtendedAlert extends AlertType {
   type: string;
   source: string;
   status: string;
@@ -70,7 +66,7 @@ export const IncidentAlertDashboard = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [incidentWorkflowOpen, setIncidentWorkflowOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' as Severity });
+  const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' as any });
 
   const severityConfig: Record<string, { color: string; label: string; icon: ReactNode }> = {
     critical: { color: '#ef4444', label: 'Critical', icon: <ErrorIcon /> },
@@ -104,7 +100,7 @@ export const IncidentAlertDashboard = () => {
       const backendAlerts = res.data || [];
       const demoAlerts = generateDemoAlerts();
       setAlerts(backendAlerts.length > 0 ? backendAlerts : demoAlerts);
-    } catch (err) {
+    } catch (err: any) {
       setAlerts(generateDemoAlerts());
     } finally {
       setLoading(false);
@@ -117,7 +113,7 @@ export const IncidentAlertDashboard = () => {
       const backendIncidents = res.data || [];
       const demoIncidents = generateDemoIncidents();
       setIncidents(backendIncidents.length > 0 ? backendIncidents : demoIncidents);
-    } catch (err) {
+    } catch (err: any) {
       setIncidents(generateDemoIncidents());
     }
   };
@@ -130,7 +126,7 @@ export const IncidentAlertDashboard = () => {
       id: `alert_${i + 1}`,
       title: types[i % types.length],
       type: types[i % types.length],
-      severity: severities[Math.floor(Math.random() * severities.length)] as ExtendedAlert['severity'],
+      severity: severities[Math.floor(Math.random() * severities.length)] as any,
       message: getAlertMessage(types[i % types.length]),
       timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString(),
       confidence: Math.random() * 0.5 + 0.5,
@@ -152,7 +148,7 @@ export const IncidentAlertDashboard = () => {
       severity: ['critical', 'high', 'medium'][i % 3],
       createdAt: new Date(Date.now() - Math.random() * 604800000).toISOString(),
       updatedAt: new Date(Date.now() - Math.random() * 86400000).toISOString(),
-      assignedTo: ['John Smith', 'Sarah Johnson', 'Mike Chen', null][i % 4],
+      assignedTo: ['John Smith', 'Sarah Johnson', 'Mike Chen', undefined][i % 4],
       priority: ['P1', 'P2', 'P3'][i % 3],
       affectedSystems: ['Recognition Engine', 'Liveness Detection', 'Multi-Modal Fusion'][i % 3],
       relatedAlerts: Math.floor(Math.random() * 10) + 1,
@@ -228,7 +224,7 @@ export const IncidentAlertDashboard = () => {
         inc.id === incidentId ? { ...inc, status: newStatus, updatedAt: new Date().toISOString() } : inc
       ));
       setSnackbar({ open: true, message: 'Status updated successfully', severity: 'success' });
-    } catch (err) {
+    } catch (err: any) {
       setSnackbar({ open: true, message: 'Failed to update status', severity: 'error' });
     }
   };
@@ -238,7 +234,7 @@ export const IncidentAlertDashboard = () => {
       await API.put(`/api/alerts/${alertId}/acknowledge`);
       setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'acknowledged' } : a));
       setSnackbar({ open: true, message: 'Alert acknowledged', severity: 'success' });
-    } catch (err) {
+    } catch (err: any) {
       setSnackbar({ open: true, message: 'Failed to acknowledge alert', severity: 'error' });
     }
   };
@@ -311,7 +307,7 @@ export const IncidentAlertDashboard = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }} >
               <TextField
                 select
                 fullWidth
@@ -327,7 +323,7 @@ export const IncidentAlertDashboard = () => {
                 <MenuItem value="low">Low</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }} >
               <TextField
                 select
                 fullWidth
@@ -345,7 +341,7 @@ export const IncidentAlertDashboard = () => {
                 <MenuItem value="resolved">Resolved</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }} >
               <TextField
                 fullWidth
                 size="small"
@@ -363,7 +359,7 @@ export const IncidentAlertDashboard = () => {
         <>
           {/* Alert Summary Cards */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }} >
               <Card sx={{ bgcolor: 'error.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Critical</Typography>
@@ -371,7 +367,7 @@ export const IncidentAlertDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }} >
               <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>High</Typography>
@@ -379,7 +375,7 @@ export const IncidentAlertDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }} >
               <Card sx={{ bgcolor: 'info.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Medium</Typography>
@@ -387,7 +383,7 @@ export const IncidentAlertDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }} >
               <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
                 <CardContent>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Low</Typography>
@@ -582,7 +578,7 @@ export const IncidentAlertDashboard = () => {
       {activeTab === 2 && (
         <>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }} >
               <Card sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>Alerts Over Time</Typography>
                 <ResponsiveContainer width="100%" height={250}>
@@ -602,7 +598,7 @@ export const IncidentAlertDashboard = () => {
                 </ResponsiveContainer>
               </Card>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }} >
               <Card sx={{ p: 2, height: '100%' }}>
                 <Typography variant="subtitle2" gutterBottom>Incident Types</Typography>
                 <ResponsiveContainer width="100%" height={250}>
@@ -636,7 +632,7 @@ export const IncidentAlertDashboard = () => {
                 </List>
               </Card>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }} >
               <Card sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>Mean Time to Resolution (MTTR)</Typography>
                 <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -645,7 +641,7 @@ export const IncidentAlertDashboard = () => {
                 </Box>
               </Card>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }} >
               <Card sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>Incident Escalation Rate</Typography>
                 <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -674,12 +670,12 @@ export const IncidentAlertDashboard = () => {
             </CardContent>
           </Card>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }} >
               <Button fullWidth variant="contained" startIcon={<PlayArrow />} sx={{ mb: 1 }}>Start Investigation</Button>
               <Button fullWidth variant="outlined" startIcon={<Escalator />} sx={{ mb: 1 }}>Escalate</Button>
               <Button fullWidth variant="outlined" startIcon={<Comment />}>Add Note</Button>
             </Grid>
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }} >
               <Card sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>Incident Timeline</Typography>
                 <List dense>
@@ -721,11 +717,11 @@ export const IncidentAlertDashboard = () => {
             </DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }} >
                   <Typography variant="body2" color="text.secondary">ID</Typography>
                   <Typography variant="body1" fontFamily="monospace">{selectedIncident.id}</Typography>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }} >
                   <Typography variant="body2" color="text.secondary">Severity</Typography>
                   <Badge
                     badgeContent=""
@@ -744,7 +740,7 @@ export const IncidentAlertDashboard = () => {
                     </Typography>
                   </Badge>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }} >
                   <Typography variant="body2" color="text.secondary">Status</Typography>
                   <Chip
                     label={selectedIncident.status}
@@ -755,27 +751,27 @@ export const IncidentAlertDashboard = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }} >
                   <Typography variant="body2" color="text.secondary">Assigned To</Typography>
                   <Typography variant="body1">{selectedIncident.assignedTo || 'Unassigned'}</Typography>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }} >
                   <Typography variant="body2" color="text.secondary">Created</Typography>
                   <Typography variant="body1">{new Date(selectedIncident.createdAt).toLocaleString()}</Typography>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }} >
                   <Typography variant="body2" color="text.secondary">Last Updated</Typography>
                   <Typography variant="body1">{new Date(selectedIncident.updatedAt).toLocaleString()}</Typography>
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }} >
                   <Typography variant="body2" color="text.secondary">Description</Typography>
                   <Typography variant="body1">{selectedIncident.description}</Typography>
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }} >
                   <Typography variant="body2" color="text.secondary">Root Cause</Typography>
                   <Typography variant="body1">{selectedIncident.rootCause}</Typography>
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }} >
                   <Typography variant="body2" color="text.secondary">Impact</Typography>
                   <Typography variant="body1">{selectedIncident.impact}</Typography>
                 </Grid>

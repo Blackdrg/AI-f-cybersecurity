@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  Box, Typography, Paper, Grid, Button, 
+import { Box, Typography, Paper,  Button, 
   Tabs, Tab, TextField, Divider, Chip,
-  IconButton, List, ListItem, ListItemText
-} from '@mui/material';
+  IconButton, List, ListItem, ListItemText } from '@mui/material';
+import { Grid } from '@mui/material';
 import { 
   Code, IntegrationInstructions, PlayArrow, 
   ContentCopy, Description 

@@ -13,7 +13,7 @@ from backend.app.security import get_encrypted_redis_client
 
 logger = logging.getLogger(__name__)
 
-PUBLIC_PATHS = {"/health", "/api/health", "/api/version", "/docs", "/openapi.json", "/redoc", "/api/webhooks/stripe", "/api/webhooks/biometric-event"}
+PUBLIC_PATHS = {"/health", "/api/health", "/api/version", "/docs", "/openapi.json", "/redoc", "/api/webhooks/stripe", "/api/webhooks/biometric-event", "/api/payments/webhook"}
 
 class MockRevocationStore:
     """Mock Redis store for tests and degraded operation."""
@@ -180,10 +180,18 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         if request.url.path in PUBLIC_PATHS or request.method == "OPTIONS":
             return await call_next(request)
+        token = None
         auth_header = request.headers.get("authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            return JSONResponse(status_code=401, content={"success": False, "error": "Missing or invalid authorization header"})
-        token = auth_header.split(" ")[1]
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+        
+        # In production/staging, fallback to cookie if header is missing
+        if not token:
+            token = request.cookies.get("auth_token")
+            
+        if not token:
+            return JSONResponse(status_code=401, content={"success": False, "error": "Missing or invalid authorization header/cookie"})
+            
         local_jti = None
         try:
             unverified = jwt.decode(token, None, options={"verify_signature": False}, algorithms=[self.algorithm])

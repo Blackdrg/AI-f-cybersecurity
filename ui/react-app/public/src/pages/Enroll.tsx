@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  Box, Typography, TextField, Button, Paper, Grid, 
+import { Box, Typography, TextField, Button, Paper,  
   Checkbox, FormControlLabel, Alert, CircularProgress,
-  List, ListItem, ListItemText, IconButton
-} from '@mui/material';
+  List, ListItem, ListItemText, IconButton } from '@mui/material';
+import { Grid } from '@mui/material';
 import { Delete, CloudUpload, PersonAdd, Image as ImageIcon } from '@mui/icons-material';
 import { enroll } from '../services/api';
 

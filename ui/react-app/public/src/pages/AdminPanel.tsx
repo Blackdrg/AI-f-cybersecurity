@@ -1,12 +1,13 @@
 /* Enhanced Admin Panel with Enterprise Features */
 import React, { useState, useEffect } from 'react';
 import { 
-  Box, Typography, Grid, Paper, List, ListItem, ListItemText, 
+  Box, Typography, Paper, List, ListItem, ListItemText, 
   Divider, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
   Chip, Table, TableBody, TableCell, TableHead, TableRow, Card, CardContent,
   Tabs, Tab, Alert, LinearProgress, IconButton, Tooltip, Switch,
   FormControlLabel, Select, MenuItem, CircularProgress
 } from '@mui/material';
+import { Grid } from '@mui/material';
 import { 
   VpnKey, Business, People, Receipt, Shield, Gavel, 
   Security, TrendingUp, BugReport, Key, 
@@ -103,7 +104,7 @@ setOrgs(orgsRes.data);
        setComplianceData(complianceRes.data);
        setThreats(threatsRes.data);
        setRiskMetrics(riskRes.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch admin data");
     }
   };
@@ -115,7 +116,7 @@ setOrgs(orgsRes.data);
       setIsKeyDialogOpen(false);
       setNewKeyName('');
       fetchDashboardData();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to generate API key");
     }
   };
@@ -124,7 +125,7 @@ setOrgs(orgsRes.data);
     try {
       await API.put(`/api/policies/${policyId}`, { enabled });
       fetchDashboardData();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to update policy");
     }
   };
@@ -515,7 +516,7 @@ const handleTabChange = (event: any, newValue: any) => {
         <Box>
           <React.Suspense fallback={<Box sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></Box>}>
 <EnrichmentPortalPanel
-               personId={activeOrg?.org_id || null}
+               personId={activeOrg?.org_id}
                onEnrichmentComplete={async (results: any) => console.log('Enrichment complete:', results)}
                onAlertAction={(alert: any, action: any) => console.log('Alert action:', alert, action)}
              />

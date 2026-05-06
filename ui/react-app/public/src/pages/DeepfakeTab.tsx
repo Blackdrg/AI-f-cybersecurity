@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box, Typography, Grid, Card, CardContent, Paper,
+import { Box, Typography,  Card, CardContent, Paper,
   Table, TableBody, TableCell, TableHead, TableRow,
   LinearProgress, Chip, Alert, Button, IconButton,
   Tooltip, Avatar, Badge, List, ListItem, ListItemText,
-  ListItemAvatar, Divider
-} from '@mui/material';
+  ListItemAvatar, Divider } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   BugReport, Security, Radar, Warning,
   CheckCircle, Error as ErrorIcon, Timeline,
@@ -54,7 +53,7 @@ function DeepfakeTab() {
       const res = await API.get('/api/deepfake/threats');
       setThreats(res.data || []);
       setStats(res.data?.stats || {});
-    } catch (err) {
+    } catch (err: any) {
       // Sample data
       setThreats([
         {

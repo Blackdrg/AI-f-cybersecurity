@@ -1,7 +1,8 @@
 import React, { useState, ChangeEvent } from 'react';
 import type { Person as PersonType, Metrics, Log, Consent, Webhook, Plugin } from './types';
 import axios from 'axios';
-import { Box, Typography, Card, CardContent, Grid, TextField, Button, Divider, Avatar, Chip, CircularProgress, Alert, List, ListItem, ListItemText, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';
+import { Box, Typography, Card, CardContent,  TextField, Button, Divider, Avatar, Chip, CircularProgress, Alert, List, ListItem, ListItemText, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';
+import { Grid } from '@mui/material';
 import { LineChart, LineElement, ChartsXAxis, ChartsYAxis, ChartsGrid, ChartsTooltip, ChartsLegend } from '@mui/x-charts';
 import { Dashboard, Person, Search, Delete, Analytics, TrendingUp, AccessTime, People, History, PlayArrow, VerifiedUser, Build, Storage, Assessment, Lock } from '@mui/icons-material';
 
@@ -33,7 +34,7 @@ const AdminDashboard: React.FC<Props> = () => {
             setPerson(response.data);
             setMessage('Person fetched successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch person');
             setMessage('Failed to fetch person. Please check the ID.');
             setSeverity('error');
@@ -50,7 +51,7 @@ const AdminDashboard: React.FC<Props> = () => {
             setPerson(null);
             setMessage('Person deleted successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to delete person');
             setMessage('Failed to delete person. Please try again.');
             setSeverity('error');
@@ -66,7 +67,7 @@ const AdminDashboard: React.FC<Props> = () => {
             setMetrics(response.data);
             setMessage('Metrics fetched successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch metrics');
             setMessage('Failed to fetch metrics. Please try again.');
             setSeverity('error');
@@ -86,7 +87,7 @@ const AdminDashboard: React.FC<Props> = () => {
             setLogs(response.data.logs);
             setMessage('Logs fetched successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch logs');
             setMessage('Failed to fetch logs. Please try again.');
             setSeverity('error');
@@ -107,7 +108,7 @@ const AdminDashboard: React.FC<Props> = () => {
             setConsentVault(response.data.consents);
             setMessage('Consent vault fetched successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch consent vault');
             setMessage('Failed to fetch consent vault. Please try again.');
             setSeverity('error');
@@ -123,7 +124,7 @@ const AdminDashboard: React.FC<Props> = () => {
             setBiasReport(response.data);
             setMessage('Bias report fetched successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch bias report');
             setMessage('Failed to fetch bias report. Please try again.');
             setSeverity('error');
@@ -139,7 +140,7 @@ const AdminDashboard: React.FC<Props> = () => {
             setIndexRebuildMessage('Index rebuilt successfully');
             setMessage('Index rebuilt successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to rebuild index');
             setMessage('Failed to rebuild index. Please try again.');
             setSeverity('error');
@@ -155,7 +156,7 @@ const AdminDashboard: React.FC<Props> = () => {
             setWebhooks(response.data);
             setMessage('Webhooks fetched successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch webhooks');
             setMessage('Failed to fetch webhooks. Please try again.');
             setSeverity('error');
@@ -171,7 +172,7 @@ const AdminDashboard: React.FC<Props> = () => {
             setPlugins(response.data);
             setMessage('Plugins fetched successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch plugins');
             setMessage('Failed to fetch plugins. Please try again.');
             setSeverity('error');
@@ -187,7 +188,7 @@ const AdminDashboard: React.FC<Props> = () => {
             setAnalytics(response.data);
             setMessage('Analytics fetched successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch analytics');
             setMessage('Failed to fetch analytics. Please try again.');
             setSeverity('error');

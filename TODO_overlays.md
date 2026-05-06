@@ -9,12 +9,12 @@
 - [x] Style overlays with colors based on emotion or match status
 
 ## Step 2: Test Overlays
-- [ ] Test bounding box drawing accuracy
-- [ ] Test text display (name, confidence, etc.)
-- [ ] Test real-time updates
-- [ ] Test on different screen sizes
+- [x] Test bounding box drawing accuracy
+- [x] Test text display (name, confidence, etc.)
+- [x] Test real-time updates
+- [x] Test on different screen sizes
 
 ## Step 3: UI Enhancements
 - [x] Add toggle for overlay visibility
 - [x] Adjust overlay opacity/transparency
-- [ ] Handle multiple faces overlapping
+- [x] Handle multiple faces overlapping

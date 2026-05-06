@@ -1,9 +1,36 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Button, Typography, Grid, Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab, Paper, Divider } from '@mui/material';
+import { Button, Typography,  Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab, Paper, Divider, styled } from '@mui/material';
+import { Grid } from '@mui/material';
 import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, BarChart, PieChart } from '@mui/icons-material';
 
 import { RecognitionResult } from './types';
+
+const StyledVideo = styled('video')({
+    width: '100%',
+    maxWidth: '500px',
+    borderRadius: '16px',
+    border: '2px solid #00bcd4'
+});
+
+const OverlayCanvas = styled('canvas')({
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    maxWidth: '500px',
+    height: 'auto',
+    borderRadius: '16px',
+    pointerEvents: 'none'
+});
+
+const HiddenInput = styled('input')({
+    display: 'none'
+});
+
+const HiddenCanvas = styled('canvas')({
+    display: 'none'
+});
 
 const RecognizeView = () => {
     const [image, setImage] = useState<File | null>(null);
@@ -12,6 +39,7 @@ const RecognizeView = () => {
     const [severity, setSeverity] = useState('success');
     const [webcamActive, setWebcamActive] = useState(false);
     const [streamResults, setStreamResults] = useState<RecognitionResult | null>(null);
+    const [results, setResults] = useState<RecognitionResult | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -116,6 +144,8 @@ const RecognizeView = () => {
         if (!overlayCanvas || !streamResults || !streamResults.faces) return;
 
         const ctx = overlayCanvas.getContext('2d');
+        if (!ctx) return;
+        
         const video = videoRef.current;
         if (!video) return;
 
@@ -174,7 +204,7 @@ const RecognizeView = () => {
         });
     };
 
-    const getEmotionColor = (emotion) => {
+    const getEmotionColor = (emotion: string) => {
         switch (emotion) {
             case 'happy': return '#4caf50';
             case 'sad': return '#2196f3';
@@ -187,11 +217,11 @@ const RecognizeView = () => {
     };
 
     // Calculate emotion summary for dashboard
-    const calculateEmotionSummary = (faces) => {
+    const calculateEmotionSummary = (faces: any[]) => {
         if (!faces || faces.length === 0) return null;
 
-        const emotionCounts = {};
-        const emotionScores = {};
+        const emotionCounts: Record<string, number> = {};
+        const emotionScores: Record<string, number> = {};
         let totalFaces = faces.length;
 
         faces.forEach(face => {
@@ -231,7 +261,7 @@ const RecognizeView = () => {
             setResults(response.data);
             setMessage('Recognition completed successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Recognition failed');
             setMessage('Recognition failed. Please try again.');
             setSeverity('error');
@@ -242,7 +272,9 @@ const RecognizeView = () => {
     const startWebcam = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            videoRef.current.srcObject = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
             setWebcamActive(true);
             setMessage('Webcam started successfully');
             setSeverity('success');
@@ -266,7 +298,7 @@ const RecognizeView = () => {
 
             // Start capturing frames
             intervalRef.current = setInterval(captureFrame, 500);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error accessing webcam:', error);
             setMessage('Failed to access webcam. Please check permissions.');
             setSeverity('error');
@@ -275,9 +307,11 @@ const RecognizeView = () => {
 
     const stopWebcam = () => {
         if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject;
-            const tracks = stream.getTracks();
-            tracks.forEach((track: MediaStreamTrack) => track.stop());
+            const stream = videoRef.current.srcObject as MediaStream;
+            if (stream && stream.getTracks) {
+                const tracks = stream.getTracks();
+                tracks.forEach((track: MediaStreamTrack) => track.stop());
+            }
             videoRef.current.srcObject = null;
         }
         setWebcamActive(false);
@@ -286,7 +320,9 @@ const RecognizeView = () => {
         const overlayCanvas = overlayCanvasRef.current;
         if (overlayCanvas) {
             const ctx = overlayCanvas.getContext('2d');
-            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            if (ctx) {
+                ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            }
         }
         if (wsRef.current) {
             wsRef.current.close();
@@ -312,6 +348,7 @@ const RecognizeView = () => {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         canvas.toBlob((blob) => {
+            if (!blob) return;
             const reader = new FileReader();
             reader.onload = () => {
                 const base64Data = (reader.result as string).split(',')[1]!;
@@ -401,32 +438,16 @@ const RecognizeView = () => {
 
                             {webcamActive && (
                                 <Box sx={{ textAlign: 'center', mb: 3, position: 'relative' }}>
-                                    <video
+                                    <StyledVideo
                                         ref={videoRef}
                                         autoPlay
                                         playsInline
                                         muted
-                                        style={{
-                                            width: '100%',
-                                            maxWidth: '500px',
-                                            borderRadius: '16px',
-                                            border: '2px solid #00bcd4'
-                                        }}
                                     />
-                                    <canvas
+                                    <OverlayCanvas
                                         ref={overlayCanvasRef}
-                                        style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            width: '100%',
-                                            maxWidth: '500px',
-                                            height: 'auto',
-                                            borderRadius: '16px',
-                                            pointerEvents: 'none'
-                                        }}
                                     />
-                                    <canvas ref={canvasRef} style={{ display: 'none' }} />
+                                    <HiddenCanvas ref={canvasRef} />
                                 </Box>
                             )}
 
@@ -445,12 +466,12 @@ const RecognizeView = () => {
                                                 background: 'linear-gradient(145deg, rgba(0, 188, 212, 0.05), rgba(0, 188, 212, 0.02))',
                                             }
                                         }}>
-                                            <input
+                                            <HiddenInput
                                                 accept="image/*"
-                                                style={{ display: 'none' }}
                                                 id="image-recognize"
                                                 type="file"
                                                 onChange={(e) => setImage(e.target.files?.[0] || null)}
+                                                aria-label="Upload image for recognition"
                                             />
                                             <label htmlFor="image-recognize">
                                                 <IconButton component="span" sx={{ fontSize: '3rem', color: '#00bcd4' }}>
@@ -646,13 +667,13 @@ const RecognizeView = () => {
                                                             />
                                                             {/* Emotion Scores */}
                                                             <Box sx={{ mt: 1 }}>
-                                                                {Object.entries(face.emotion.emotions).map(([emotion, score]) => (
+                                                            {Object.entries(face.emotion?.emotions || {}).map(([emotion, score]: [string, any]) => (
                                                                     <Box key={emotion} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                                                                         <Typography variant="caption" sx={{
                                                                             minWidth: 60,
                                                                             textAlign: 'left',
-                                                                            fontWeight: emotion === face.emotion.dominant_emotion ? 600 : 400,
-                                                                            color: emotion === face.emotion.dominant_emotion ? emotionTheme.primary : 'text.secondary'
+                                                                            fontWeight: face.emotion && emotion === face.emotion.dominant_emotion ? 600 : 400,
+                                                                            color: face.emotion && emotion === face.emotion.dominant_emotion ? emotionTheme.primary : 'text.secondary'
                                                                         }}>
                                                                             {emotion}
                                                                         </Typography>
@@ -666,15 +687,15 @@ const RecognizeView = () => {
                                                                                 borderRadius: 3,
                                                                                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
                                                                                 '& .MuiLinearProgress-bar': {
-                                                                                    backgroundColor: emotion === face.emotion.dominant_emotion ? emotionTheme.primary : emotionTheme.secondary,
+                                                                                    backgroundColor: face.emotion && emotion === face.emotion.dominant_emotion ? emotionTheme.primary : emotionTheme.secondary,
                                                                                     transition: 'all 0.3s ease',
                                                                                 }
                                                                             }}
                                                                         />
                                                                         <Typography variant="caption" sx={{
                                                                             minWidth: 30,
-                                                                            fontWeight: emotion === face.emotion.dominant_emotion ? 600 : 400,
-                                                                            color: emotion === face.emotion.dominant_emotion ? emotionTheme.primary : 'text.secondary'
+                                                                            fontWeight: face.emotion && emotion === face.emotion.dominant_emotion ? 600 : 400,
+                                                                            color: face.emotion && emotion === face.emotion.dominant_emotion ? emotionTheme.primary : 'text.secondary'
                                                                         }}>
                                                                             {(score * 100).toFixed(0)}%
                                                                         </Typography>

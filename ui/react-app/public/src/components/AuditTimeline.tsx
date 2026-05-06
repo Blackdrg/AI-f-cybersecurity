@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import {
-  Box, Typography, Paper, Card, CardContent,
-  Chip, Button, TextField, MenuItem, Grid, Collapse, List, ListItem,
+import { Box, Typography, Paper, Card, CardContent,
+  Chip, Button, TextField, MenuItem,  Collapse, List, ListItem,
   ListItemText, ListItemIcon, LinearProgress,
-  CircularProgress
-} from '@mui/material';
+  CircularProgress } from '@mui/material';
+import { Grid } from '@mui/material';
 import { TimelineDot } from '@mui/lab';
 import {
   History, Security, Block, CheckCircle,
@@ -66,7 +65,7 @@ export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }: AuditTime
         setAuditLogs(res.data.logs);
         verifyChainIntegrity(res.data.logs);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Failed to fetch audit logs');
     } finally {
       setLoading(false);
@@ -82,7 +81,7 @@ export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }: AuditTime
           chainData: res.data.device_stats || []
         }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Failed to fetch chain verification');
     }
   }, []);
@@ -147,7 +146,7 @@ export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }: AuditTime
           } else if (data.type === 'integrity_alert') {
             setVerificationStatus(prev => ({ ...prev, hashChainValid: false }));
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error('[WebSocket] Failed to parse message', err);
         }
       };

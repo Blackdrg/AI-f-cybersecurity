@@ -16,7 +16,7 @@ export default function SetupWizard({ onComplete }: { onComplete?: () => void })
     try {
       await API.post('/api/orgs/cameras/test-connection', { rtsp_url: rtspUrl });
       setTestStatus('success');
-    } catch (err) {
+    } catch (err: any) {
       setTestStatus('failed');
     }
   };

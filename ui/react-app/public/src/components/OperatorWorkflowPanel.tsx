@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box, Typography, Grid, Paper,
+import { Box, Typography,  Paper,
   Button, Chip, Alert, Dialog, DialogTitle,
   DialogContent, DialogActions, List, ListItem,
   ListItemText, ListItemIcon, TextField,
-  Stepper, Step, StepLabel, StepContent
-} from '@mui/material';
+  Stepper, Step, StepLabel, StepContent } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   Refresh, Replay, HelpOutline, CheckCircle,
   Error, Warning, Psychology, Timeline,
@@ -136,7 +135,7 @@ const OperatorWorkflowPanel: React.FC<OperatorWorkflowPanelProps> = ({
       }
       setActiveStep(prev => prev + 1);
       setWorkflowState('success');
-    } catch (error) {
+    } catch (error: any) {
       setWorkflowState('error');
     }
   };
@@ -157,7 +156,7 @@ const OperatorWorkflowPanel: React.FC<OperatorWorkflowPanelProps> = ({
       }]);
       setIsOverrideDialogOpen(false);
       setOverrideReason('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Override failed:', error);
     }
   };
@@ -172,7 +171,7 @@ const OperatorWorkflowPanel: React.FC<OperatorWorkflowPanelProps> = ({
         timestamp: new Date().toISOString(),
         target: 'supervisor'
       }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Escalation failed:', error);
     }
   };

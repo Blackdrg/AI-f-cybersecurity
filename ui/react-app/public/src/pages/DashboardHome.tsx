@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { Box, Toolbar, Typography, Container, Grid, Paper, Card, CardContent, IconButton, CircularProgress, Select, MenuItem, Button } from '@mui/material';
+import { Box, Toolbar, Typography, Container,  Paper, Card, CardContent, IconButton, CircularProgress, Select, MenuItem, Button } from '@mui/material';
+import { Grid } from '@mui/material';
 import { 
   People, CameraAlt, History, Assessment, 
   Security, Timeline, ShowChart, Warning,
@@ -60,12 +61,12 @@ const DashboardHome = () => {
       try {
         const threatsRes = await API.get("/api/security/threats").catch(() => ({data: []}));
         setThreats(threatsRes.data || []);
-      } catch (err) {
+      } catch (err: any) {
         setThreats([]);
       }
       
       setError(null);
-    } catch (err) {
+    } catch (err: any) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import {
-  Container, Typography, Box, Grid, Card, CardContent,
+import { Container, Typography, Box,  Card, CardContent,
   Paper, Button, TextField, LinearProgress, Chip, CircularProgress,
-  IconButton, Tooltip, Tabs, Tab, Divider, Alert, Stack
-} from '@mui/material';
+  IconButton, Tooltip, Tabs, Tab, Divider, Alert, Stack } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   CameraAlt, Search, Image as ImageIcon,
   BarChart, Timeline, ShowChart, CompareArrows,

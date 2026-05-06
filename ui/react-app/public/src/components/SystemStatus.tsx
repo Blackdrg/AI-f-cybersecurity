@@ -35,7 +35,7 @@ const SystemStatus = () => {
       } else {
         setError(data.error);
       }
-    } catch (err) {
+    } catch (err: any) {
       setError('Failed to fetch system status');
     } finally {
       setLoading(false);

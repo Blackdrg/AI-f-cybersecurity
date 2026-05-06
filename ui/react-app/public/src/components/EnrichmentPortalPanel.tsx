@@ -85,18 +85,17 @@ interface ExpandState {
 }
 
 interface EnrichmentPortalPanelProps {
-  personId?: string;
+  personId?: string | null;
   onEnrichmentComplete?: (results: EnrichmentResult[]) => void;
   onAlertAction?: (action: string, data: unknown) => void;
 }
 
-import {
-  Box, Typography, Paper, Grid, Card, CardContent,
+import { Box, Typography, Paper,  Card, CardContent,
   TextField, Button, Chip, List, ListItem, ListItemText,
   ListItemIcon, Avatar, CircularProgress, Alert, IconButton,
   Tabs, Tab, Divider, Tooltip, Badge, Collapse, CardHeader,
-  Table, TableBody, TableCell, TableHead, TableRow, Stack
-} from '@mui/material';
+  Table, TableBody, TableCell, TableHead, TableRow, Stack } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   Search, Web, Description, Link as LinkIcon,
   Public, Book, Article, OpenInNew,
@@ -138,7 +137,7 @@ const EnrichmentPortalPanel = ({
     try {
       const res = await API.get<{ results: HistoryItem[] }>(`/api/enrichments?person_id=${personId}`);
       setHistory(res.data?.results || []);
-    } catch (err) {
+    } catch (err: any) {
       console.warn('No enrichment history available');
     }
   };
@@ -162,7 +161,7 @@ const EnrichmentPortalPanel = ({
       const correlation = generateCorrelationAnalysis(combined);
       setCorrelationGraph(correlation);
 
-      const summary = generateEnrichmentSummary(combined, personId);
+      const summary = generateEnrichmentSummary(combined, personId ?? undefined);
       setEnrichmentSummary(summary);
 
       const riskMap = calculateRiskScores(combined);
@@ -171,7 +170,7 @@ const EnrichmentPortalPanel = ({
       await logEnrichmentQuery(searchTerm, combined);
 
       onEnrichmentComplete && onEnrichmentComplete(combined);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Enrichment search failed:', err);
     } finally {
       setIsSearching(false);
@@ -309,7 +308,7 @@ const EnrichmentPortalPanel = ({
           relevance: r.relevanceScore
         }))
       });
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Failed to log enrichment query');
     }
   };

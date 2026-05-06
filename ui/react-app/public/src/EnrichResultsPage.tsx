@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Box,
+import { Box,
     Typography,
     Card,
     CardContent,
-    Grid,
+    
     Chip,
     Button,
     Alert,
@@ -17,8 +16,8 @@ import {
     ListItemText,
     Divider,
     IconButton,
-    Tooltip
-} from '@mui/material';
+    Tooltip } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
     ExpandMore,
     Launch,
@@ -156,7 +155,7 @@ const EnrichResultsPage: React.FC<EnrichResultsPageProps> = ({ enrichId, onBack 
             {results && results.length > 0 ? (
                 <Grid container spacing={3}>
                     {results.map((result, idx) => (
-                        <Grid item xs={12} key={idx}>
+                        <Grid key={idx} size={{ xs: 12 }} >
                             <Card sx={{
                                 borderRadius: '12px',
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)',

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box, Typography, Grid, Paper, Card, CardContent,
+import { Box, Typography,  Paper, Card, CardContent,
   Table, TableBody, TableCell, TableHead, TableRow,
   Chip, LinearProgress, Tooltip, IconButton, Avatar,
-  Button, TextField, InputAdornment
-} from '@mui/material';
+  Button, TextField, InputAdornment } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   Monitor, Radar, NetworkCheck, TrendingUp,
   PlayArrow, Pause, Timeline, AccountCircle
@@ -50,7 +49,7 @@ function SessionsTab() {
       const res = await API.get('/api/sessions/active');
       setSessions(res.data?.sessions || []);
       setMetrics(res.data?.metrics || {});
-    } catch (err) {
+    } catch (err: any) {
       // Use sample data
       setSessions([
         {

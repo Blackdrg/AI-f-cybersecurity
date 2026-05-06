@@ -84,7 +84,7 @@ if (res?.data?.data) {
         // Fallback to basic health
         setSystemHealth({ status: 'healthy', production_systems: true });
       }
-    } catch (err) {
+    } catch (err: any) {
       setSystemHealth({ status: 'degraded', production_systems: false });
     }
     setLoading(false);
@@ -94,12 +94,12 @@ if (res?.data?.data) {
     try {
       const res = await API.get('/api/alerts/active').catch(() => ({ data: [] }));
       const alerts = res.data || [];
-      const critical = alerts.filter(a => 
+      const critical = alerts.filter((a: any) => 
         a.severity === 'critical' || 
         (typeof a === 'object' && a.type === 'DEEPFAKE_DETECTED')
       ).length;
       setCriticalAlerts(critical);
-    } catch (err) {
+    } catch (err: any) {
       // Use demo data if API fails
       setCriticalAlerts(Math.floor(Math.random() * 3));
     }
@@ -109,11 +109,11 @@ if (res?.data?.data) {
     try {
       const res = await API.get('/api/incidents').catch(() => ({ data: [] }));
       const incidents = res.data || [];
-      const pending = incidents.filter(i => 
+      const pending = incidents.filter((i: any) => 
         i.status === 'open' || i.status === 'investigating'
       ).length;
       setPendingIncidents(pending);
-    } catch (err) {
+    } catch (err: any) {
       setPendingIncidents(Math.floor(Math.random() * 2));
     }
   };
@@ -177,13 +177,42 @@ const handlePageChange = (newPage: string) => {
     }
   };
 
+  const renderContent = () => {
+    switch (activePage) {
+      case 'dashboard':
+        return <DashboardHome />;
+      case 'recognize':
+        return <RecognizePage />;
+      case 'enroll':
+        return <EnrollPage />;
+      case 'admin':
+        return <AdminPanel />;
+      case 'cameras':
+        return <CameraManagement />;
+      case 'person':
+        return <PersonProfile personId="" />;
+      case 'analytics':
+        return <TabAnalyticsView activeTab={activeTab} setActiveTab={setActiveTab} />;
+      case 'compliance':
+        return <Compliance />;
+      case 'developer':
+        return <DeveloperPlatform />;
+      case 'audit':
+        return <AuditTimeline orgId={organization?.org_id || ""} />;
+      case 'incidents':
+        return <IncidentAlertDashboard />;
+      default:
+        return <DashboardHome />;
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }} className="dashboard-app">
       <Sidebar
         activePage={activePage}
         setActivePage={handlePageChange}
         onLogout={logout}
-        user={currentUser}
+        user={currentUser || undefined}
       />
       <Box
         component="main"
@@ -208,7 +237,7 @@ const handlePageChange = (newPage: string) => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <OrgSwitcher />
               {organization && (
-                <RoleBadge role={currentUser?.role} />
+                <RoleBadge role={currentUser?.role || 'viewer'} />
               )}
             </Box>
             

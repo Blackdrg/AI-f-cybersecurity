@@ -15,6 +15,7 @@ export interface Organization {
   name: string;
   subscription_tier: string;
   is_default?: boolean;
+  billing_email?: string;
 }
 
 export interface AuthContextType {

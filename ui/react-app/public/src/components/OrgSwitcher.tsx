@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box, Button, Menu, MenuItem, List, ListItem, ListItemText,
+import { Box, Button, Menu, MenuItem, List, ListItem, ListItemText, ListItemButton,
   ListItemIcon, Typography, Chip, Avatar, Divider, Paper,
-  IconButton, Tooltip, Card, CardContent, Grid, TextField,
+  IconButton, Tooltip, Card, CardContent,  TextField,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  FormControl, InputLabel, Select, LinearProgress
-} from '@mui/material';
+  FormControl, InputLabel, Select, LinearProgress } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   AccountTree, Add, Settings, AccountCircle,
   Business, Payment, Security, Key, People,
@@ -50,7 +49,7 @@ export const OrgSwitcher = () => {
       if (res?.data) {
         setOrgBilling(prev => ({ ...prev, [orgId]: res.data }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Failed to fetch billing info');
     }
   };
@@ -73,7 +72,7 @@ export const OrgSwitcher = () => {
       setCreateOrgOpen(false);
       setNewOrgName('');
       setNewOrgEmail('');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create organization:', err);
     }
   };
@@ -153,8 +152,7 @@ export const OrgSwitcher = () => {
         <List sx={{ maxHeight: 300, overflow: 'auto' }}>
           {organizations.map((org) => (
             <React.Fragment key={org.org_id}>
-              <ListItem
-                button
+              <ListItemButton
                 selected={organization?.org_id === org.org_id}
                 onClick={() => handleOrgSwitch(org)}
                 sx={{
@@ -181,7 +179,7 @@ export const OrgSwitcher = () => {
                 {organization?.org_id === org.org_id && (
                   <CheckCircle sx={{ color: 'success.main', fontSize: 16 }} />
                 )}
-              </ListItem>
+              </ListItemButton>
               {organization?.org_id === org.org_id && (
                 <Box sx={{ px: 2, pb: 2 }}>
                   <Paper sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
@@ -294,7 +292,7 @@ export const BillingWidget = ({ orgId }: { orgId: string }) => {
         };
         setBillingInfo(data);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Failed to fetch billing info');
     }
   };
@@ -358,7 +356,7 @@ export const BillingWidget = ({ orgId }: { orgId: string }) => {
         <DialogTitle>Billing & Subscription</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }} >
               <Card sx={{ p: 2, bgcolor: 'action.hover' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>
@@ -371,7 +369,7 @@ export const BillingWidget = ({ orgId }: { orgId: string }) => {
                 </Box>
               </Card>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }} >
               <Card sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>Recognitions</Typography>
                 <Typography variant="h5">{billingInfo.recognitions_used?.toLocaleString() || 0}</Typography>
@@ -393,7 +391,7 @@ export const BillingWidget = ({ orgId }: { orgId: string }) => {
                 />
               </Card>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }} >
               <Card sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>Billing Cycle</Typography>
                 <Typography variant="body2">

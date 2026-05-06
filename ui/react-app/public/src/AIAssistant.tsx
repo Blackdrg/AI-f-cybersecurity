@@ -35,7 +35,7 @@ const AIAssistant = () => {
             };
             setConversation(prev => [...prev, aiMessage]);
             setQuery('');
-        } catch (error) {
+        } catch (error: any) {
             console.error('AI Assistant error:', error);
             setError('Failed to get AI response. Please try again.');
         }

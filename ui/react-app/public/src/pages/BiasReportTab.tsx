@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box, Typography, Grid, Paper, Card, CardContent,
+import { Box, Typography,  Paper, Card, CardContent,
   Table, TableBody, TableCell, TableHead, TableRow,
   LinearProgress, Chip, Alert, Button, Select, MenuItem,
-  FormControl, InputLabel, TablePagination
-} from '@mui/material';
+  FormControl, InputLabel, TablePagination } from '@mui/material';
+import { Grid } from '@mui/material';
 import { AccountCircle, TrendingUp, Analytics } from '@mui/icons-material';
 import API from '../services/api';
 
@@ -42,7 +41,7 @@ function BiasReportTab() {
     try {
       const res = await API.get(`/api/bias-report?timeframe=${timeframe}`);
       setBiasData(res.data);
-    } catch (err) {
+    } catch (err: any) {
       // Use sample data
       setBiasData({
         summary: {

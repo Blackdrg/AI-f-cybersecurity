@@ -12,9 +12,20 @@ import onnxruntime as ort
 import numpy as np
 import torch
 import torch.onnx
-from insightface.app import FaceAnalysis
-import speechbrain
-from speechbrain.pretrained import EncoderClassifier
+try:
+    from insightface.app import FaceAnalysis
+    INSIGHTFACE_AVAILABLE = True
+except ImportError:
+    INSIGHTFACE_AVAILABLE = False
+    logger.warning("insightface not available, skipping buffalo_l download")
+
+try:
+    import speechbrain
+    from speechbrain.pretrained import EncoderClassifier
+    SPEECHBRAIN_AVAILABLE = True
+except ImportError:
+    SPEECHBRAIN_AVAILABLE = False
+    logger.warning("speechbrain not available, skipping voxceleb download")
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -25,15 +36,23 @@ BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
 
 def download_insightface_buffalo_l():
     """Download InsightFace buffalo_l weights."""
+    if not INSIGHTFACE_AVAILABLE:
+        logger.warning("Skipping InsightFace download (missing dependency)")
+        return
     cache_dir = Path.home() / ".insightface" / "models" / "buffalo_l"
     if not cache_dir.exists():
         app = FaceAnalysis(name='buffalo_l')
         app.prepare(ctx_id=0, det_size=(640,640))
-    (BUNDLE_DIR / "insightface_buffalo_l").symlink_to(cache_dir, target_is_directory=True)
-    logger.info(f"Bundled InsightFace buffalo_l: {cache_dir}")
+    # Create symlink only if cache_dir exists
+    if cache_dir.exists():
+        (BUNDLE_DIR / "insightface_buffalo_l").symlink_to(cache_dir, target_is_directory=True)
+        logger.info(f"Bundled InsightFace buffalo_l: {cache_dir}")
 
 def download_speechbrain_voxceleb():
     """Download SpeechBrain VoxCeleb speaker embedding model."""
+    if not SPEECHBRAIN_AVAILABLE:
+        logger.warning("Skipping SpeechBrain download (missing dependency)")
+        return
     model = EncoderClassifier.from_hparams(
         source="speechbrain/spkrec-ecapa-voxceleb",
         savedir=str(BUNDLE_DIR / "speechbrain_voxceleb")

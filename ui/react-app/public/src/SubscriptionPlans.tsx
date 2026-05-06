@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import type { Plan } from './types';
-import { Card, CardContent, Typography, Button, Grid, Chip, Alert, CircularProgress } from '@mui/material';
+import { Card, CardContent, Typography, Button,  Chip, Alert, CircularProgress } from '@mui/material';
+import { Grid } from '@mui/material';
 import { CreditCard, CheckCircle, Star } from '@mui/icons-material';
 
 interface SubscriptionMessage {

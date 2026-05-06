@@ -5,10 +5,9 @@ interface Metrics {
   avg_latency_ms: number;
   [key: string]: any;
 }
-import { 
-  Box, Typography, Grid, Paper, Card, CardContent, 
-  CircularProgress, List, ListItem, ListItemText, ListItemIcon, Tabs, Tab 
-} from '@mui/material';
+import { Box, Typography,  Paper, Card, CardContent, 
+  CircularProgress, List, ListItem, ListItemText, ListItemIcon, Tabs, Tab } from '@mui/material';
+import { Grid } from '@mui/material';
 import { 
   TrendingUp, TrendingDown, People, 
   CameraAlt, Speed, GppGood, Map,
@@ -30,7 +29,7 @@ const AnalyticsDashboard = () => {
     try {
       const res = await API.get('/api/admin/metrics');
       setMetrics(res.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch metrics");
     } finally {
       setLoading(false);

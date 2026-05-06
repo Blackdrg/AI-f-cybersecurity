@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box, Typography, Card, CardContent, Alert, Button,
+import { Box, Typography, Card, CardContent, Alert, Button,
   LinearProgress, Chip, List, ListItem, ListItemText,
   ListItemIcon, Divider, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, Grid, Paper, IconButton, Tooltip,
-  CircularProgress, Stack
-} from '@mui/material';
+  DialogActions, TextField,  Paper, IconButton, Tooltip,
+  CircularProgress, Stack } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   Error as ErrorIcon,
   Warning,
@@ -353,7 +352,7 @@ const RecognitionErrorRecovery: React.FC<RecognitionErrorRecoveryProps> = ({
       if (onRecoveryComplete && result) {
         onRecoveryComplete(result.data);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Recovery action failed:', err);
     }
   };
@@ -373,7 +372,7 @@ const RecognitionErrorRecovery: React.FC<RecognitionErrorRecoveryProps> = ({
           level: 'supervisor'
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Escalation failed:', err);
     }
   };
@@ -394,7 +393,7 @@ const RecognitionErrorRecovery: React.FC<RecognitionErrorRecoveryProps> = ({
           note: resolutionNote
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Resolution failed:', err);
     }
   };

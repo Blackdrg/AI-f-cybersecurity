@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Accordion, AccordionSummary, AccordionDetails, Alert as MuiAlert,
+import { Accordion, AccordionSummary, AccordionDetails, Alert as MuiAlert,
   Tabs, Tab, Badge, CircularProgress, TextField,
   Select, MenuItem, FormControl, InputLabel, Stack,
   SelectChangeEvent,
   // Missing imports added below
   Card, CardContent, Box, Typography, Paper, Chip, Button,
   Table, TableHead, TableRow, TableCell, TableBody,
-  Grid, LinearProgress
-} from '@mui/material';
+   LinearProgress } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   Timeline, Warning, TrendingUp, FilterList,
   Search, ExpandMore, Assessment, Dataset
@@ -101,7 +100,7 @@ const DashboardIntelligencePanel: React.FC<DashboardIntelligencePanelProps> = ({
       setRiskMetrics(riskRes.data || {});
 
       fetchDecisionTrace();
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Failed to fetch intelligence data:', err);
     } finally {
       setIsLoading(false);

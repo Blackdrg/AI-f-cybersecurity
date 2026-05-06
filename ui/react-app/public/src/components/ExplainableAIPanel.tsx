@@ -1,9 +1,8 @@
 import React from 'react';
-import { 
-  Box, Typography, Grid, Paper, Card, CardContent,
+import { Box, Typography,  Paper, Card, CardContent,
   LinearProgress, Tooltip, Chip, IconButton,
-  Slider, Table, TableBody, TableCell, TableHead, TableRow
-} from '@mui/material';
+  Slider, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   ShowChart, CompareArrows, FilterCenterFocus,
   Analytics, AccountCircle, BarChart

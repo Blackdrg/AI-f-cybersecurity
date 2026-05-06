@@ -52,14 +52,14 @@ const AdminPanel = () => (
   )
 );
 
-const RBACGuard = ({ children }: { children: React.ReactNode }) => (
+const RBACGuard = ({ children, requiredPermission }: { children?: React.ReactNode, requiredPermission?: string }) => (
   React.createElement('div', null, children)
 );
 
 const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
   try {
     return React.createElement(React.Fragment, null, children);
-  } catch (error) {
+  } catch (error: any) {
     return React.createElement('div', null, 'Something went wrong');
   }
 };

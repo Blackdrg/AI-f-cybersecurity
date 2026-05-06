@@ -109,6 +109,7 @@ const createAPI = (config: { baseURL?: string; timeout?: number; headers?: Recor
       'Content-Type': 'application/json',
       ...config.headers
     },
+    withCredentials: true,
     // Note: axios doesn't have built-in retry, we'll implement in interceptors
   });
 
@@ -119,9 +120,13 @@ const createAPI = (config: { baseURL?: string; timeout?: number; headers?: Recor
       request.headers['X-Request-ID'] = uuidv4();
       
       // Add auth token
-      const token = localStorage.getItem('token');
-      if (token) {
-        request.headers.Authorization = `Bearer ${token}`;
+      // In production with httpOnly cookie, the browser automatically sends the cookie
+      // No token in localStorage - relying on httpOnly cookie for XSS protection
+      if (process.env.NODE_ENV === 'development') {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (token) {
+          request.headers.Authorization = `Bearer ${token}`;
+        }
       }
 
       // Sanitize request data
@@ -131,7 +136,7 @@ const createAPI = (config: { baseURL?: string; timeout?: number; headers?: Recor
 
       // Log request for debugging
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[API] ${request.method.toUpperCase()} ${request.url}`, {
+        console.log(`[API] ${request.method?.toUpperCase() || 'UNKNOWN'} ${request.url}`, {
           data: request.data,
           headers: request.headers
         });
@@ -152,7 +157,7 @@ const createAPI = (config: { baseURL?: string; timeout?: number; headers?: Recor
   api.interceptors.response.use(
     (response) => {
       // Validate response against schema if available
-      const endpoint = response.config.url;
+      const endpoint = response.config.url || '';
       const schema = getResponseSchema(endpoint);
       
       if (schema) {
@@ -160,7 +165,7 @@ const createAPI = (config: { baseURL?: string; timeout?: number; headers?: Recor
       }
 
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[API] Response ${response.status} ${response.config.method.toUpperCase()} ${response.config.url}`);
+        console.log(`[API] Response ${response.status} ${response.config.method?.toUpperCase() || 'UNKNOWN'} ${response.config.url}`);
       }
 
       return response;
@@ -325,7 +330,7 @@ const EnhancedAPI = {
     try {
       const response = await fn();
       return { data: response.data, error: null };
-    } catch (error) {
+    } catch (error: any) {
       return { 
         data: null, 
         error: error instanceof APIError ? error : new APIError(

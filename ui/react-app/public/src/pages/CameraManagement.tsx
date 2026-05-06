@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Grid, Paper, Button, 
+import { Box, Typography,  Paper, Button, 
   TextField, Dialog, DialogTitle, DialogContent, 
   DialogActions, Card, CardContent, CardMedia,
-  Chip, IconButton, List, ListItem, ListItemText
-} from '@mui/material';
+  Chip, IconButton, List, ListItem, ListItemText } from '@mui/material';
+import { Grid } from '@mui/material';
 import { CameraAlt, VideocamOff, Add, Settings, Delete } from '@mui/icons-material';
 import API from '../services/api';
 import { Camera } from '../types';
@@ -23,7 +22,7 @@ const CameraManagement = () => {
       // For demo, we use a placeholder org_id
       const res = await API.get('/api/orgs/any/cameras');
       setCameras(res.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch cameras");
     }
   };
@@ -34,7 +33,7 @@ const CameraManagement = () => {
       setIsDialogOpen(false);
       setNewCamera({ name: '', rtsp_url: '', location: '' });
       fetchCameras();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to add camera");
     }
   };

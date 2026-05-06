@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Grid, Paper, Card, CardContent, Tabs, Tab } from '@mui/material';
+import { Box, Typography,  Paper, Card, CardContent, Tabs, Tab } from '@mui/material';
+import { Grid } from '@mui/material';
 import ExplainableAIPanel from '../components/ExplainableAIPanel';
 import API from '../services/api';
 
 function ExplanationTab() {
-  const [explanations, setExplanations] = useState([]);
-  const [selectedExplanation, setSelectedExplanation] = useState(null);
+  const [explanations, setExplanations] = useState<any[]>([]);
+  const [selectedExplanation, setSelectedExplanation] = useState<any>(null);
 
   useEffect(() => {
     // Generate sample data if API not available

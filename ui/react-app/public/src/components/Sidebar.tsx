@@ -171,7 +171,7 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }: SidebarProps) =>
         {navSections.map((section) => (
           <Box key={section.key} sx={{ mb: 1 }}>
             <ListItemButton
-              onClick={() => toggleSection(section.key)}
+              onClick={() => toggleSection(section.key as any)}
               sx={{
                 px: 2,
                 py: 1,
@@ -184,15 +184,15 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }: SidebarProps) =>
             >
               <ListItemIcon sx={{ 
                 minWidth: 40, 
-                color: expandedSections[section.key] ? '#3b82f6' : '#94a3b8',
+                color: expandedSections[section.key as keyof typeof expandedSections] ? '#3b82f6' : '#94a3b8',
                 fontSize: 18,
               }}>
                 {section.icon}
               </ListItemIcon>
               <Typography variant="body2" sx={{
                 flex: 1,
-                color: expandedSections[section.key] ? '#f1f5f9' : '#94a3b8',
-                fontWeight: expandedSections[section.key] ? 600 : 400,
+                color: expandedSections[section.key as keyof typeof expandedSections] ? '#f1f5f9' : '#94a3b8',
+                fontWeight: expandedSections[section.key as keyof typeof expandedSections] ? 600 : 400,
                 fontSize: '0.8rem',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
@@ -202,13 +202,13 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }: SidebarProps) =>
               {section.badge && (
                 <Badge badgeContent={section.badge} color="error" />
               )}
-              {expandedSections[section.key] ? 
+              {expandedSections[section.key as keyof typeof expandedSections] ? 
                 <ExpandLess sx={{ color: '#3b82f6', fontSize: 18 }} /> : 
                 <ExpandMore sx={{ color: '#64748b', fontSize: 18 }} />
               }
             </ListItemButton>
             
-            <Collapse in={expandedSections[section.key]} timeout="auto" unmountOnExit>
+            <Collapse in={expandedSections[section.key as keyof typeof expandedSections]} timeout="auto" unmountOnExit>
               <List component="div" disablePadding>
                 {section.items
                   .filter(item => !user?.role || item.roles.includes(user.role.toLowerCase()))

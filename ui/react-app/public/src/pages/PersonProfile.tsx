@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Paper, Grid, Avatar, 
+import { Box, Typography, Paper,  Avatar, 
   List, ListItem, ListItemText, ListItemIcon,
-  Divider, Chip, CircularProgress, Button
-} from '@mui/material';
+  Divider, Chip, CircularProgress, Button } from '@mui/material';
+import { Grid } from '@mui/material';
 import { 
   AccessTime, CameraAlt, LocationOn, 
   VerifiedUser, Shield, Fingerprint,
@@ -43,7 +42,7 @@ const PersonProfile = ({ personId }: PersonProfileProps) => {
       
       const timelineRes = await API.get(`/api/orgs/any/persons/${personId}/timeline`);
       setTimeline(timelineRes.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch person data");
     } finally {
       setLoading(false);
@@ -54,7 +53,7 @@ const PersonProfile = ({ personId }: PersonProfileProps) => {
     try {
       await API.post(`/api/identities/merge?source_id=${personId}&target_id=${targetId}`);
       // Refresh or redirect
-    } catch (err) {
+    } catch (err: any) {
       console.error("Merge failed");
     }
   };

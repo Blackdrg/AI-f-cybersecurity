@@ -58,9 +58,14 @@ class MockConnection:
         return None       # OK
 
 class MockPool:
-    """Mock connection pool."""
-    async def acquire(self):
-        return MockConnection()
+    """Mock connection pool that supports async with acquire()."""
+    def acquire(self):
+        class AcquireContext:
+            async def __aenter__(self):
+                return MockConnection()
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                pass
+        return AcquireContext()
 
 class InMemoryDB:
     """A minimal async DB client used by the entire test suite."""

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
 import axios from 'axios';
-import { Button, Typography, Grid, Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab } from '@mui/material';
+import { Button, Typography,  Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab } from '@mui/material';
+import { Grid } from '@mui/material';
 import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, Public, Visibility, VisibilityOff, Opacity } from '@mui/icons-material';
 import { AlertColor } from '@mui/material';
 import ConsentModal from './ConsentModal';
@@ -165,7 +166,7 @@ const RecognizeView = () => {
             setResults(response.data);
             setMessage('Recognition completed successfully');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Recognition failed');
             setMessage('Recognition failed. Please try again.');
             setSeverity('error');
@@ -202,7 +203,7 @@ const RecognizeView = () => {
 
 // Start capturing frames
              intervalRef.current = window.setInterval(captureFrame, 500) as unknown as number;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error accessing webcam:', error);
             setMessage('Failed to access webcam. Please check permissions.');
             setSeverity('error');
@@ -295,7 +296,7 @@ const RecognizeView = () => {
             setEnrichResultsPage(response.data.enrich_id);
             setMessage('Public profile enrichment completed');
             setSeverity('success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Enrichment failed:', error);
             setMessage('Public profile enrichment failed. Please try again.');
             setSeverity('error');

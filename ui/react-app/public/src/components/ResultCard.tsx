@@ -40,7 +40,7 @@ const ResultCard = ({ data, timeTaken }: ResultCardProps) => {
       </Typography>
       {data.faces.map((face: FaceData, index) => {
         const match = face.matches && face.matches.length > 0 ? face.matches[0] : null;
-        const confidence = match ? (match.score * 100).toFixed(1) : 0;
+        const confidence = match ? (match.score * 100).toFixed(1) : "0";
         const spoofScoreNum = face.spoof_score ? (face.spoof_score * 100) : 0;
 
         return (
