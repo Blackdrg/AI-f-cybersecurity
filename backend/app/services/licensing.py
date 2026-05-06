@@ -3,6 +3,7 @@ import hashlib
 import json
 import base64
 from datetime import datetime
+from typing import Dict
 import os
 
 class LicensingSystem:

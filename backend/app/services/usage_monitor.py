@@ -19,7 +19,6 @@ class UsageMonitor:
     """
     def __init__(self, alert_threshold=0.8):
         self.alert_threshold = alert_threshold
-        self.db = DBClient()
 
     async def check_all_users(self):
         """Audits all users and sends alerts if needed."""
