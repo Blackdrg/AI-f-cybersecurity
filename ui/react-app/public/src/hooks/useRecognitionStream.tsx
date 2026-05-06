@@ -1,16 +1,35 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+interface RecognitionResult {
+  [key: string]: unknown;
+}
+
+interface UseRecognitionStreamOptions {
+  autoReconnect?: boolean;
+  autoConnect?: boolean;
+  onResult?: (data: RecognitionResult) => void;
+}
+
+interface UseRecognitionStreamReturn {
+  lastResult: RecognitionResult | null;
+  status: 'disconnected' | 'connecting' | 'connected' | 'error';
+  error: string | null;
+  connect: () => void;
+  disconnect: () => void;
+  send: (data: unknown) => void;
+}
+
 /**
  * useRecognitionStream Hook
  * Manages WebSocket connection for real-time biometric streaming.
  */
-export const useRecognitionStream = (url, options = {}) => {
-  const [lastResult, setLastResult] = useState(null);
-  const [status, setStatus] = useState('disconnected'); // disconnected, connecting, connected, error
-  const [error, setError] = useState(null);
+export const useRecognitionStream = (url: string, options: UseRecognitionStreamOptions = {}): UseRecognitionStreamReturn => {
+  const [lastResult, setLastResult] = useState<RecognitionResult | null>(null);
+  const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+  const [error, setError] = useState<string | null>(null);
   
-  const socketRef = useRef(null);
-  const reconnectTimeoutRef = useRef(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const connect = useCallback(() => {
     if (socketRef.current) return;
@@ -31,15 +50,15 @@ export const useRecognitionStream = (url, options = {}) => {
       
       socket.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
+          const data: RecognitionResult = JSON.parse(event.data);
           setLastResult(data);
           if (options.onResult) options.onResult(data);
-        } catch (err) {
+        } catch (err: unknown) {
           console.error('Failed to parse WS message:', err);
         }
       };
       
-      socket.onerror = (err) => {
+      socket.onerror = (err: Event) => {
         setStatus('error');
         setError('WebSocket error');
         console.error('WebSocket Error:', err);
@@ -57,9 +76,9 @@ export const useRecognitionStream = (url, options = {}) => {
           }, 3000);
         }
       };
-    } catch (err) {
+    } catch (err: unknown) {
       setStatus('error');
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     }
   }, [url, options]);
   
@@ -74,8 +93,8 @@ export const useRecognitionStream = (url, options = {}) => {
     setStatus('disconnected');
   }, []);
   
-  const send = useCallback((data) => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+  const send = useCallback((data: unknown) => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
       socketRef.current.send(typeof data === 'string' ? data : JSON.stringify(data));
     } else {
       console.warn('Cannot send: WebSocket is not open');

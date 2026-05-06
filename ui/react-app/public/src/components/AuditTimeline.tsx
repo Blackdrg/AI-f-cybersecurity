@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box, Typography, Paper, Card, CardContent,
-  Chip, Button, TextField, MenuItem,
-  Grid, Collapse, List, ListItem,
+  Chip, Button, TextField, MenuItem, Grid, Collapse, List, ListItem,
   ListItemText, ListItemIcon, LinearProgress,
   CircularProgress
 } from '@mui/material';
@@ -294,67 +293,67 @@ export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }: AuditTime
       {/* Filters */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
-              <TextField
-                select
-                fullWidth
-                size="small"
-                label="Timeframe"
-                value={timeframe}
-                onChange={(e) => setTimeframe(e.target.value)}
-              >
-                <MenuItem value="1h">Last Hour</MenuItem>
-                <MenuItem value="24h">Last 24 Hours</MenuItem>
-                <MenuItem value="7d">Last 7 Days</MenuItem>
-                <MenuItem value="30d">Last 30 Days</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                select
-                fullWidth
-                size="small"
-                label="Action Type"
-                value={filterAction}
-                onChange={(e) => setFilterAction(e.target.value)}
-              >
-                <MenuItem value="all">All Actions</MenuItem>
-                <MenuItem value="login">Login</MenuItem>
-                <MenuItem value="enroll">Enroll</MenuItem>
-                <MenuItem value="recognize">Recognize</MenuItem>
-                <MenuItem value="revoke">Revoke</MenuItem>
-                <MenuItem value="override">Override</MenuItem>
-                <MenuItem value="escalate">Escalate</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                select
-                fullWidth
-                size="small"
-                label="Severity"
-                value={filterSeverity}
-                onChange={(e) => setFilterSeverity(e.target.value)}
-              >
-                <MenuItem value="all">All Severity</MenuItem>
-                <MenuItem value="critical">Critical</MenuItem>
-                <MenuItem value="high">High</MenuItem>
-                <MenuItem value="medium">Medium</MenuItem>
-                <MenuItem value="low">Low</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Search logs..."
-                InputProps={{
-                  startAdornment: <Search fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                }}
-              />
-            </Grid>
-          </Grid>
+<Grid container spacing={2} alignItems="center">
+             <Grid size={{ xs: 12, sm: 3 }}>
+               <TextField
+                 select
+                 fullWidth
+                 size="small"
+                 label="Timeframe"
+                 value={timeframe}
+                 onChange={(e) => setTimeframe(e.target.value)}
+               >
+                 <MenuItem value="1h">Last Hour</MenuItem>
+                 <MenuItem value="24h">Last 24 Hours</MenuItem>
+                 <MenuItem value="7d">Last 7 Days</MenuItem>
+                 <MenuItem value="30d">Last 30 Days</MenuItem>
+               </TextField>
+             </Grid>
+             <Grid size={{ xs: 12, sm: 3 }}>
+               <TextField
+                 select
+                 fullWidth
+                 size="small"
+                 label="Action Type"
+                 value={filterAction}
+                 onChange={(e) => setFilterAction(e.target.value)}
+               >
+                 <MenuItem value="all">All Actions</MenuItem>
+                 <MenuItem value="login">Login</MenuItem>
+                 <MenuItem value="enroll">Enroll</MenuItem>
+                 <MenuItem value="recognize">Recognize</MenuItem>
+                 <MenuItem value="revoke">Revoke</MenuItem>
+                 <MenuItem value="override">Override</MenuItem>
+                 <MenuItem value="escalate">Escalate</MenuItem>
+               </TextField>
+             </Grid>
+             <Grid size={{ xs: 12, sm: 3 }}>
+               <TextField
+                 select
+                 fullWidth
+                 size="small"
+                 label="Severity"
+                 value={filterSeverity}
+                 onChange={(e) => setFilterSeverity(e.target.value)}
+               >
+                 <MenuItem value="all">All Severity</MenuItem>
+                 <MenuItem value="critical">Critical</MenuItem>
+                 <MenuItem value="high">High</MenuItem>
+                 <MenuItem value="medium">Medium</MenuItem>
+                 <MenuItem value="low">Low</MenuItem>
+               </TextField>
+             </Grid>
+             <Grid size={{ xs: 12, sm: 3 }}>
+               <TextField
+                 fullWidth
+                 size="small"
+                 placeholder="Search logs..."
+                 InputProps={{
+                   startAdornment: <Search fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                 }}
+               />
+             </Grid>
+           </Grid>
         </CardContent>
       </Card>
 
@@ -395,9 +394,9 @@ export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }: AuditTime
         ) : (
           filteredLogs.map((log, index) => (
             <React.Fragment key={log.id || index}>
-              <ListItem
-                button
-                onClick={() => setExpandedLog(expandedLog === index ? null : index)}
+<ListItem
+                 component="button"
+                 onClick={() => setExpandedLog(expandedLog === index ? null : index)}
                 sx={{
                   borderBottom: '1px solid',
                   borderColor: 'divider',
@@ -471,22 +470,22 @@ export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }: AuditTime
           <Typography variant="body2" color="text.secondary" gutterBottom>
             Each log entry is cryptographically hashed and linked to form an immutable chain.
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-                <Typography variant="caption" color="text.secondary">Chain Length</Typography>
-                <Typography variant="h5" color="primary">{(verificationStatus.totalLogs || 0)}</Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Box sx={{ p: 2, bgcolor: (verificationStatus.hashChainValid ?? true) ? 'success.light' : 'error.light', borderRadius: 1 }}>
-                <Typography variant="caption" color="text.secondary">Integrity Status</Typography>
-                <Typography variant="h6">
-                  {(verificationStatus.hashChainValid ?? true) ? 'VERIFIED' : 'TAMPERED'}
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
+<Grid container spacing={2}>
+             <Grid size={{ xs: 12, sm: 6 }}>
+               <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                 <Typography variant="caption" color="text.secondary">Chain Length</Typography>
+                 <Typography variant="h5" color="primary">{(verificationStatus.totalLogs || 0)}</Typography>
+               </Box>
+             </Grid>
+             <Grid size={{ xs: 12, sm: 6 }}>
+               <Box sx={{ p: 2, bgcolor: (verificationStatus.hashChainValid ?? true) ? 'success.light' : 'error.light', borderRadius: 1 }}>
+                 <Typography variant="caption" color="text.secondary">Integrity Status</Typography>
+                 <Typography variant="h6">
+                   {(verificationStatus.hashChainValid ?? true) ? 'VERIFIED' : 'TAMPERED'}
+                 </Typography>
+               </Box>
+             </Grid>
+           </Grid>
         </CardContent>
       </Card>
     </Paper>

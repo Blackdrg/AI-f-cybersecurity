@@ -221,7 +221,7 @@ try:
     bp = BehavioralPredictor()
     res = bp.predict_behavior({"dominant_emotion": "happy"})
     assert 'behavior' in res
-    results["BehavioralPredictor"] = "[PASS] - Emotion→behavior mapping"
+    results["BehavioralPredictor"] = "[PASS] - Emotion->behavior mapping"
 except Exception as e:
     results["BehavioralPredictor"] = f"[FAIL]: {e}"
 

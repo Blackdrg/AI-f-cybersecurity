@@ -6,8 +6,16 @@ Production implementation with bias mitigation and explainability.
 from typing import Dict, Any, Optional
 from dataclasses import dataclass, asdict
 import logging
+from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+
+class DecisionStrategy(Enum):
+    """Decision strategy modes."""
+    CONSERVATIVE = "conservative"
+    BALANCED = "balanced"
+    AGGRESSIVE = "aggressive"
 
 
 @dataclass
@@ -39,11 +47,34 @@ class DecisionEngine:
             "review": 0.50,
         }
     
-    def make_decision(self, context: DecisionContext) -> Dict[str, Any]:
+    def make_decision(self, face_result=None, voice_result=None, gait_result=None, liveness_result=None, metadata=None, context: Optional[DecisionContext] = None) -> Dict[str, Any]:
         """
         Compute final decision from multi-modal scores.
+        
+        Supports both legacy parameter-based call and new context-based call.
+        Legacy signature (for compatibility with existing code/tests):
+            make_decision(face_result, voice_result, gait_result, liveness_result, metadata)
+        
+        New context-based signature:
+            make_decision(context=DecisionContext(...))
+        
         Returns accept/reject with explanation.
         """
+        # If context is provided, use it (new way)
+        if context is not None:
+            ctx = context
+        else:  # Legacy parameter-based call
+            confidence = face_result.get('score', 0) if isinstance(face_result, dict) else float(face_result or 0)
+            liveness = float(liveness_result) if not isinstance(liveness_result, dict) else liveness_result.get('score', 0.5)
+            ctx = DecisionContext(
+                confidence=confidence,
+                liveness_score=liveness,
+                policy_score=metadata.get('policy_score', 0.7) if isinstance(metadata, dict) else 0.7,
+                ethical_score=metadata.get('ethical_score', 0.8) if isinstance(metadata, dict) else 0.8,
+                bias_risk=metadata.get('bias_risk', 0.1) if isinstance(metadata, dict) else 0.1,
+                environment=metadata.get('environment', 'production') if isinstance(metadata, dict) else 'production',
+                user_role=metadata.get('user_role', 'viewer') if isinstance(metadata, dict) else 'viewer'
+            )
         # Compute weighted score
         total_score = (
             context.confidence * self.weights["confidence"] +

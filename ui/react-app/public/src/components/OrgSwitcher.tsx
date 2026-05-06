@@ -4,7 +4,7 @@ import {
   ListItemIcon, Typography, Chip, Avatar, Divider, Paper,
   IconButton, Tooltip, Card, CardContent, Grid, TextField,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  FormControl, InputLabel, Select
+  FormControl, InputLabel, Select, LinearProgress
 } from '@mui/material';
 import {
   AccountTree, Add, Settings, AccountCircle,
@@ -12,16 +12,30 @@ import {
   ChevronRight, ExpandMore, ExpandLess, CheckCircle,
   Error as ErrorIcon, Warning, Info, Store
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, Organization as OrgType } from '../contexts/AuthContext';
 import API from '../services/api';
+
+interface Subscription {
+  plan_name: string;
+  monthly_price: number;
+  current_period_start: string | null;
+  next_invoice_date: string | null;
+  status: string;
+  recognitions_used: number;
+  recognitions_limit: number;
+}
+
+interface BillingUsage {
+  [orgId: string]: Subscription;
+}
 
 export const OrgSwitcher = () => {
   const { organization, organizations, switchOrganization, user, hasPermission } = useAuth();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [createOrgOpen, setCreateOrgOpen] = useState(false);
-  const [newOrgName, setNewOrgName] = useState('');
-  const [newOrgEmail, setNewOrgEmail] = useState('');
-  const [orgBilling, setOrgBilling] = useState({});
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [createOrgOpen, setCreateOrgOpen] = useState<boolean>(false);
+  const [newOrgName, setNewOrgName] = useState<string>('');
+  const [newOrgEmail, setNewOrgEmail] = useState<string>('');
+  const [orgBilling, setOrgBilling] = useState<BillingUsage>({});
 
   useEffect(() => {
     // Fetch billing info for current org
@@ -30,7 +44,7 @@ export const OrgSwitcher = () => {
     }
   }, [organization]);
 
-  const fetchBillingInfo = async (orgId) => {
+  const fetchBillingInfo = async (orgId: string) => {
     try {
       const res = await API.get(`/api/subscriptions/org/${orgId}`).catch(() => null);
       if (res?.data) {
@@ -41,7 +55,7 @@ export const OrgSwitcher = () => {
     }
   };
 
-  const handleOrgSwitch = (org) => {
+  const handleOrgSwitch = (org: OrgType) => {
     switchOrganization(org);
     setAnchorEl(null);
   };
@@ -64,23 +78,23 @@ export const OrgSwitcher = () => {
     }
   };
 
-  const getTierColor = (tier) => {
-    const colors = {
+  const getTierColor = (tier: string | undefined) => {
+    const colors: Record<string, string> = {
       free: '#64748b',
       pro: '#3b82f6',
       enterprise: '#8b5cf6',
       custom: '#f59e0b'
     };
-    return colors[tier?.toLowerCase()] || '#64748b';
+    return tier ? (colors[tier.toLowerCase()] || '#64748b') : '#64748b';
   };
 
-  const getTierFeatures = (tier) => {
-    const features = {
+  const getTierFeatures = (tier: string | undefined) => {
+    const features: Record<string, string[]> = {
       free: ['Up to 5 users', '10,000 recognitions/mo', 'Basic support'],
       pro: ['Up to 50 users', '100,000 recognitions/mo', 'Priority support', 'Advanced analytics'],
       enterprise: ['Unlimited users', 'Unlimited recognitions', '24/7 support', 'Custom deployments', 'SLA guarantee']
     };
-    return features[tier?.toLowerCase()] || features.free;
+    return tier ? (features[tier.toLowerCase()] || features.free) : features.free;
   };
 
   const currentTier = organization?.subscription_tier || 'free';
@@ -254,9 +268,9 @@ export const OrgSwitcher = () => {
   );
 };
 
-export const BillingWidget = ({ orgId }) => {
-  const [billingInfo, setBillingInfo] = useState(null);
-  const [billingDialogOpen, setBillingDialogOpen] = useState(false);
+export const BillingWidget = ({ orgId }: { orgId: string }) => {
+  const [billingInfo, setBillingInfo] = useState<Subscription | null>(null);
+  const [billingDialogOpen, setBillingDialogOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (orgId) {
@@ -268,14 +282,24 @@ export const BillingWidget = ({ orgId }) => {
     try {
       const res = await API.get(`/api/subscriptions/org/${orgId}`).catch(() => null);
       if (res?.data) {
-        setBillingInfo(res.data);
+        // Ensure the data has default values for optional properties
+        const data: Subscription = {
+          plan_name: res.data.plan_name || 'Free',
+          monthly_price: res.data.monthly_price || 0,
+          current_period_start: res.data.current_period_start || null,
+          next_invoice_date: res.data.next_invoice_date || null,
+          status: res.data.status || 'active',
+          recognitions_used: res.data.recognitions_used || 0,
+          recognitions_limit: res.data.recognitions_limit || 0
+        };
+        setBillingInfo(data);
       }
     } catch (err) {
       console.warn('Failed to fetch billing info');
     }
   };
 
-  const getUsageColor = (percentage) => {
+  const getUsageColor = (percentage: number) => {
     if (percentage > 90) return '#ef4444';
     if (percentage > 70) return '#f59e0b';
     return '#10b981';
@@ -291,7 +315,9 @@ export const BillingWidget = ({ orgId }) => {
     );
   }
 
-  const recUsagePercent = Math.round((billingInfo.recognitions_used / billingInfo.recognitions_limit) * 100) || 0;
+  const recUsagePercent = billingInfo.recognitions_limit > 0
+    ? Math.round((billingInfo.recognitions_used / billingInfo.recognitions_limit) * 100)
+    : 0;
 
   return (
     <>

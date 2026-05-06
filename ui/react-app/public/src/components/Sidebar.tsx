@@ -6,19 +6,29 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
-  ExpandLess, ExpandMore, Shield, Home, PersonAdd, CameraAlt, 
+  ExpandLess, ExpandMore, Shield, Home, PersonAdd, CameraAlt,
   BarChart, Settings, ExitToApp, AdminPanelSettings, Security,
   Videocam, Gavel, Code, Monitor, Radar, NetworkCheck,
   ShowChart, CompareArrows, FilterCenterFocus, BugReport,
-  Fingerprint, Eye, Style, BlurLinear, VerifiedUser, Key,
+  Fingerprint, VisibilityOutlined as Eye, Style, BlurLinear, VerifiedUser, Key,
   Description, Layers, Storage, Public, Policy, Gavel as GavelIcon,
   Warning, Lock, TrendingUp, Analytics, PsychologyOutlined, StorageOutlined,
   VisibilityOutlined, Cloud, Domain, Timeline, AccountCircle, ChevronRight
 } from '@mui/icons-material';
 
+interface SidebarProps {
+  activePage: string;
+  setActivePage: (page: string) => void;
+  onLogout: () => void;
+  user?: {
+    role?: string;
+    [key: string]: any;
+  };
+}
+
 const drawerWidth = 280;
 
-const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
+const Sidebar = ({ activePage, setActivePage, onLogout, user }: SidebarProps) => {
   const theme = useTheme();
   const [expandedSections, setExpandedSections] = useState({
     core: true,
@@ -29,7 +39,7 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
     identity: true
   });
 
-  const toggleSection = (section) => {
+  const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
@@ -190,7 +200,7 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
                 {section.label}
               </Typography>
               {section.badge && (
-                <Badge badgeContent={section.badge} color="error" size="small" />
+                <Badge badgeContent={section.badge} color="error" />
               )}
               {expandedSections[section.key] ? 
                 <ExpandLess sx={{ color: '#3b82f6', fontSize: 18 }} /> : 
@@ -242,14 +252,13 @@ const Sidebar = ({ activePage, setActivePage, onLogout, user }) => {
                       {item.badge && (
                         <Badge 
                           badgeContent={item.badge} 
-                          color="error" 
-                          size="small"
+                          color="error"
                           sx={{
                             '& .MuiBadge-badge': {
                               fontSize: '0.7rem',
                               height: 14,
                               minWidth: 14,
-                            }
+                            },
                           }}
                         />
                       )}

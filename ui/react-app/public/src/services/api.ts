@@ -129,4 +129,22 @@ export const checkHealth = async () => {
   return res.data;
 };
 
+export interface SystemStatusData {
+  overall: 'healthy' | 'degraded' | 'unhealthy' | 'unconfigured';
+  dependencies: {
+    payments: string;
+    llm: string;
+    search_bing: string;
+    search_wikipedia: string;
+    database: string;
+  };
+}
+
+export interface CheckDependenciesResponse extends APIResponse<SystemStatusData> {}
+
+export const checkDependencies = async (): Promise<CheckDependenciesResponse> => {
+  const res = await API.get<CheckDependenciesResponse>("/api/health/dependencies");
+  return res.data;
+};
+
 export default API;

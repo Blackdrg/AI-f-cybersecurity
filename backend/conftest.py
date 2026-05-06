@@ -23,7 +23,7 @@ import pytest
 # =============================================================================
 os.environ.setdefault('ENVIRONMENT', 'test')
 os.environ.setdefault('JWT_SECRET', 'test-jwt-secret-key-64byte-long-string-here-for-HS256')
-os.environ.setdefault('ENCRYPTION_KEY', 'test-encryption-key-32bytes-longstring-for-AES256')
+os.environ.setdefault('ENCRYPTION_KEY', '0XKYdoZg1Q4f1mXPIWwEVRwQcGm0sKomFk4N5ksJ2nA=')
 os.environ.setdefault('OPENAI_API_KEY', 'sk-test-mock-openai')
 os.environ.setdefault('STRIPE_SECRET_KEY', 'sk_test_mock_stripe')
 os.environ.setdefault('STRIPE_WEBHOOK_SECRET', 'whsec_change_me')  # matches test_webhooks
@@ -446,6 +446,13 @@ openai_patcher = patch('openai.OpenAI', side_effect=_MockOpenAI)
 openai_patcher.start()
 
 # --- Mock InsightFace & ONNX ---
+import sys
+from unittest.mock import MagicMock
+# Create mock insightface module
+mock_insightface = MagicMock()
+mock_insightface.app.FaceAnalysis = MagicMock()
+sys.modules['insightface'] = mock_insightface
+sys.modules['insightface.app'] = mock_insightface.app
 insightface_patcher = patch('insightface.app.FaceAnalysis', MagicMock())
 insightface_patcher.start()
 onnx_patcher = patch('onnxruntime.InferenceSession', MagicMock())
@@ -494,6 +501,12 @@ class _MockHTTPXClient:
             def json(self):
                 return self._json
         return _Resp(url)
+    async def send(self, *args, **kwargs):
+        class _Resp:
+            status_code = 200
+            def json(self):
+                return {"access_token":"mock","id_token":"mock_id","expires_in":3600}
+        return _Resp()
 httpx_patcher = patch('httpx.AsyncClient', _MockHTTPXClient)
 httpx_patcher.start()
 
@@ -508,6 +521,12 @@ torch_device_count_patcher = patch('torch.cuda.device_count', return_value=0)
 torch_device_count_patcher.start()
 
 # --- Mock SpeechBrain (voice) ---
+import sys
+from unittest.mock import MagicMock
+sys.modules['speechbrain'] = MagicMock()
+sys.modules['speechbrain.inference'] = MagicMock()
+sys.modules['speechbrain.inference.speaker'] = MagicMock()
+sys.modules['speechbrain.inference.speaker'].EncoderClassifier = MagicMock()
 speechbrain_patcher = patch('speechbrain.inference.speaker.EncoderClassifier', MagicMock())
 speechbrain_patcher.start()
 

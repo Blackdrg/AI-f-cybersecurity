@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, DragEvent, ChangeEvent } from 'react';
 import { Box, Typography, Button, Paper } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 
-const UploadBox = ({ onUpload, isProcessing }) => {
-  const [dragActive, setDragActive] = useState(false);
+interface UploadBoxProps {
+  onUpload: (file: File) => void;
+  isProcessing: boolean;
+}
 
-  const handleDrag = (e) => {
+const UploadBox = ({ onUpload, isProcessing }: UploadBoxProps) => {
+  const [dragActive, setDragActive] = useState<boolean>(false);
+
+  const handleDrag = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -15,19 +20,21 @@ const UploadBox = ({ onUpload, isProcessing }) => {
     }
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onUpload(e.dataTransfer.files[0]);
+    const file: File = e.dataTransfer.files[0];
+    if (file) {
+      onUpload(file);
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      onUpload(e.target.files[0]);
+    const file: File = e.target.files?.[0] as File;
+    if (file) {
+      onUpload(file);
     }
   };
 

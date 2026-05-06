@@ -2,7 +2,27 @@ import React from 'react';
 import { Card, CardContent, Typography, Box, Chip, LinearProgress } from '@mui/material';
 import { Face, SentimentSatisfied, Person, Security } from '@mui/icons-material';
 
-const ResultCard = ({ data, timeTaken }) => {
+interface FaceMatch {
+  name: string;
+  score: number;
+}
+
+interface FaceData {
+  face_embedding_id: string;
+  is_unknown: boolean;
+  matches?: FaceMatch[];
+  spoof_score?: number;
+  emotion?: { dominant_emotion: string };
+  age?: number;
+  gender?: string;
+}
+
+interface ResultCardProps {
+  data: { faces: FaceData[] } | null;
+  timeTaken: number;
+}
+
+const ResultCard = ({ data, timeTaken }: ResultCardProps) => {
   if (!data || !data.faces || data.faces.length === 0) {
     return (
       <Card sx={{ mt: 2 }}>
@@ -18,10 +38,10 @@ const ResultCard = ({ data, timeTaken }) => {
       <Typography variant="subtitle2" sx={{ mb: 1, opacity: 0.7 }}>
         Processing time: {(timeTaken * 1000).toFixed(0)}ms
       </Typography>
-      {data.faces.map((face, index) => {
+      {data.faces.map((face: FaceData, index) => {
         const match = face.matches && face.matches.length > 0 ? face.matches[0] : null;
         const confidence = match ? (match.score * 100).toFixed(1) : 0;
-        const spoofScore = face.spoof_score ? (face.spoof_score * 100).toFixed(1) : 0;
+        const spoofScoreNum = face.spoof_score ? (face.spoof_score * 100) : 0;
 
         return (
           <Card key={index} sx={{ mb: 2, borderLeft: '4px solid', borderLeftColor: face.is_unknown ? 'warning.main' : 'success.main' }}>
@@ -35,8 +55,8 @@ const ResultCard = ({ data, timeTaken }) => {
                     Face ID: {face.face_embedding_id.substring(0, 8)}...
                   </Typography>
                 </Box>
-                <Chip 
-                  label={`${confidence}% Match`} 
+                <Chip
+                  label={`${confidence}% Match`}
                   color={parseFloat(confidence) > 80 ? "success" : "warning"}
                   icon={<Security />}
                 />
@@ -60,13 +80,13 @@ const ResultCard = ({ data, timeTaken }) => {
                 <Box sx={{ gridColumn: 'span 2' }}>
                   <Typography variant="caption" display="block">Spoof Protection Score</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={100 - spoofScore} 
+                    <LinearProgress
+                      variant="determinate"
+                      value={100 - spoofScoreNum}
                       sx={{ flexGrow: 1, mr: 1, height: 8, borderRadius: 4 }}
-                      color={parseFloat(spoofScore) < 50 ? "success" : "error"}
+                      color={spoofScoreNum < 50 ? "success" : "error"}
                     />
-                    <Typography variant="body2">{(100 - spoofScore).toFixed(0)}% Real</Typography>
+                    <Typography variant="body2">{(100 - spoofScoreNum).toFixed(0)}% Real</Typography>
                   </Box>
                 </Box>
               </Box>

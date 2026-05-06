@@ -1,32 +1,33 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
 import axios from 'axios';
 import { Button, Typography, Grid, Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab } from '@mui/material';
 import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, Public, Visibility, VisibilityOff, Opacity } from '@mui/icons-material';
-import ConsentModal from './ConsentModal.tsx';
-import EnrichResultsPage from './EnrichResultsPage.tsx';
+import { AlertColor } from '@mui/material';
+import ConsentModal from './ConsentModal';
+import EnrichResultsPage from './EnrichResultsPage';
 
 const RecognizeView = () => {
-    const [image, setImage] = useState(null);
-    const [results, setResults] = useState(null);
+    const [image, setImage] = useState<File | null>(null);
+    const [results, setResults] = useState<any | null>(null);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
-    const [severity, setSeverity] = useState('success');
+    const [severity, setSeverity] = useState<AlertColor>('success');
     const [webcamActive, setWebcamActive] = useState(false);
-    const [streamResults, setStreamResults] = useState(null);
+    const [streamResults, setStreamResults] = useState<any | null>(null);
     const [consentModalOpen, setConsentModalOpen] = useState(false);
-    const [enrichResultsPage, setEnrichResultsPage] = useState(null);
-    const [consentToken, setConsentToken] = useState(null);
-    const [enrichingPerson, setEnrichingPerson] = useState(null);
+    const [enrichResultsPage, setEnrichResultsPage] = useState<string | null>(null);
+    const [consentToken, setConsentToken] = useState<string | null>(null);
+    const [enrichingPerson, setEnrichingPerson] = useState<{ person_id: string; name: string } | null>(null);
     const [overlaysVisible, setOverlaysVisible] = useState(true);
     const [overlayOpacity, setOverlayOpacity] = useState(0.8);
-    const videoRef = useRef(null);
-    const canvasRef = useRef(null);
-    const overlayCanvasRef = useRef(null);
-    const wsRef = useRef(null);
-    const intervalRef = useRef(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+    const wsRef = useRef<WebSocket | null>(null);
+    const intervalRef = useRef<number | null>(null);
 
     // Emotion-based theme adaptation
-    const getEmotionTheme = (emotion) => {
+    const getEmotionTheme = (emotion: any) => {
         if (!emotion) return { primary: '#00bcd4', secondary: '#ff4081', background: 'linear-gradient(145deg, rgba(0, 188, 212, 0.1), rgba(255, 64, 129, 0.05))' };
 
         const dominant = emotion.dominant_emotion;
@@ -48,7 +49,7 @@ const RecognizeView = () => {
         }
     };
 
-    const getEmotionIcon = (emotion) => {
+    const getEmotionIcon = (emotion: any) => {
         if (!emotion) return <SentimentNeutral />;
 
         const dominant = emotion.dominant_emotion;
@@ -74,7 +75,7 @@ const RecognizeView = () => {
 
         const ctx = overlayCanvas.getContext('2d');
         const video = videoRef.current;
-        if (!video) return;
+        if (!video || !ctx) return;
 
         // Set canvas size to match video
         overlayCanvas.width = video.videoWidth;
@@ -86,11 +87,11 @@ const RecognizeView = () => {
         // Set global alpha for opacity
         ctx.globalAlpha = overlayOpacity;
 
-        streamResults.faces.forEach((face, idx) => {
+        streamResults.faces.forEach((face: any, idx: number) => {
             const [x, y, w, h] = face.face_box;
 
             // Draw bounding box
-            ctx.strokeStyle = face.matches.length > 0 ? '#4caf50' : '#f44336';
+            ctx.strokeStyle = face.matches && face.matches.length > 0 ? '#4caf50' : '#f44336';
             ctx.lineWidth = 3;
             ctx.strokeRect(x, y, w, h);
 
@@ -103,7 +104,7 @@ const RecognizeView = () => {
             ctx.font = '14px Arial';
             ctx.fillText(`Face ${idx + 1}`, x + 5, y - 25);
 
-            if (face.matches.length > 0) {
+            if (face.matches && face.matches.length > 0) {
                 const match = face.matches[0];
                 ctx.fillText(`${match.name} (${(match.score * 100).toFixed(1)}%)`, x + 5, y - 10);
             } else {
@@ -130,7 +131,7 @@ const RecognizeView = () => {
         ctx.globalAlpha = 1.0;
     };
 
-    const getEmotionColor = (emotion) => {
+    const getEmotionColor = (emotion: string) => {
         switch (emotion) {
             case 'happy': return '#4caf50';
             case 'sad': return '#2196f3';
@@ -142,7 +143,7 @@ const RecognizeView = () => {
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!image) return;
 
@@ -175,7 +176,9 @@ const RecognizeView = () => {
     const startWebcam = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            videoRef.current.srcObject = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
             setWebcamActive(true);
             setMessage('Webcam started successfully');
             setSeverity('success');
@@ -197,8 +200,8 @@ const RecognizeView = () => {
                 setSeverity('error');
             };
 
-            // Start capturing frames
-            intervalRef.current = setInterval(captureFrame, 500);
+// Start capturing frames
+             intervalRef.current = window.setInterval(captureFrame, 500) as unknown as number;
         } catch (error) {
             console.error('Error accessing webcam:', error);
             setMessage('Failed to access webcam. Please check permissions.');
@@ -208,7 +211,7 @@ const RecognizeView = () => {
 
     const stopWebcam = () => {
         if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject;
+            const stream = videoRef.current.srcObject as MediaStream;
             const tracks = stream.getTracks();
             tracks.forEach(track => track.stop());
             videoRef.current.srcObject = null;
@@ -219,7 +222,9 @@ const RecognizeView = () => {
         const overlayCanvas = overlayCanvasRef.current;
         if (overlayCanvas) {
             const ctx = overlayCanvas.getContext('2d');
-            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            if (ctx) {
+                ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            }
         }
         if (wsRef.current) {
             wsRef.current.close();
@@ -239,35 +244,39 @@ const RecognizeView = () => {
         const canvas = canvasRef.current;
         const video = videoRef.current;
         const context = canvas.getContext('2d');
+        if (!context) return;
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         canvas.toBlob((blob) => {
+            if (!blob) return;
             const reader = new FileReader();
             reader.onload = () => {
-                const base64Data = reader.result.split(',')[1];
-                wsRef.current.send(JSON.stringify({
-                    type: 'frame',
-                    data: base64Data
-                }));
+                if (typeof reader.result === 'string') {
+                    const base64Data = reader.result.split(',')[1];
+                    wsRef.current?.send(JSON.stringify({
+                        type: 'frame',
+                        data: base64Data
+                    }));
+                }
             };
             reader.readAsDataURL(blob);
         }, 'image/jpeg', 0.8);
     };
 
-    const handleEnrichPublicProfile = (person) => {
+    const handleEnrichPublicProfile = (person: { person_id: string; name: string }) => {
         setEnrichingPerson(person);
         setConsentModalOpen(true);
     };
 
-    const handleConsentGranted = (token) => {
+    const handleConsentGranted = (token: string) => {
         setConsentToken(token);
         performEnrichment(token);
     };
 
-    const performEnrichment = async (token) => {
+    const performEnrichment = async (token: string) => {
         if (!enrichingPerson) return;
 
         setLoading(true);
@@ -320,7 +329,7 @@ const RecognizeView = () => {
             </Typography>
 
             <Grid container spacing={4}>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                     <Card sx={{ p: 4 }}>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
@@ -404,7 +413,7 @@ const RecognizeView = () => {
 
                             <form onSubmit={handleSubmit}>
                                 <Grid container spacing={3}>
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Box sx={{
                                             border: '2px dashed rgba(0, 188, 212, 0.5)',
                                             borderRadius: '16px',
@@ -441,10 +450,10 @@ const RecognizeView = () => {
                                                 </Typography>
                                             )}
                                         </Box>
-                                    </Grid>
+</Grid>
 
-                                    <Grid item xs={12}>
-                                        <Button
+                                     <Grid size={{ xs: 12 }}>
+                                         <Button
                                             type="submit"
                                             variant="contained"
                                             fullWidth
@@ -477,9 +486,9 @@ const RecognizeView = () => {
                     </Card>
                 </Grid>
 
-                {message && (
-                    <Grid item xs={12}>
-                        <Alert
+{message && (
+                     <Grid size={{ xs: 12 }}>
+                         <Alert
                             severity={severity}
                             sx={{
                                 borderRadius: '16px',
@@ -495,22 +504,22 @@ const RecognizeView = () => {
                     </Grid>
                 )}
 
-                {(results && results.faces && results.faces.length > 0) || (streamResults && streamResults.faces && streamResults.faces.length > 0) ? (
-                    <Grid item xs={12}>
-                        <Card sx={{ p: 4 }}>
-                            <CardContent>
-                                <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
-                                    <Face sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                    {webcamActive ? 'Live Recognition Results' : 'Recognition Results'}
-                                </Typography>
+{(results && results.faces && results.faces.length > 0) || (streamResults && streamResults.faces && streamResults.faces.length > 0) ? (
+                     <Grid size={{ xs: 12 }}>
+                         <Card sx={{ p: 4 }}>
+                             <CardContent>
+                                 <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+                                     <Face sx={{ mr: 1, verticalAlign: 'middle' }} />
+                                     {webcamActive ? 'Live Recognition Results' : 'Recognition Results'}
+                                 </Typography>
 
-                                <Grid container spacing={3}>
-                                    {(webcamActive ? streamResults?.faces || [] : results?.faces || []).map((face, idx) => {
-                                        const emotionTheme = getEmotionTheme(face.emotion);
-                                        const emotionIcon = getEmotionIcon(face.emotion);
-                                        const person = face.matches && face.matches.length > 0 ? face.matches[0] : null;
-                                        return (
-                                            <Grid item xs={12} sm={6} md={4} key={idx}>
+<Grid container spacing={3}>
+                                      {(webcamActive ? streamResults?.faces || [] : results?.faces || []).map((face: any, idx: number) => {
+                                         const emotionTheme = getEmotionTheme(face.emotion);
+                                         const emotionIcon = getEmotionIcon(face.emotion);
+                                         const person = face.matches && face.matches.length > 0 ? face.matches[0] : null;
+                                         return (
+                                             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
                                                 <Card sx={{
                                                     p: 3,
                                                     background: emotionTheme.background,
@@ -523,13 +532,13 @@ const RecognizeView = () => {
                                                         boxShadow: `0 8px 24px ${emotionTheme.primary}30`,
                                                     }
                                                 }}>
-                                                    <Avatar sx={{
-                                                        width: 60,
-                                                        height: 60,
-                                                        mx: 'auto',
-                                                        mb: 2,
-                                                        bgcolor: face.matches.length > 0 ? emotionTheme.primary : emotionTheme.secondary
-                                                    }}>
+<Avatar sx={{
+                                                         width: 60,
+                                                         height: 60,
+                                                         mx: 'auto',
+                                                         mb: 2,
+                                                         bgcolor: face.matches && face.matches.length > 0 ? emotionTheme.primary : emotionTheme.secondary
+                                                     }}>
                                                         <Person />
                                                     </Avatar>
                                                     <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
@@ -554,7 +563,7 @@ const RecognizeView = () => {
                                                             />
                                                             {/* Emotion Scores */}
                                                             <Box sx={{ mt: 1 }}>
-                                                                {Object.entries(face.emotion.emotions).map(([emotion, score]) => (
+                                                                {Object.entries(face.emotion?.emotions as { [key: string]: number }).map(([emotion, score]) => (
                                                                     <Box key={emotion} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                                                                         <Typography variant="caption" sx={{ minWidth: 60, textAlign: 'left' }}>
                                                                             {emotion}
@@ -582,7 +591,7 @@ const RecognizeView = () => {
                                                         </Box>
                                                     )}
 
-                                                    {face.matches.length > 0 ? (
+                                                    {face.matches && face.matches.length > 0 ? (
                                                         <Box>
                                                             <Chip
                                                                 label={face.matches[0].name}
@@ -653,9 +662,9 @@ const RecognizeView = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                ) : webcamActive ? (
-                    <Grid item xs={12}>
-                        <Card sx={{ p: 4 }}>
+) : webcamActive ? (
+                     <Grid size={{ xs: 12 }}>
+                         <Card sx={{ p: 4 }}>
                             <CardContent sx={{ textAlign: 'center' }}>
                                 <Typography variant="h6" sx={{ color: 'text.secondary' }}>
                                     Waiting for faces to be detected...

@@ -57,7 +57,6 @@ class GaitAnalyzer:
 
     def _hu_fallback(self, frames):
         """Hu moments backward compat."""
-        # Calculate Hu moments for each frame, then aggregate
         hu_features = []
         for frame in frames:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -65,10 +64,14 @@ class GaitAnalyzer:
             moments = cv2.moments(thresh)
             hu_moments = cv2.HuMoments(moments).flatten()
             hu_features.append(hu_moments)
-        # Average across frames and normalize
+        # Average across frames
         avg_hu = np.mean(hu_features, axis=0)
-        # Add small constant to avoid zero norm
-        norm = np.linalg.norm(avg_hu) + 1e-8
+        # Ensure non-zero norm: add tiny noise if needed
+        norm = np.linalg.norm(avg_hu)
+        if norm < 1e-6:
+            # Use small constant vector instead of zero
+            avg_hu = np.ones(7, dtype=np.float32) * 1e-3
+            norm = np.linalg.norm(avg_hu)
         avg_hu = avg_hu / norm
         return avg_hu.astype(np.float32)
 

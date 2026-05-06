@@ -4,6 +4,8 @@ import hvac
 import boto3
 from typing import Optional
 from cryptography.fernet import Fernet
+import hashlib
+import base64
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,8 +29,10 @@ class VaultSecretsManager:
             )
             return response["Plaintext"]
         except:
-            # Fallback env
-            return os.getenv("ENCRYPTION_KEY", "fallback-key-32bytes!!").encode()
+            # Fallback env - use valid Fernet key (32 url-safe base64-encoded bytes)
+            return base64.urlsafe_b64encode(
+                hashlib.sha256(os.getenv("ENCRYPTION_KEY", "fallback-key-32bytes-for-dev!!!").encode()).digest()
+            )[:43] + b'='  # Pad to 44 chars for Fernet
     
     def get_secret(self, path: str, field: str = "data") -> Optional[str]:
         """Retrieve secret from Vault."""

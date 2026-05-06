@@ -440,6 +440,8 @@ class MultiModalFusion:
 # Global scoring engine
 scoring_engine = IdentityScoringEngine()
 
+# Backwards compat aliases
+ScoringEngine = IdentityScoringEngine
 
 def get_scoring_engine() -> IdentityScoringEngine:
     """Get the global scoring engine."""

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { AuthProvider } from '../../contexts/AuthContext';
+import { AuthProvider } from '../contexts/AuthContext';
 
 const Child = () => <div data-testid="child">Test Child</div>;
 

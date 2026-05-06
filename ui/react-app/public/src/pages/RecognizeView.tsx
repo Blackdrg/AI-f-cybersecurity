@@ -5,7 +5,11 @@ import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatis
 
 import type { Face as FaceType, RecognitionResult } from '../types';
 
-const RecognizeView = () => {
+interface RecognizeViewProps {
+  result?: RecognitionResult | null;
+}
+
+const RecognizeView: React.FC<RecognizeViewProps> = ({ result }) => {
     const [image, setImage] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
@@ -18,6 +22,12 @@ const RecognizeView = () => {
     const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        if (result) {
+            setResults(result);
+        }
+    }, [result]);
 
     const getEmotionColor = (emotion: string): string => {
         switch (emotion) {

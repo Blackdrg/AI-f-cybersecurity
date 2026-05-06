@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import API from '../services/api';
 import { Stepper, Step, StepLabel, Button, Typography, Box, Paper, TextField } from '@mui/material';
 
+type TestStatus = 'idle' | 'testing' | 'success' | 'failed';
+
 const steps = ['Connect Camera', 'Add Users', 'Configure Alerts', 'Go Live'];
 
-export default function SetupWizard({ onComplete }) {
+export default function SetupWizard({ onComplete }: { onComplete?: () => void }) {
   const [activeStep, setActiveStep] = useState(0);
   const [rtspUrl, setRtspUrl] = useState('');
-  const [testStatus, setTestStatus] = useState(null);
+  const [testStatus, setTestStatus] = useState<TestStatus>('idle');
 
   const handleTestConnection = async () => {
     setTestStatus('testing');
@@ -28,7 +30,7 @@ export default function SetupWizard({ onComplete }) {
   };
   const handleBack = () => setActiveStep((prev) => prev - 1);
 
-  const getStepContent = (step) => {
+  const getStepContent = (step: number) => {
     switch (step) {
       case 0:
         return (

@@ -1,4 +1,95 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
+
+// Data interfaces
+interface EnrichmentResult {
+  id: string;
+  provider: string;
+  providerName: string;
+  title: string;
+  snippet: string;
+  url: string;
+  confidence: number;
+  type: string;
+  timestamp: string;
+  relevanceScore: number;
+  tags: string[];
+  category?: string;
+  lastUpdated?: string;
+  person_name?: string;
+  riskScore?: number;
+  riskLevel?: string;
+  entities?: string[];
+}
+
+interface HistoryItem {
+  query: string;
+  timestamp: string;
+  results_count: number;
+}
+
+interface CorrelationGraph {
+  entities: Array<{
+    entity: string;
+    occurrences: number;
+    sources: string[];
+    riskScore: number;
+  }>;
+  correlations: Array<{
+    entity1: string;
+    entity2: string;
+    sharedSources: string[];
+    combinedRisk: number;
+    connectionStrength: number;
+  }>;
+}
+
+interface ProviderStatus {
+  id: string;
+  name: string;
+  active: boolean;
+  requests: number;
+  successRate: number;
+  latency: number | null;
+}
+
+interface RiskScores {
+  overall: number;
+  byProvider: Record<string, { maxRisk: number; count: number }>;
+  byType: Record<string, { maxRisk: number; count: number }>;
+  highRiskItems: Array<{
+    id: string;
+    title: string;
+    riskScore: number;
+    riskLevel: string;
+  }>;
+}
+
+interface EnrichmentSummary {
+  totalResults: number;
+  avgConfidence: number;
+  avgRelevance: number;
+  maxRiskScore: number;
+  riskDistribution: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  topTags: Array<[string, number]>;
+  personId?: string;
+  timestamp: string;
+}
+
+interface ExpandState {
+  [key: string]: boolean;
+}
+
+interface EnrichmentPortalPanelProps {
+  personId?: string;
+  onEnrichmentComplete?: (results: EnrichmentResult[]) => void;
+  onAlertAction?: (action: string, data: unknown) => void;
+}
+
 import {
   Box, Typography, Paper, Grid, Card, CardContent,
   TextField, Button, Chip, List, ListItem, ListItemText,
@@ -15,26 +106,26 @@ import {
 } from '@mui/icons-material';
 import API from '../services/api';
 
-const EnrichmentPortalPanel = ({ 
+const EnrichmentPortalPanel = ({
   personId,
   onEnrichmentComplete,
   onAlertAction
-}) => {
+}: EnrichmentPortalPanelProps) => {
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [enrichmentResults, setEnrichmentResults] = useState([]);
-  const [history, setHistory] = useState([]);
-  const [providers, setProviders] = useState([
+  const [enrichmentResults, setEnrichmentResults] = useState<EnrichmentResult[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [providers, setProviders] = useState<ProviderStatus[]>([
     { id: 'bing', name: 'Bing Search', active: true, requests: 0, successRate: 0.95, latency: 120 },
     { id: 'wikipedia', name: 'Wikipedia', active: true, requests: 0, successRate: 0.98, latency: 85 },
     { id: 'threatIntel', name: 'Threat Intelligence', active: true, requests: 0, successRate: 0.92, latency: 200 },
     { id: 'darkweb', name: 'Dark Web Monitor', active: false, requests: 0, successRate: 0.0, latency: null }
   ]);
-  const [expandStates, setExpandStates] = useState({});
-  const [riskScores, setRiskScores] = useState({});
-  const [enrichmentSummary, setEnrichmentSummary] = useState(null);
-  const [correlationGraph, setCorrelationGraph] = useState(null);
+  const [expandStates, setExpandStates] = useState<ExpandState>({});
+  const [riskScores, setRiskScores] = useState<RiskScores | null>(null);
+  const [enrichmentSummary, setEnrichmentSummary] = useState<EnrichmentSummary | null>(null);
+  const [correlationGraph, setCorrelationGraph] = useState<CorrelationGraph | null>(null);
 
   useEffect(() => {
     fetchEnrichmentHistory();
@@ -45,7 +136,7 @@ const EnrichmentPortalPanel = ({
   const fetchEnrichmentHistory = async () => {
     if (!personId) return;
     try {
-      const res = await API.get(`/api/enrichments?person_id=${personId}`);
+      const res = await API.get<{ results: HistoryItem[] }>(`/api/enrichments?person_id=${personId}`);
       setHistory(res.data?.results || []);
     } catch (err) {
       console.warn('No enrichment history available');
@@ -54,37 +145,31 @@ const EnrichmentPortalPanel = ({
 
   const performSearch = async () => {
     if (!searchQuery.trim() && !personId) return;
-    
+
     setIsSearching(true);
     const searchTerm = searchQuery.trim() || `Person ID: ${personId}`;
-    
+
     try {
-      // Simulate Bing provider search
       updateProviderRequests('bing');
       const bingResults = await mockBingSearch(searchTerm);
-      
-      // Simulate Wikipedia provider search
+
       updateProviderRequests('wikipedia');
       const wikiResults = await mockWikipediaSearch(searchTerm);
-      
+
       const combined = [...bingResults, ...wikiResults];
       setEnrichmentResults(combined);
-      
-      // Generate correlation analysis
+
       const correlation = generateCorrelationAnalysis(combined);
       setCorrelationGraph(correlation);
-      
-      // Generate enrichment summary
+
       const summary = generateEnrichmentSummary(combined, personId);
       setEnrichmentSummary(summary);
-      
-      // Calculate risk scores
+
       const riskMap = calculateRiskScores(combined);
       setRiskScores(riskMap);
-      
-      // Log to history
+
       await logEnrichmentQuery(searchTerm, combined);
-      
+
       onEnrichmentComplete && onEnrichmentComplete(combined);
     } catch (err) {
       console.error('Enrichment search failed:', err);
@@ -93,22 +178,21 @@ const EnrichmentPortalPanel = ({
     }
   };
 
-  const updateProviderRequests = (providerId) => {
-    setProviders(prev => prev.map(p => 
+  const updateProviderRequests = (providerId: string) => {
+    setProviders(prev => prev.map(p =>
       p.id === providerId ? { ...p, requests: p.requests + 1 } : p
     ));
   };
 
-  const mockBingSearch = async (query) => {
-    // Simulate API delay
+  const mockBingSearch = async (query: string): Promise<EnrichmentResult[]> => {
     await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const topics = query.toLowerCase().includes('security') || query.toLowerCase().includes('threat') 
+
+    const topics = query.toLowerCase().includes('security') || query.toLowerCase().includes('threat')
       ? ['cybersecurity', 'intelligence', 'monitoring']
       : query.toLowerCase().includes('identity') || query.toLowerCase().includes('person')
       ? ['identity verification', 'biometric systems', 'authentication']
       : ['facial recognition', 'AI systems', 'privacy'];
-    
+
     return [
       {
         id: `bing_${Date.now()}_1`,
@@ -152,18 +236,18 @@ const EnrichmentPortalPanel = ({
     ];
   };
 
-  const mockWikipediaSearch = async (query) => {
+  const mockWikipediaSearch = async (query: string): Promise<EnrichmentResult[]> => {
     await new Promise(resolve => setTimeout(resolve, 400));
-    
+
     const subjects = [
       { title: 'Biometric Recognition Systems', category: 'Technology' },
       { title: 'Facial Recognition Technology', category: 'Computer Vision' },
       { title: 'Identity Verification', category: 'Security' },
       { title: 'Machine Learning in Security', category: 'AI/ML' }
     ];
-    
+
     const subject = subjects[Math.floor(Math.random() * subjects.length)];
-    
+
     return [
       {
         id: `wiki_${Date.now()}_1`,
@@ -176,6 +260,7 @@ const EnrichmentPortalPanel = ({
         type: 'reference_article',
         timestamp: new Date().toISOString(),
         relevanceScore: 0.88,
+        tags: ['encyclopedia', 'reference'],
         category: subject.category,
         lastUpdated: '2026-03-15'
       },
@@ -190,6 +275,7 @@ const EnrichmentPortalPanel = ({
         type: 'reference_article',
         timestamp: new Date().toISOString(),
         relevanceScore: 0.82,
+        tags: ['ethics', 'AI'],
         category: 'Ethics',
         lastUpdated: '2026-04-01'
       },
@@ -204,13 +290,14 @@ const EnrichmentPortalPanel = ({
         type: 'reference_article',
         timestamp: new Date().toISOString(),
         relevanceScore: 0.76,
+        tags: ['privacy', 'law'],
         category: 'Law',
         lastUpdated: '2026-02-28'
       }
     ];
   };
 
-  const logEnrichmentQuery = async (query, results) => {
+  const logEnrichmentQuery = async (query: string, results: EnrichmentResult[]) => {
     try {
       await API.post('/api/enrichments/log', {
         query,
@@ -227,12 +314,12 @@ const EnrichmentPortalPanel = ({
     }
   };
 
-  const handleExpand = (id) => {
+  const handleExpand = (id: string) => {
     setExpandStates(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
+  const getCategoryColor = (category: string): string => {
+    const colors: Record<string, string> = {
       'Technology': 'primary',
       'Security': 'error',
       'AI/ML': 'info',
@@ -243,19 +330,22 @@ const EnrichmentPortalPanel = ({
     return colors[category] || 'default';
   };
 
-  const getProviderColor = (provider) => ({
-    bing: '#0078d4',
-    wikipedia: '#6b6b6b'
-  }[provider] || '#94a3b8');
+  const getProviderColor = (provider: string): string => {
+    const colors: Record<string, string> = {
+      bing: '#0078d4',
+      wikipedia: '#6b6b6b'
+    };
+    return colors[provider] || '#94a3b8';
+  };
 
-  const getConfidenceColor = (score) => {
+  const getConfidenceColor = (score: number) => {
     if (score >= 0.9) return { color: '#10b981', bg: 'rgba(16, 185, 129, 0.2)' };
     if (score >= 0.8) return { color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.2)' };
     if (score >= 0.7) return { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.2)' };
     return { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.2)' };
   };
 
-  const getRelevanceColor = (score) => {
+  const getRelevanceColor = (score: number): string => {
     if (score >= 0.9) return '#10b981';
     if (score >= 0.8) return '#3b82f6';
     if (score >= 0.7) return '#f59e0b';
@@ -326,16 +416,16 @@ const EnrichmentPortalPanel = ({
     </Card>
   );
 
-  const renderResultCard = (result, index) => {
+  const renderResultCard = (result: EnrichmentResult, index: number) => {
     const confidenceColor = getConfidenceColor(result.confidence);
     const relevanceColor = getRelevanceColor(result.relevanceScore);
-    const isExpanded = expandStates[result.id];
+    const isExpanded = !!expandStates[result.id];
 
     return (
       <Card key={result.id} sx={{ mb: 2 }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-            <Box sx={{ 
+            <Box sx={{
               mt: 0.5,
               width: 8,
               height: 8,
@@ -369,7 +459,7 @@ const EnrichmentPortalPanel = ({
                   </Typography>
                 </Box>
               </Box>
-              
+
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 {result.snippet}
               </Typography>
@@ -388,7 +478,7 @@ const EnrichmentPortalPanel = ({
                   <Chip
                     label={result.category}
                     size="small"
-                    color={getCategoryColor(result.category)}
+                    color={getCategoryColor(result.category) as "primary" | "secondary" | "error" | "warning" | "info" | "success"}
                     variant="outlined"
                     sx={{ fontSize: '0.7rem', height: 20 }}
                   />
@@ -397,14 +487,14 @@ const EnrichmentPortalPanel = ({
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                 <Typography variant="caption" color="text.secondary">
-                  Relevance: <Box component="span" sx={{ 
+                  Relevance: <Box component="span" sx={{
                     color: relevanceColor,
                     fontWeight: 600
                   }}>
                     {(result.relevanceScore * 100).toFixed(0)}%
                   </Box>
                 </Typography>
-                
+
                 {result.lastUpdated && (
                   <Typography variant="caption" color="text.secondary">
                     Updated: {result.lastUpdated}
@@ -413,8 +503,8 @@ const EnrichmentPortalPanel = ({
               </Box>
 
               <Collapse in={isExpanded} timeout="auto" sx={{ mt: 2 }}>
-                <Box sx={{ 
-                  p: 2, 
+                <Box sx={{
+                  p: 2,
                   bgcolor: 'background.paper',
                   borderRadius: 1,
                   border: '1px solid rgba(255,255,255,0.1)'
@@ -447,12 +537,12 @@ const EnrichmentPortalPanel = ({
                 >
                   View Source
                 </Button>
-               <IconButton
-                 size="small"
-                 onClick={() => handleExpand(result.id)}
-               >
-                 <Info color={isExpanded ? "primary" : "action"} />
-               </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handleExpand(result.id)}
+                >
+                  <Info color={isExpanded ? "primary" : "action"} />
+                </IconButton>
               </Box>
             </Box>
           </Box>
@@ -498,7 +588,7 @@ const EnrichmentPortalPanel = ({
           <History color="primary" />
           Enrichment History
         </Typography>
-        
+
         {history.length === 0 ? (
           <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
             No enrichment history available
@@ -539,25 +629,31 @@ const EnrichmentPortalPanel = ({
   );
 
   // --- Dynamic Analysis Functions ---
-  
-  const generateCorrelationAnalysis = (results) => {
+
+  const generateCorrelationAnalysis = (results: EnrichmentResult[]): CorrelationGraph => {
     const entityMap = new Map<string, { occurrences: number; sources: string[]; riskScore: number }>();
-    
+
     results.forEach(result => {
       if (result.entities) {
         result.entities.forEach(entity => {
           if (!entityMap.has(entity)) {
             entityMap.set(entity, { occurrences: 0, sources: [], riskScore: 0 });
           }
-          const entry = entityMap.get(entity);
+          const entry = entityMap.get(entity)!;
           entry.occurrences++;
           entry.sources.push(result.provider);
           entry.riskScore = Math.max(entry.riskScore, result.riskScore || 0);
         });
       }
     });
-    
-    const correlatedEntities = [];
+
+    const correlatedEntities: Array<{
+      entity1: string;
+      entity2: string;
+      sharedSources: string[];
+      combinedRisk: number;
+      connectionStrength: number;
+    }> = [];
     const entityArray = Array.from(entityMap.entries());
     for (let i = 0; i < entityArray.length; i++) {
       for (let j = i + 1; j < entityArray.length; j++) {
@@ -575,38 +671,42 @@ const EnrichmentPortalPanel = ({
         }
       }
     }
-    
+
     return {
-       entities: Array.from(entityMap.entries()).map(([entity, data]) => ({
-         entity,
-         occurrences: data.occurrences,
-         sources: Array.from(new Set(data.sources)),
-         riskScore: data.riskScore
-       })).sort((a, b) => b.riskScore - a.riskScore),
+      entities: Array.from(entityMap.entries()).map(([entity, data]) => ({
+        entity,
+        occurrences: data.occurrences,
+        sources: Array.from(new Set(data.sources)),
+        riskScore: data.riskScore
+      })).sort((a, b) => b.riskScore - a.riskScore),
       correlations: correlatedEntities.sort((a, b) => b.combinedRisk - a.combinedRisk)
     };
   };
-  
-  const generateEnrichmentSummary = (results, personId) => {
+
+  const generateEnrichmentSummary = (results: EnrichmentResult[], personId?: string): EnrichmentSummary => {
     const totalResults = results.length;
-    const avgConfidence = results.reduce((sum, r) => sum + (r.confidence || 0), 0) / totalResults || 0;
-    const avgRelevance = results.reduce((sum, r) => sum + (r.relevanceScore || 0), 0) / totalResults || 0;
+    const avgConfidence = totalResults > 0
+      ? results.reduce((sum, r) => sum + (r.confidence || 0), 0) / totalResults
+      : 0;
+    const avgRelevance = totalResults > 0
+      ? results.reduce((sum, r) => sum + (r.relevanceScore || 0), 0) / totalResults
+      : 0;
     const maxRiskScore = Math.max(...results.map(r => r.riskScore || 0));
-    
+
     const riskDistribution = {
       critical: results.filter(r => (r.riskScore || 0) >= 0.8).length,
       high: results.filter(r => (r.riskScore || 0) >= 0.6 && (r.riskScore || 0) < 0.8).length,
       medium: results.filter(r => (r.riskScore || 0) >= 0.3 && (r.riskScore || 0) < 0.6).length,
       low: results.filter(r => (r.riskScore || 0) < 0.3).length
     };
-    
-     const commonTags: Record<string, number> = {};
-     results.forEach(r => {
-       (r.tags || []).forEach(tag => {
-         commonTags[tag] = (commonTags[tag] || 0) + 1;
-       });
-     });
-    
+
+    const commonTags: Record<string, number> = {};
+    results.forEach(r => {
+      (r.tags || []).forEach(tag => {
+        commonTags[tag] = (commonTags[tag] || 0) + 1;
+      });
+    });
+
     return {
       totalResults,
       avgConfidence,
@@ -618,31 +718,33 @@ const EnrichmentPortalPanel = ({
       timestamp: new Date().toISOString()
     };
   };
-  
-  const calculateRiskScores = (results) => {
-    const riskMap = {
+
+  const calculateRiskScores = (results: EnrichmentResult[]): RiskScores => {
+    const riskMap: RiskScores = {
       overall: 0,
       byProvider: {},
       byType: {},
       highRiskItems: []
     };
-    
+
     results.forEach(r => {
       const risk = r.riskScore || 0;
       riskMap.overall = Math.max(riskMap.overall, risk);
-      
+
       if (!riskMap.byProvider[r.provider]) {
         riskMap.byProvider[r.provider] = { maxRisk: 0, count: 0 };
       }
-      riskMap.byProvider[r.provider].maxRisk = Math.max(riskMap.byProvider[r.provider].maxRisk, risk);
-      riskMap.byProvider[r.provider].count++;
-      
+      const providerEntry = riskMap.byProvider[r.provider]!;
+      providerEntry.maxRisk = Math.max(providerEntry.maxRisk, risk);
+      providerEntry.count++;
+
       if (!riskMap.byType[r.type]) {
         riskMap.byType[r.type] = { maxRisk: 0, count: 0 };
       }
-      riskMap.byType[r.type].maxRisk = Math.max(riskMap.byType[r.type].maxRisk, risk);
-      riskMap.byType[r.type].count++;
-      
+      const typeEntry = riskMap.byType[r.type]!;
+      typeEntry.maxRisk = Math.max(typeEntry.maxRisk, risk);
+      typeEntry.count++;
+
       if (risk >= 0.7) {
         riskMap.highRiskItems.push({
           id: r.id,
@@ -652,10 +754,12 @@ const EnrichmentPortalPanel = ({
         });
       }
     });
-    
+
     riskMap.highRiskItems.sort((a, b) => b.riskScore - a.riskScore);
     return riskMap;
-  };  return (
+  };
+
+  return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
         Enrichment Portal

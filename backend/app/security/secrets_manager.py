@@ -74,6 +74,17 @@ class SecretsManager:
         if is_production and key in sensitive_keys:
             raise RuntimeError(f"CRITICAL: Missing production secret: {key}")
         
+        # 4. Fallback for development
+        if key in sensitive_keys and not val:
+            import hashlib, base64
+            if key == "JWT_SECRET":
+                return "dev-jwt-secret-key-change-in-production"
+            if key == "ENCRYPTION_KEY":
+                fallback = hashlib.sha256(b"ai-f-dev-encryption-key").digest()
+                return base64.urlsafe_b64encode(fallback).decode()
+            if key == "DB_PASSWORD":
+                return "dev-password"
+        
         logger.warning(f"Secret '{key}' not found")
         return None
 

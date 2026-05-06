@@ -20,12 +20,12 @@ import {
   Search, 
   Storage 
 } from '@mui/icons-material';
-import { checkDependencies } from '../services/api';
+import { checkDependencies, SystemStatusData } from '../services/api';
 
 const SystemStatus = () => {
-  const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [status, setStatus] = useState<SystemStatusData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchStatus = async () => {
     try {
@@ -48,7 +48,7 @@ const SystemStatus = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusIcon = (state) => {
+  const getStatusIcon = (state: 'healthy' | 'degraded' | 'unhealthy' | 'unconfigured' | string) => {
     switch (state) {
       case 'healthy':
         return <CheckCircle color="success" />;
@@ -62,7 +62,7 @@ const SystemStatus = () => {
     }
   };
 
-  const getStatusColor = (state) => {
+  const getStatusColor = (state: 'healthy' | 'degraded' | 'unhealthy' | 'unconfigured' | string) => {
     switch (state) {
       case 'healthy': return 'success';
       case 'degraded': return 'warning';
@@ -85,6 +85,14 @@ const SystemStatus = () => {
     return (
       <Paper sx={{ p: 2, bgcolor: 'error.light' }}>
         <Typography color="error">Error: {error}</Typography>
+      </Paper>
+    );
+  }
+
+  if (!status) {
+    return (
+      <Paper sx={{ p: 2, bgcolor: 'warning.light' }}>
+        <Typography>No status data available</Typography>
       </Paper>
     );
   }

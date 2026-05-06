@@ -31,6 +31,15 @@ interface ExtendedAlert extends Alert {
   status: string;
   affectedEntities: number;
   confidence: number;
+  // Additional properties from Alert that might be missing or overridden
+  id: string;
+  title: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  message: string;
+  timestamp: string;
+  category?: string;
+  affected_systems?: string[];
+  metrics?: Record<string, number>;
 }
 
 interface Incident {

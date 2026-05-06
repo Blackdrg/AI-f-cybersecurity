@@ -30,21 +30,38 @@ import { SnackbarState } from '../types';
 import { PERMISSIONS } from '../contexts/AuthContext';
 import './Dashboard.css';
 
+interface SystemHealth {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  production_systems?: boolean;
+}
+
+interface OrgData {
+  org_id?: string;
+  name?: string;
+  subscription_tier?: string;
+}
+
+interface UserData {
+  name?: string;
+  email?: string;
+  role?: string;
+}
+
 const Dashboard = () => {
-  const [activePage, setActivePage] = useState('dashboard');
+  const [activePage, setActivePage] = useState<string>('dashboard');
   const [loading, setLoading] = useState(true);
-  const [systemHealth, setSystemHealth] = useState({ status: 'healthy' });
+  const [systemHealth, setSystemHealth] = useState<SystemHealth>({ status: 'healthy' });
   const [criticalAlerts, setCriticalAlerts] = useState(0);
   const [pendingIncidents, setPendingIncidents] = useState(0);
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' as const });
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState<number>(0);
   const [fabOpen, setFabOpen] = useState(false);
-  
-  const { 
-    user: currentUser, 
-    organization, 
-    hasPermission, 
-    logout 
+
+  const {
+    user: currentUser,
+    organization,
+    hasPermission,
+    logout
   } = useAuth();
 
   useEffect(() => {
@@ -101,79 +118,12 @@ if (res?.data?.data) {
     }
   };
 
-const handlePageChange = (newPage: any) => {
-     setActivePage(newPage);
-     setActiveTab(0);
-   };
+const handlePageChange = (newPage: string) => {
+   setActivePage(newPage);
+   setActiveTab(0);
+ };
 
-  const renderContent = () => {
-    switch (activePage) {
-      case 'dashboard':
-        return (
-          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_DASHBOARD]}>
-            <DashboardHome />
-          </RBACGuard>
-        );
-      case 'enroll':
-        return (
-          <RBACGuard requiredPermission={[PERMISSIONS.ENROLL_IDENTITY]}>
-            <EnrollPage />
-          </RBACGuard>
-        );
-      case 'recognize':
-        return (
-          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_RECOGNITIONS]}>
-            <RecognizePage />
-          </RBACGuard>
-        );
-      case 'admin':
-        return (
-          <RBACGuard requiredPermission={[PERMISSIONS.MANAGE_USERS]}>
-            <AdminPanel />
-          </RBACGuard>
-        );
-      case 'cameras':
-        return (
-          <CameraManagement />
-        );
-      case 'person-profile':
-        return (
-          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_IDENTITIES]}>
-            <PersonProfile personId={null} />
-          </RBACGuard>
-        );
-      case 'analytics':
-        return (
-          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_ANALYTICS, PERMISSIONS.VIEW_DASHBOARD]}>
-            <TabAnalyticsView activeTab={activeTab} setActiveTab={setActiveTab} />
-          </RBACGuard>
-        );
-      case 'compliance':
-        return (
-          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_COMPLIANCE]}>
-            <Compliance />
-          </RBACGuard>
-        );
-      case 'developer':
-        return <DeveloperPlatform />;
-      case 'audit':
-        return (
-          <RBACGuard requiredPermission={[PERMISSIONS.VIEW_AUDIT_LOGS]}>
-            <AuditTimeline orgId={organization?.org_id} />
-          </RBACGuard>
-        );
-      case 'incidents':
-        return (
-          <RBACGuard requiredPermission={[PERMISSIONS.MANAGE_INCIDENTS, PERMISSIONS.VIEW_ALERTS]}>
-            <IncidentAlertDashboard />
-          </RBACGuard>
-        );
-      default:
-        return <DashboardHome />;
-    }
-  };
-
-  const TabAnalyticsView = ({ activeTab, setActiveTab }) => (
+ const TabAnalyticsView = ({ activeTab, setActiveTab }: { activeTab: number; setActiveTab: (tab: number) => void }) => (
     <Box sx={{ width: '100%', height: '100%' }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} variant="scrollable" scrollButtons="auto">
@@ -322,31 +272,31 @@ const handlePageChange = (newPage: any) => {
               </IconButton>
 
               {/* User Menu */}
-              {currentUser && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<AccountCircle />}
-                  endIcon={<ExpandMore />}
-                  sx={{
-                    borderColor: 'rgba(255,255,255,0.2)',
-                    color: '#e2e8f0',
-                    textTransform: 'none',
-                    minWidth: 'auto',
-                    px: 1
-                  }}
-                  onClick={logout}
-                >
-                  <Box sx={{ textAlign: 'left', mr: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {currentUser.name || currentUser.email}
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                      {currentUser.role || 'Viewer'}
-                    </Typography>
-                  </Box>
-                </Button>
-              )}
+               {currentUser && (
+                 <Button
+                   variant="outlined"
+                   size="small"
+                   startIcon={<AccountCircle />}
+                   endIcon={<ExpandMore />}
+                   sx={{
+                     borderColor: 'rgba(255,255,255,0.2)',
+                     color: '#e2e8f0',
+                     textTransform: 'none',
+                     minWidth: 'auto',
+                     px: 1
+                   }}
+                   onClick={logout}
+                 >
+                   <Box sx={{ textAlign: 'left', mr: 1 }}>
+                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                       {currentUser?.name || currentUser?.email || 'User'}
+                     </Typography>
+                     <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                       {currentUser?.role || 'Viewer'}
+                     </Typography>
+                   </Box>
+                 </Button>
+               )}
             </Box>
           </Toolbar>
         </AppBar>
@@ -505,14 +455,14 @@ bgcolor: `${getTierColor(organization?.subscription_tier)}20`,
   );
 };
 
-const getTierColor = (tier: any) => {
-  const colors = {
+const getTierColor = (tier?: string) => {
+  const colors: Record<string, string> = {
     free: '#64748b',
     pro: '#3b82f6',
     enterprise: '#8b5cf6',
     custom: '#f59e0b'
   };
-  return colors[tier?.toLowerCase()] || '#64748b';
+  return colors[tier?.toLowerCase() || 'free'] || '#64748b';
 };
 
 export default Dashboard;

@@ -3,7 +3,8 @@ import {
   Box, Typography, Card, CardContent, Alert, Button,
   LinearProgress, Chip, List, ListItem, ListItemText,
   ListItemIcon, Divider, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, Grid, Paper, IconButton, Tooltip
+  DialogActions, TextField, Grid, Paper, IconButton, Tooltip,
+  CircularProgress, Stack
 } from '@mui/material';
 import {
   Error as ErrorIcon,
@@ -18,10 +19,76 @@ import {
   CompareArrows,
   Description
 } from '@mui/icons-material';
-import { Severity } from '../types';
 import API from '../services/api';
 
-const ERROR_CATEGORIES = {
+// MUI Alert severity type (MUI only supports these 4 values)
+type AlertSeverity = 'error' | 'warning' | 'info' | 'success';
+
+interface RecognitionErrorCategory {
+  icon: React.ReactNode;
+  color: 'error' | 'warning' | 'info' | 'success';
+  title: string;
+  description: string;
+}
+
+interface RecoveryAction {
+  label: string;
+  icon: React.ReactNode;
+  color: 'primary' | 'secondary' | 'warning' | 'success';
+  action?: string;
+  reason?: string;
+  threshold_suggestion?: number;
+}
+
+interface ErrorItem {
+  category: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'warning' | 'info' | 'success';
+  score: number;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+interface SuggestedAction extends RecoveryAction {
+  action?: string;
+  reason?: string;
+  threshold_suggestion?: number;
+}
+
+interface Diagnostics {
+  total_errors: number;
+  max_severity: 'critical' | 'high' | 'medium' | 'low' | 'warning' | 'info' | 'success';
+  error_categories: string[];
+}
+
+interface RecoveryPlanItem {
+  category: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'warning' | 'info' | 'success';
+  score: number;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+interface RecognitionErrorRecoveryProps {
+  recognitionResult?: {
+    faces?: Array<{
+      spoof_score?: number;
+      reconstruction_confidence?: number;
+      score?: number;
+      matches?: Array<{ name: string; score: number }>;
+    }>;
+    request?: Record<string, unknown>;
+    request_id?: string;
+  };
+  onRecoveryComplete?: (data: unknown) => void;
+  onEscalate?: (data: { errors: RecoveryPlanItem[]; level: string }) => void;
+  onErrorResolve?: (data: { id?: string; resolved: boolean; note: string }) => void;
+}
+
+interface RecoveryResult {
+  data: unknown;
+}
+
+const ERROR_CATEGORIES: Record<string, RecognitionErrorCategory> = {
   SPOOF_DETECTED: {
     icon: <BugReport />,
     color: 'error',
@@ -54,7 +121,7 @@ const ERROR_CATEGORIES = {
   }
 };
 
-const RECOVERY_ACTIONS = {
+const RECOVERY_ACTIONS: Record<string, RecoveryAction> = {
   RETRY_WITH_ADJUSTMENT: {
     label: 'Retry with Adjustments',
     icon: <Refresh />,
@@ -77,19 +144,20 @@ const RECOVERY_ACTIONS = {
   }
 };
 
-const RecognitionErrorRecovery = ({
+const RecognitionErrorRecovery: React.FC<RecognitionErrorRecoveryProps> = ({
   recognitionResult,
   onRecoveryComplete,
   onEscalate,
   onErrorResolve
 }) => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [recoveryDialogOpen, setRecoveryDialogOpen] = useState(false);  const [selectedError, setSelectedError] = useState(null);
-  const [recoveryPlan, setRecoveryPlan] = useState([]);
-  const [suggestedActions, setSuggestedActions] = useState([]);
-  const [diagnostics, setDiagnostics] = useState(null);
-  const [resolutionDialogOpen, setResolutionDialogOpen] = useState(false);
-  const [resolutionNote, setResolutionNote] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [recoveryDialogOpen, setRecoveryDialogOpen] = useState<boolean>(false);
+  const [selectedError, setSelectedError] = useState<SuggestedAction | null>(null);
+  const [recoveryPlan, setRecoveryPlan] = useState<RecoveryPlanItem[]>([]);
+  const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
+  const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
+  const [resolutionDialogOpen, setResolutionDialogOpen] = useState<boolean>(false);
+  const [resolutionNote, setResolutionNote] = useState<string>('');
 
   useEffect(() => {
     if (recognitionResult?.faces?.[0]) {
@@ -97,14 +165,19 @@ const RecognitionErrorRecovery = ({
     }
   }, [recognitionResult]);
 
-  const analyzeError = async (face) => {
+  const analyzeError = async (face: {
+    spoof_score?: number;
+    score?: number;
+    reconstruction_confidence?: number;
+    matches?: Array<{ name: string; score: number }>;
+  }) => {
     setIsAnalyzing(true);
     
-    const errors = [];
-    const suggestedActions = [];
+    const errors: RecoveryPlanItem[] = [];
+    const suggested: SuggestedAction[] = [];
 
     // Check for spoof detection
-    if (face.spoof_score > 0.5) {
+    if (face.spoof_score && face.spoof_score > 0.5) {
       errors.push({
         category: 'SPOOF_DETECTED',
         severity: 'critical',
@@ -116,7 +189,7 @@ const RecognitionErrorRecovery = ({
         }
       });
       
-      suggestedActions.push({
+      suggested.push({
         ...RECOVERY_ACTIONS.MANUAL_RECOGNITION,
         action: 'manual_review',
         reason: 'Spoof detection requires human verification'
@@ -124,7 +197,7 @@ const RecognitionErrorRecovery = ({
     }
 
     // Check confidence levels
-    if (face.score < 0.4) {
+    if (face.score !== undefined && face.score < 0.4) {
       errors.push({
         category: 'NO_MATCH',
         severity: 'info',
@@ -133,13 +206,13 @@ const RecognitionErrorRecovery = ({
         details: { match_count: face.matches?.length || 0 }
       });
       
-      suggestedActions.push({
+      suggested.push({
         ...RECOVERY_ACTIONS.RETRY_WITH_ADJUSTMENT,
         action: 'retry_lower_threshold',
         threshold_suggestion: 0.3,
         reason: 'Consider lowering threshold for broader search'
       });
-    } else if (face.score < 0.6) {
+    } else if (face.score !== undefined && face.score < 0.6) {
       errors.push({
         category: 'LOW_CONFIDENCE',
         severity: 'warning',
@@ -148,7 +221,7 @@ const RecognitionErrorRecovery = ({
         details: { threshold_breach: 0.6 - face.score }
       });
       
-      suggestedActions.push(
+      suggested.push(
         {
           ...RECOVERY_ACTIONS.RETRY_WITH_ADJUSTMENT,
           action: 'request_better_image',
@@ -173,7 +246,7 @@ const RecognitionErrorRecovery = ({
         details: { reconstruction_confidence: face.reconstruction_confidence }
       });
       
-      suggestedActions.push({
+      suggested.push({
         ...RECOVERY_ACTIONS.RETRY_WITH_ADJUSTMENT,
         action: 'request_better_lighting',
         reason: 'Suggest better lighting conditions'
@@ -181,7 +254,7 @@ const RecognitionErrorRecovery = ({
     }
 
     // If no specific error but still unclear
-    if (errors.length === 0 && face.score && face.score < 0.7) {
+    if (errors.length === 0 && face.score !== undefined && face.score < 0.7) {
       errors.push({
         category: 'AMBIGUOUS',
         severity: 'warning',
@@ -190,30 +263,34 @@ const RecognitionErrorRecovery = ({
         details: { confidence_range: '0.4 - 0.7' }
       });
       
-      suggestedActions.push({
+      suggested.push({
         ...RECOVERY_ACTIONS.MANUAL_RECOGNITION,
         action: 'manual_review',
         reason: 'Result requires human judgment'
       });
     }
 
+    const errorSeverityOrder: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1, info: 0, warning: 2, success: 0 };
+    
+    const maxSeverity = errors.length > 0 
+      ? errors.reduce<string>((max, e) => {
+          return (errorSeverityOrder[e.severity] || 0) > (errorSeverityOrder[max] || 0) ? e.severity : max;
+        }, 'info')
+      : 'success';
+
     setDiagnostics({
       total_errors: errors.length,
-      max_severity: errors.length > 0 ? 
-        errors.reduce<Severity>((max, e) => {
-          const order = { critical: 4, high: 3, medium: 2, low: 1, info: 0, warning: 2 };
-          return (order[e.severity as Severity] || 0) > (order[max as Severity] || 0) ? e.severity as Severity : max as Severity;
-        }, 'info' as Severity) : 'success' as Severity,
+      max_severity: maxSeverity as Diagnostics['max_severity'],
       error_categories: [...new Set(errors.map(e => e.category))]
     });
 
     setRecoveryPlan(errors);
-    setSuggestedActions(suggestedActions);
+    setSuggestedActions(suggested);
     setIsAnalyzing(false);
   };
 
-  const getSeverityColor = (severity) => {
-    const colors = {
+  const getSeverityColor = (severity: RecoveryPlanItem['severity']): string => {
+    const colors: Record<string, string> = {
       critical: '#ef4444',
       high: '#f59e0b',
       medium: '#fbbf24',
@@ -225,37 +302,57 @@ const RecognitionErrorRecovery = ({
     return colors[severity] || colors.info;
   };
 
-  const handleRecoveryAction = async (action) => {
+  const mapSeverityToAlert = (severity: RecoveryPlanItem['severity']): AlertSeverity => {
+    switch (severity) {
+      case 'critical':
+      case 'high':
+        return 'error';
+      case 'warning':
+        return 'warning';
+      case 'info':
+        return 'info';
+      case 'success':
+        return 'success';
+      case 'medium':
+      case 'low':
+      default:
+        return 'warning';
+    }
+  };
+
+  const handleRecoveryAction = async (action: SuggestedAction) => {
     setRecoveryDialogOpen(false);
     
     try {
-      let result;
+      let result: RecoveryResult | undefined;
       switch (action.action) {
         case 'retry_lower_threshold':
-          result = await API.post('/api/recognize/retry', {
+          result = await API.post<RecoveryResult>('/api/recognize/retry', {
             original_request: recognitionResult?.request,
             threshold: action.threshold_suggestion || 0.3
           });
           break;
         case 'manual_review':
-          result = await API.post('/api/review/queue', {
+          result = await API.post<RecoveryResult>('/api/review/queue', {
             recognition_id: recognitionResult?.request_id,
             reason: action.reason
           });
           break;
         case 'adjust_threshold':
-          result = await API.post('/api/recognize/override', {
+          result = await API.post<RecoveryResult>('/api/recognize/override', {
             recognition_id: recognitionResult?.request_id,
             new_threshold: action.threshold_suggestion
           });
           break;
         default:
-          result = await API.post('/api/recognize/retry', {
+          result = await API.post<RecoveryResult>('/api/recognize/retry', {
             original_request: recognitionResult?.request
           });
       }
       
-      onRecoveryComplete && onRecoveryComplete(result.data);
+      if (onRecoveryComplete && result) {
+        onRecoveryComplete(result.data);
+      }
     } catch (err) {
       console.error('Recovery action failed:', err);
     }
@@ -270,10 +367,12 @@ const RecognitionErrorRecovery = ({
         level: 'supervisor'
       });
       
-      onEscalate && onEscalate({
-        errors: recoveryPlan,
-        level: 'supervisor'
-      });
+      if (onEscalate) {
+        onEscalate({
+          errors: recoveryPlan,
+          level: 'supervisor'
+        });
+      }
     } catch (err) {
       console.error('Escalation failed:', err);
     }
@@ -288,51 +387,53 @@ const RecognitionErrorRecovery = ({
         resolved_by: 'operator'
       });
       
-      onErrorResolve && onErrorResolve({
-        id: recognitionResult?.request_id,
-        resolved: true,
-        note: resolutionNote
-      });
+      if (onErrorResolve) {
+        onErrorResolve({
+          id: recognitionResult?.request_id,
+          resolved: true,
+          note: resolutionNote
+        });
+      }
     } catch (err) {
       console.error('Resolution failed:', err);
     }
   };
 
-  if (!recognitionResult || !recoveryPlan.length) {
+  if (!recognitionResult || recoveryPlan.length === 0) {
     return null;
   }
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Card sx={{ mb: 2, borderLeft: `4px solid ${getSeverityColor(diagnostics?.max_severity)}` }}>
+      <Card sx={{ mb: 2, borderLeft: `4px solid ${diagnostics ? getSeverityColor(diagnostics.max_severity) : '#3b82f6'}` }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {diagnostics?.max_severity === 'success' ? (
                 <ErrorIcon color="success" />
               ) : (
-                <BugReport color={getSeverityColor(diagnostics?.max_severity)} />
+                <BugReport sx={{ color: diagnostics ? getSeverityColor(diagnostics.max_severity) : '#3b82f6' }} />
               )}
               <Typography variant="h6">
                 {diagnostics?.max_severity === 'success' 
                   ? 'Recognition Successful' 
-                  : `Issues Detected (${diagnostics?.total_errors})`
+                  : `Issues Detected (${diagnostics?.total_errors ?? 0})`
                 }
               </Typography>
             </Box>
             {isAnalyzing && <CircularProgress size={20} />}
           </Box>
 
-          {/* Error List */}
+{/* Error List */}
           <Stack spacing={1} sx={{ mb: 2 }}>
             {recoveryPlan.map((error, idx) => {
               const category = ERROR_CATEGORIES[error.category] || ERROR_CATEGORIES.QUALITY_ISSUE;
               return (
                 <Alert
                   key={idx}
-                  severity={error.severity}
+                  severity={mapSeverityToAlert(error.severity)}
                   icon={category.icon}
-                  sx={{ 
+                  sx={{
                     borderLeft: `4px solid ${getSeverityColor(error.severity)}`,
                     '& .MuiAlert-icon': {
                       color: getSeverityColor(error.severity)
@@ -373,7 +474,7 @@ const RecognitionErrorRecovery = ({
               </Typography>
               <Grid container spacing={1}>
                 {suggestedActions.map((action, idx) => (
-                  <Grid item key={idx}>
+                  <Grid size={{ xs: 'auto' }} key={idx}>
                     <Button
                       size="small"
                       variant="outlined"
@@ -465,7 +566,7 @@ const RecognitionErrorRecovery = ({
           <Button onClick={() => setRecoveryDialogOpen(false)}>Cancel</Button>
           <Button
             variant="contained"
-            onClick={() => handleRecoveryAction(selectedError)}
+            onClick={() => handleRecoveryAction(selectedError as SuggestedAction)}
             startIcon={<PlayArrow />}
           >
             Execute

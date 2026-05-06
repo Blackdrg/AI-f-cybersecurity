@@ -1,8 +1,30 @@
-import React from 'react';
-import { Box } from '@mui/material';
+import React, { ReactNode } from 'react';
+import { Box, BoxProps } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 
-export const ProtectedRoute = ({ children, requiredPermissions = [] }) => {
+interface PermissionGuardProps {
+  children: ReactNode;
+  requiredPermission: string;
+}
+
+interface ProtectedRouteProps {
+  children: ReactNode;
+  requiredPermissions?: string[];
+}
+
+interface RoleBadgeProps {
+  role: string;
+}
+
+interface RoleColors {
+  [key: string]: { bg: string; color: string; label: string };
+}
+
+interface LoadingOverlayProps {
+  message: string;
+}
+
+export const ProtectedRoute = ({ children, requiredPermissions = [] }: ProtectedRouteProps) => {
   const { user, canAccessRoute, loading } = useAuth();
 
   if (loading) {
@@ -20,7 +42,7 @@ export const ProtectedRoute = ({ children, requiredPermissions = [] }) => {
   return children;
 };
 
-export const PermissionGuard = ({ children, requiredPermission }) => {
+export const PermissionGuard = ({ children, requiredPermission }: PermissionGuardProps) => {
   const { hasPermission } = useAuth();
 
   if (!hasPermission(requiredPermission)) {
@@ -30,8 +52,8 @@ export const PermissionGuard = ({ children, requiredPermission }) => {
   return children;
 };
 
-export const RoleBadge = ({ role }) => {
-  const roleColors = {
+export const RoleBadge = ({ role }: RoleBadgeProps) => {
+  const roleColors: RoleColors = {
     super_admin: { bg: '#7c3aed', color: 'white', label: 'Super Admin' },
     admin: { bg: '#2563eb', color: 'white', label: 'Admin' },
     operator: { bg: '#059669', color: 'white', label: 'Operator' },
@@ -63,7 +85,7 @@ export const RoleBadge = ({ role }) => {
   );
 };
 
-const LoadingOverlay = ({ message }) => (
+const LoadingOverlay = ({ message }: LoadingOverlayProps) => (
   <div style={{
     display: 'flex',
     flexDirection: 'column',
