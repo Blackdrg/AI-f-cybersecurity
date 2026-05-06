@@ -50,9 +50,12 @@ function DeepfakeTab() {
 
   const loadThreatData = async () => {
     try {
-      const res = await API.get('/api/deepfake/threats');
-      setThreats(res.data || []);
-      setStats(res.data?.stats || {});
+      const res = await API.get('/api/security/threats');
+      const data = res.data;
+      const threatsList = Array.isArray(data) ? data : (data.threats || []);
+      setThreats(threatsList);
+      const statsData = Array.isArray(data) ? {} : (data.stats || {});
+      setStats(statsData);
     } catch (err: any) {
       // Sample data
       setThreats([

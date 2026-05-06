@@ -51,6 +51,7 @@ fakeredis
 pytest-mock
 pytest-cov
 httpx  # already present
+schemathesis>=23.10.0  # API contract testing
 
 # Additional dependencies for original engineering components
 faiss-cpu>=1.7.4  # For hybrid vector search (HNSW)

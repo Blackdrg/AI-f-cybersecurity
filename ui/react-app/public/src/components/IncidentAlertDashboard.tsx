@@ -96,7 +96,7 @@ export const IncidentAlertDashboard = () => {
   const fetchAlerts = async () => {
     setLoading(true);
     try {
-      const res = await API.get('/api/alerts/active').catch(() => ({ data: [] as ExtendedAlert[] }));
+       const res = await API.get('/api/orgs/active').catch(() => ({ data: [] as ExtendedAlert[] }));
       const backendAlerts = res.data || [];
       const demoAlerts = generateDemoAlerts();
       setAlerts(backendAlerts.length > 0 ? backendAlerts : demoAlerts);
@@ -109,7 +109,7 @@ export const IncidentAlertDashboard = () => {
 
   const fetchIncidents = async () => {
     try {
-      const res = await API.get('/api/incidents').catch(() => ({ data: [] as Incident[] }));
+       const res = await API.get('/api/orgs/incidents').catch(() => ({ data: [] as Incident[] }));
       const backendIncidents = res.data || [];
       const demoIncidents = generateDemoIncidents();
       setIncidents(backendIncidents.length > 0 ? backendIncidents : demoIncidents);

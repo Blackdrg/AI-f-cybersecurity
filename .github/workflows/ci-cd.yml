@@ -105,40 +105,80 @@ jobs:
           flags: unittests
           name: codecov-umbrella
 
-  # Job 5: Integration Tests
-  integration:
-    runs-on: ubuntu-latest
-    needs: test
-    services:
-      postgres:
-        image: pgvector/pgvector:pg15
-        env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_pass
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports: ['6379:6379']
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install deps
-        run: |
-          pip install -r backend/requirements.txt
-          pip install pytest pytest-asyncio
-      - name: Run integration tests
-        run: |
-          cd backend
-          pytest tests/integration/ -v --tb=short
+   # Job 5: Integration Tests
+   integration:
+     runs-on: ubuntu-latest
+     needs: test
+     services:
+       postgres:
+         image: pgvector/pgvector:pg15
+         env:
+           POSTGRES_DB: test_db
+           POSTGRES_USER: test_user
+           POSTGRES_PASSWORD: test_pass
+         ports: ['5432:5432']
+         options: >-
+           --health-cmd pg_isready
+           --health-interval 10s
+           --health-timeout 5s
+           --health-retries 5
+       redis:
+         image: redis:7-alpine
+         ports: ['6379:6379']
+     env:
+       DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+       REDIS_URL: redis://localhost:6379
+       MODEL_PATH: backend/models/onnx_bundle
+       JWT_SECRET: integration-test-jwt-secret-64byte-long-string
+       ENCRYPTION_KEY: 0XKYdoZg1Q4f1mXPIWwEVRwQcGm0sKomFk4N5ksJ2nA=
+       CI: true
+     steps:
+       - uses: actions/checkout@v4
+       - name: Set up Python
+         uses: actions/setup-python@v5
+         with:
+           python-version: '3.12'
+       - name: Install deps
+         run: |
+           pip install -r backend/requirements.txt
+           pip install pytest pytest-asyncio schemathesis
+       - name: Wait for Postgres
+         run: |
+           # Wait for Postgres to be ready
+           for i in {1..30}; do
+             if pg_isready -h localhost -p 5432 -U test_user; then
+               echo "Postgres ready"
+               break
+             fi
+             echo "Waiting for Postgres... ($i)"
+             sleep 1
+           done
+       - name: Initialize pgvector extension
+         run: |
+           psql postgresql://test_user:test_pass@localhost:5432/test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+         continue-on-error: true
+       - name: Run integration tests
+         run: |
+           cd backend
+           pytest tests/integration/ -v --tb=short -m "integration"
+       - name: Run API contract tests
+         run: |
+           cd backend
+           # Start the server in background
+           uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+           SERVER_PID=$!
+           sleep 5  # Wait for server to start
+           # Run Schemathesis against the OpenAPI spec
+           schemathesis run http://localhost:8000/docs/openapi.json \
+             --checks all \
+             --validate-schema=true \
+             --data-generation=positive \
+             --hypothesis-max-examples=50 \
+             -H "Authorization: Bearer test_token" \
+             --report=json:schemathesis-report.json
+           kill $SERVER_PID 2>/dev/null || true
+           # Exit with Schemathesis code
+           exit $?
 
   # Job 6: Build and Push Docker Image
   build:

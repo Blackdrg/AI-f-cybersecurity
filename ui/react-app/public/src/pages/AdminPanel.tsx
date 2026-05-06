@@ -97,13 +97,14 @@ const AdminPanel = () => {
         API.get('/api/analytics/risk-metrics').catch(() => ({data: {}}))
       ]);
       
-setOrgs(orgsRes.data);
-       if (orgsRes.data.length > 0) setActiveOrg(orgsRes.data[0]);
-       setPolicies(policiesRes.data);
-       setSystems(systemsRes.data);
-       setComplianceData(complianceRes.data);
-       setThreats(threatsRes.data);
-       setRiskMetrics(riskRes.data);
+        setOrgs(orgsRes.data);
+        if (orgsRes.data.length > 0) setActiveOrg(orgsRes.data[0]);
+        setPolicies(policiesRes.data);
+        setSystems(systemsRes.data);
+        setComplianceData(complianceRes.data);
+        const threatsArray = Array.isArray(threatsRes.data) ? threatsRes.data : (threatsRes.data?.threats || []);
+        setThreats(threatsArray);
+        setRiskMetrics(riskRes.data);
     } catch (err: any) {
       console.error("Failed to fetch admin data");
     }

@@ -90,20 +90,20 @@ if (res?.data?.data) {
     setLoading(false);
   };
 
-   const fetchCriticalAlerts = async () => {
-     try {
-       const res = await API.get('/api/orgs/alerts/active').catch(() => ({ data: [] }));
-       const alerts = res.data || [];
-       const critical = alerts.filter((a: any) => 
-         a.severity === 'critical' || 
-         (typeof a === 'object' && a.type === 'DEEPFAKE_DETECTED')
-       ).length;
-       setCriticalAlerts(critical);
-     } catch (err: any) {
-       // Use demo data if API fails
-       setCriticalAlerts(Math.floor(Math.random() * 3));
-     }
-   };
+    const fetchCriticalAlerts = async () => {
+      try {
+        const res = await API.get('/api/orgs/active').catch(() => ({ data: [] }));
+        const alerts = res.data?.alerts || res.data || [];
+        const critical = alerts.filter((a: any) => 
+          a.severity === 'critical' || 
+          (typeof a === 'object' && a.type === 'DEEPFAKE_DETECTED')
+        ).length;
+        setCriticalAlerts(critical);
+      } catch (err: any) {
+        // Use demo data if API fails
+        setCriticalAlerts(Math.floor(Math.random() * 3));
+      }
+    };
 
    const fetchPendingIncidents = async () => {
      try {
@@ -180,7 +180,7 @@ const handlePageChange = (newPage: string) => {
   const renderContent = () => {
     switch (activePage) {
       case 'dashboard':
-        return <DashboardHome />;
+        return <DashboardHome orgId={organization?.org_id} />;
       case 'recognize':
         return <RecognizePage />;
       case 'enroll':

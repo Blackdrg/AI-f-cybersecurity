@@ -19,7 +19,7 @@ import ExplainableAIPanel from '../components/ExplainableAIPanel';
 import API from '../services/api';
 import './Dashboard.css';
 
-const DashboardHome = () => {
+const DashboardHome: React.FC<{ orgId?: string }> = ({ orgId }) => {
   const [metrics, setMetrics] = useState({
     totalRecognitions: 0,
     totalEnrollments: 0,
@@ -47,27 +47,57 @@ const DashboardHome = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [metricsRes, eventsRes, sessionsRes] = await Promise.all([
-        API.get("/api/analytics?timeframe=" + timeframe).catch(() => ({data: metrics})),
-        API.get("/api/events?limit=50").catch(() => ({data: {events: []}})),
-        API.get("/api/sessions/active").catch(() => ({data: {sessions: []}}))
+      const [metricsRes, eventsRes, sessionsRes, threatsRes] = await Promise.all([
+        API.get("/api/analytics?timeframe=" + timeframe).catch(() => ({data: null})),
+        orgId 
+          ? API.get(`/api/orgs/${orgId}/events?limit=50`).catch(() => ({data: {events: []}}))
+          : Promise.resolve({data: {events: []}}),
+        API.get("/api/sessions/active").catch(() => ({data: {sessions: [], metrics: {}}})),
+        API.get("/api/security/threats").catch(() => ({data: {threats: [], stats: {}}}))
       ]);
-      
-      setMetrics(metricsRes.data || metrics);
-      setEvents(eventsRes.data?.events || eventsRes.data || []);
-      setSessions(sessionsRes.data?.sessions || sessionsRes.data || []);
-      
-      // Fetch threats
-      try {
-        const threatsRes = await API.get("/api/security/threats").catch(() => ({data: []}));
-        setThreats(threatsRes.data || []);
-      } catch (err: any) {
-        setThreats([]);
+
+      // Merge metrics with demo fallback
+      let mergedMetrics = { ...demoMetrics };
+      if (metricsRes.data?.data) {
+        const d = metricsRes.data.data;
+        mergedMetrics.totalRecognitions = d.recognition_count ?? mergedMetrics.totalRecognitions;
+        mergedMetrics.totalEnrollments = d.enroll_count ?? mergedMetrics.totalEnrollments;
+        // accuracy could be derived: (1 - false_accepts/(recognitions+1))? Not accurate, keep demo
       }
-      
+      // Incorporate sessions metrics
+      if (sessionsRes.data?.metrics) {
+        const sm = sessionsRes.data.metrics;
+        mergedMetrics.activeSessions = sm.total_active ?? mergedMetrics.activeSessions;
+      }
+      setMetrics(mergedMetrics);
+
+      // Events: array or {events: []}
+      const eventsData = eventsRes.data;
+      setEvents(Array.isArray(eventsData) ? eventsData : (eventsData.events || []));
+
+      // Sessions
+      const sessionsData = sessionsRes.data?.sessions || [];
+      setSessions(sessionsData);
+
+      // Threats: could be array or {threats: [], stats: {}}
+      const threatsData = threatsRes.data;
+      if (Array.isArray(threatsData)) {
+        setThreats(threatsData);
+        setStats({});
+      } else {
+        setThreats(threatsData.threats || []);
+        setStats(threatsData.stats || {});
+      }
+
       setError(null);
     } catch (err: any) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+      // Set defaults on error
+      setMetrics(demoMetrics);
+      setEvents(demoEvents);
+      setSessions(demoSessions);
+      setThreats(demoThreats);
+      setStats({});
     } finally {
       setLoading(false);
     }
