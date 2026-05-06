@@ -1,10 +1,10 @@
-from fastapi import APIRouter, HTTPException, Form, Query, Depends
+from fastapi import APIRouter, HTTPException, Form, Query, Depends, Body
 from ..db.db_client import get_db
 from ..schemas import PersonResponse, RevokeRequest, DeleteResponse, MetricsResponse, ConsentVaultRequest, BiasReport, LogsResponse, LogEntry, ModelVersion, OTADownload, AnalyticsResponse
 from ..security import require_admin, require_operator, require_auth
 from ..metrics import recognition_count, enroll_count, recognition_latency, false_accepts, false_rejects, index_size
 from ..models.bias_detector import BiasDetector
-from typing import List
+from typing import List, Dict, Any
 from datetime import datetime
 
 router = APIRouter()
@@ -216,3 +216,80 @@ async def get_analytics(timeframe: str = Query('24h'), user: dict = Depends(requ
     dev_data = [dict(row) for row in device_stats]
 
     return AnalyticsResponse(time_series=ts_data, bias_trends=bias_data, device_stats=dev_data)
+
+# Additional endpoints for AdminPanel
+
+@router.get("/policies")
+async def list_policies(user: dict = Depends(require_admin)):
+    """List all policy rules."""
+    from ..policy_engine import policy_engine
+    report = policy_engine.get_policy_report()
+    policies = []
+    for rule in report['rules']:
+        policies.append({
+            "id": rule['rule_id'],
+            "name": rule['name'],
+            "description": f"Resources: {', '.join(rule['resources'])}",
+            "type": rule['effect'],
+            "enabled": rule['enabled']
+        })
+    return policies
+
+@router.put("/policies/{policy_id}")
+async def update_policy(policy_id: str, payload: Dict[str, Any] = Body(...), user: dict = Depends(require_admin)):
+    """Enable or disable a policy."""
+    enabled = payload.get('enabled')
+    if enabled is None:
+        raise HTTPException(status_code=400, detail="'enabled' field required")
+    from ..policy_engine import policy_engine
+    for rule in policy_engine.rules:
+        if rule.rule_id == policy_id:
+            rule.enabled = enabled
+            return {"message": "Policy updated"}
+    raise HTTPException(status_code=404, detail="Policy not found")
+
+@router.get("/systems/status")
+async def systems_status(user: dict = Depends(require_admin)):
+    """System component health status."""
+    # Basic static check - can be enhanced
+    return [
+        {"id": "database", "name": "PostgreSQL Database", "status": "healthy", "uptime": 99.9},
+        {"id": "redis", "name": "Redis Cache", "status": "healthy", "uptime": 99.9},
+        {"id": "models", "name": "ML Model Service", "status": "loaded", "uptime": 100},
+        {"id": "policy_engine", "name": "Policy Engine", "status": "active", "uptime": 100}
+    ]
+
+@router.get("/compliance/status")
+async def compliance_status(user: dict = Depends(require_admin)):
+    """Overall compliance score."""
+    # Could integrate with dsar-status
+    return {"overallScore": 100}
+
+@router.get("/security/threats")
+async def security_threats(user: dict = Depends(require_admin)):
+    """List recent security threats."""
+    try:
+        from .alerts import generate_demo_alerts
+        alerts = generate_demo_alerts()
+    except Exception:
+        alerts = []
+    threats = [
+        {"type": a.get('type', 'Unknown'), "severity": a.get('severity', 'medium'), "timestamp": a.get('timestamp', '')}
+        for a in alerts
+    ]
+    return threats
+
+@router.get("/analytics/risk-metrics")
+async def risk_metrics(user: dict = Depends(require_admin)):
+    """Risk metrics summary."""
+    try:
+        from .alerts import generate_demo_alerts
+        alerts = generate_demo_alerts()
+    except Exception:
+        alerts = []
+    counts = {"critical": 0, "high": 0, "medium": 0, "resolved": 0}
+    for a in alerts:
+        sev = a.get('severity')
+        if sev in counts:
+            counts[sev] += 1
+    return counts

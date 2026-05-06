@@ -123,13 +123,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
 
-  useEffect(() => {
-    // Check auth state without reading token from localStorage (httpOnly cookie)
-    const checkAuth = async () => {
-      try {
-        const res = await fetch('http://localhost:8000/api/users/me', {
-          credentials: 'include',  // Required for httpOnly cookies
-        });
+   useEffect(() => {
+     // Check auth state without reading token from localStorage (httpOnly cookie)
+     const checkAuth = async () => {
+       try {
+         const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+         const res = await fetch(`${baseURL}/api/users/me`, {
+           credentials: 'include',  // Required for httpOnly cookies
+         });
         if (res.ok) {
           const userData = await res.json();
           setUser(userData);
@@ -192,7 +193,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('organization');
     localStorage.removeItem('organizations');
     // Call backend logout to clear httpOnly cookie
-    fetch('http://localhost:8000/api/auth/logout', {
+    const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    fetch(`${baseURL}/api/auth/logout`, {
       method: 'POST',
       credentials: 'include',
     }).finally(() => {

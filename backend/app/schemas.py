@@ -222,6 +222,7 @@ class MetricsResponse(BaseModel):
     avg_latency_ms: float
     false_accepts: int
     false_rejects: int
+    index_size: int
 
 
 class LogEntry(BaseModel):

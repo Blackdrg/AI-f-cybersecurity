@@ -20,7 +20,7 @@ const Compliance = () => {
     if (!personId) return;
     setIsExporting(true);
     try {
-      const response = await API.get(`/compliance/export/${personId}`);
+      const response = await API.get(`/api/compliance/export/${personId}`);
       const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -38,7 +38,7 @@ const Compliance = () => {
   const handleDelete = async () => {
     if (!personId) return;
     try {
-      await API.delete(`/compliance/delete/${personId}`);
+      await API.delete(`/api/compliance/delete/${personId}`);
       alert("Identity purged successfully.");
       setIsDeleteDialogOpen(false);
     } catch (err: any) {

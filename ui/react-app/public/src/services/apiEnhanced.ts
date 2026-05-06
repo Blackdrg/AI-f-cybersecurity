@@ -365,7 +365,7 @@ const EnhancedAPI = {
   },
 
   audit: {
-    getLogs: (params: Record<string, any>) => API.get('/api/admin/logs', { params }),
+    getLogs: (params: Record<string, any>) => API.get('/api/logs', { params }),
     getForensicTrace: (eventId: string) => API.get(`/api/audit/forensic/${eventId}`),
     verifyChain: () => API.get('/api/audit/verify')
   },

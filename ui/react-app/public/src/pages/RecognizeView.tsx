@@ -101,7 +101,11 @@ const RecognizeView: React.FC<RecognizeViewProps> = ({ result }) => {
             setMessage('Webcam started successfully');
             setSeverity('success');
 
-            wsRef.current = new WebSocket('ws://localhost:8000/api/recognize_stream');
+            // Connect to WebSocket
+            const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+            const wsProtocol = baseURL.startsWith('https') ? 'wss' : 'ws';
+            const host = baseURL.replace(/^https?:\/\//, '');
+            wsRef.current = new WebSocket(`${wsProtocol}://${host}/api/recognize_stream`);
             wsRef.current.onopen = () => {
                 console.log('WebSocket connected');
             };

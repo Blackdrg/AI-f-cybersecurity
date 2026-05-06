@@ -55,7 +55,7 @@ export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }: AuditTime
   const fetchAuditLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await API.get('/api/admin/logs', {
+      const res = await API.get('/api/logs', {
         params: {
           limit: 100,
           action: filterAction !== 'all' ? filterAction : undefined
@@ -74,7 +74,7 @@ export const AuditTimeline = ({ orgId, filters = {}, onFilterChange }: AuditTime
 
   const fetchChainVerification = useCallback(async () => {
     try {
-      const res = await API.get('/api/admin/analytics');
+      const res = await API.get('/api/analytics');
       if (res.data) {
         setVerificationStatus(prev => ({
           ...prev,

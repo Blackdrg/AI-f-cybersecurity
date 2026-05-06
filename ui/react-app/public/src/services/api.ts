@@ -18,7 +18,7 @@ export interface User {
 }
 
 const API: AxiosInstance = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:8000",
   timeout: 30000,
   withCredentials: true,  // Important: Send cookies with requests for httpOnly auth
 });
@@ -106,7 +106,7 @@ export const enroll = async (files: File[], name: string, consent: boolean, opti
 
 export const getAuditLogs = async (params: Record<string, any> = {}): Promise<any> => {
   const query = new URLSearchParams(params).toString();
-  const res = await API.get(`/api/admin/logs${query ? '?' + query : ''}`);
+  const res = await API.get(`/api/logs${query ? '?' + query : ''}`);
   return res.data;
 };
 

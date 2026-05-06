@@ -27,7 +27,7 @@ const AnalyticsDashboard = () => {
 
   const fetchMetrics = async () => {
     try {
-      const res = await API.get('/api/admin/metrics');
+      const res = await API.get('/api/metrics');
       setMetrics(res.data);
     } catch (err: any) {
       console.error("Failed to fetch metrics");

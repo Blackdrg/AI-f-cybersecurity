@@ -90,33 +90,33 @@ if (res?.data?.data) {
     setLoading(false);
   };
 
-  const fetchCriticalAlerts = async () => {
-    try {
-      const res = await API.get('/api/alerts/active').catch(() => ({ data: [] }));
-      const alerts = res.data || [];
-      const critical = alerts.filter((a: any) => 
-        a.severity === 'critical' || 
-        (typeof a === 'object' && a.type === 'DEEPFAKE_DETECTED')
-      ).length;
-      setCriticalAlerts(critical);
-    } catch (err: any) {
-      // Use demo data if API fails
-      setCriticalAlerts(Math.floor(Math.random() * 3));
-    }
-  };
+   const fetchCriticalAlerts = async () => {
+     try {
+       const res = await API.get('/api/orgs/alerts/active').catch(() => ({ data: [] }));
+       const alerts = res.data || [];
+       const critical = alerts.filter((a: any) => 
+         a.severity === 'critical' || 
+         (typeof a === 'object' && a.type === 'DEEPFAKE_DETECTED')
+       ).length;
+       setCriticalAlerts(critical);
+     } catch (err: any) {
+       // Use demo data if API fails
+       setCriticalAlerts(Math.floor(Math.random() * 3));
+     }
+   };
 
-  const fetchPendingIncidents = async () => {
-    try {
-      const res = await API.get('/api/incidents').catch(() => ({ data: [] }));
-      const incidents = res.data || [];
-      const pending = incidents.filter((i: any) => 
-        i.status === 'open' || i.status === 'investigating'
-      ).length;
-      setPendingIncidents(pending);
-    } catch (err: any) {
-      setPendingIncidents(Math.floor(Math.random() * 2));
-    }
-  };
+   const fetchPendingIncidents = async () => {
+     try {
+       const res = await API.get('/api/orgs/incidents').catch(() => ({ data: [] }));
+       const incidents = res.data || [];
+       const pending = incidents.filter((i: any) => 
+         i.status === 'open' || i.status === 'investigating'
+       ).length;
+       setPendingIncidents(pending);
+     } catch (err: any) {
+       setPendingIncidents(Math.floor(Math.random() * 2));
+     }
+   };
 
 const handlePageChange = (newPage: string) => {
    setActivePage(newPage);
