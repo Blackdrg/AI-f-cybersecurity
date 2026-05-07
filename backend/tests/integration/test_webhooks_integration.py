@@ -11,8 +11,11 @@ import pytest
 import hmac
 import hashlib
 import json
+import os
 import time
 from datetime import datetime
+from app.services.stripe_service import billing_service
+from app.services.stripe_service import billing_service
 
 
 @pytest.mark.billing
@@ -23,8 +26,14 @@ class TestStripeWebhooksIntegration:
 
     def test_webhook_signature_verification(self):
         """Test that webhook signatures are correctly verified."""
-        # This test uses actual Stripe test mode webhook payload
-        pytest.skip("Requires Stripe test mode webhook secret - run in dedicated CI job")
+        from app.api.webhooks import verify_signature
+        payload = json.dumps({"type": "test"}).encode()
+        secret = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_change_me")
+        # Compute valid signature
+        signature = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+        assert verify_signature(payload, signature, secret) is True
+        # Invalid signature should fail
+        assert verify_signature(payload, "invalid", secret) is False
 
     async def test_checkout_session_completed(self, real_db):
         """Test processing of successful checkout completion webhook."""
@@ -48,7 +57,7 @@ class TestStripeWebhooksIntegration:
         
         # Process event (would normally validate signature first)
         # with pytest.raises(SomeException) if validation fails
-        result = await process_checkout_session_completed(event)
+        result = await billing_service.handle_webhook(event)
         
         # Verify subscription was created in DB
         async with real_db.pool.acquire() as conn:

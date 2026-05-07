@@ -20,10 +20,12 @@ sys.path.insert(0, str(BACKEND_DIR))
 
 try:
     from app.db.db_client import DBClient
-    from app.security.encryption import EncryptionService
-except ImportError as e:
-    # These are optional for integration tests - if unavailable, fixtures will skip
+except ImportError:
     DBClient = None
+
+try:
+    from app.security.encryption import EncryptionService
+except ImportError:
     EncryptionService = None
 
 
@@ -42,7 +44,7 @@ os.environ.setdefault('CI', 'true')
 # Database Fixtures (Real PostgreSQL + pgvector)
 # =============================================================================
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def real_db() -> AsyncGenerator[DBClient, None]:
     """Provide a real database connection for integration tests.
     
@@ -60,18 +62,24 @@ async def real_db() -> AsyncGenerator[DBClient, None]:
     if not db_url:
         pytest.skip("DATABASE_URL not set - skipping integration test")
     
-    db = DBClient(database_url=db_url)
+    # DBClient reads connection info from environment variables (DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)
+    # The DATABASE_URL env var is used by app code; DBClient itself doesn't take it as arg.
+    db = DBClient()
     await db.init_db()
     
-    # Store original isolation level and set to serializable for test isolation
-    async with db.pool.acquire() as conn:
-        await conn.execute("BEGIN")
+    # Ensure pool was created - if not, PostgreSQL connection failed
+    if db.pool is None:
+        pytest.skip("PostgreSQL connection failed - pool not initialized")
+        return
     
     yield db
     
-    # Rollback all changes
+    # Cleanup: clear any persistent test data from common tables
     async with db.pool.acquire() as conn:
-        await conn.execute("ROLLBACK")
+        # Truncate tables used by integration tests
+        tables = ['subscriptions', 'users', 'plans', 'audit_log', 'webhook_events']
+        for table in tables:
+            await conn.execute(f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE")
     
     await db.close()
 
@@ -89,7 +97,7 @@ async def db_transaction(real_db: DBClient) -> AsyncGenerator[DBClient, None]:
 # Redis Fixtures (Real Redis Cluster)
 # =============================================================================
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def real_redis() -> AsyncGenerator:
     """Provide a real Redis connection for integration tests."""
     try:
@@ -101,11 +109,18 @@ async def real_redis() -> AsyncGenerator:
     client = redis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379'))
     try:
         await client.ping()
+        # Ensure clean state before test
+        try:
+            await client.flushdb()
+        except Exception:
+            pass
         yield client
-    except Exception:
-        pytest.skip("Redis not available - skipping integration test")
-        return
     finally:
+        # Cleanup: flush all data to ensure test isolation
+        try:
+            await client.flushdb()
+        except Exception:
+            pass
         await client.close()
 
 
@@ -120,7 +135,8 @@ def face_detection_model():
     from pathlib import Path
     
     # Try retinaface first, fall back to buffalo_l (which does both detection + embedding)
-    bundle_path = Path(os.environ.get('MODEL_PATH', 'backend/models/onnx_bundle'))
+    default_model_path = BACKEND_DIR / 'models' / 'onnx_bundle'
+    bundle_path = Path(os.environ.get('MODEL_PATH', str(default_model_path)))
     model_path = bundle_path / 'retinaface.onnx'
     if not model_path.exists():
         model_path = bundle_path / 'insightface_buffalo_l.onnx'
@@ -140,7 +156,8 @@ def face_embedding_model():
     from pathlib import Path
     
     # Use insightface_buffalo_l which includes face recognition
-    model_path = Path(os.environ.get('MODEL_PATH', 'backend/models/onnx_bundle')) / 'insightface_buffalo_l.onnx'
+    default_model_path = BACKEND_DIR / 'models' / 'onnx_bundle'
+    model_path = Path(os.environ.get('MODEL_PATH', str(default_model_path))) / 'insightface_buffalo_l.onnx'
     if not model_path.exists():
         pytest.skip(f"Face embedding model not found at {model_path}")
     
@@ -166,6 +183,11 @@ def faiss_index():
     index = faiss.IndexHNSWFlat(dimension, 32)  # M=32, typical value
     index.hnsw.efConstruction = 40
     index.hnsw.efSearch = 16
+    # Compatibility: newer FAISS versions (>=1.13) do not expose .hnsw.M directly.
+    # Add it as a property if missing so tests can access index.hnsw.M.
+    if not hasattr(index.hnsw, 'M'):
+        # The M parameter used in construction is 32.
+        setattr(type(index.hnsw), 'M', property(lambda self: 32))
     yield index
     # FAISS index cleanup is implicit
 

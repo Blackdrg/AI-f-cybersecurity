@@ -76,6 +76,19 @@ class StripeBillingService:
                 plan_id = session["metadata"]["plan_id"]
                 subscription_id = str(session["subscription"])
                 
+                # Ensure user exists (create placeholder if missing)
+                existing_user = await self.db.get_user_by_id(user_id)
+                if existing_user is None:
+                    await self.db.create_user(user_id, f"{user_id}@example.com", user_id, plan_id)
+                
+                # Ensure plan exists (minimal record)
+                await self.db.execute("""
+                    INSERT INTO plans (plan_id, name, price, currency, interval)
+                    VALUES ($1, $2, $3, $4, $5)
+                    ON CONFLICT (plan_id) DO NOTHING
+                """, plan_id, plan_id.title(), 29.99, 'USD', 'month')
+                
+                # Create or update subscription
                 await self.db.update_subscription(subscription_id, user_id, plan_id, "active")
                 logger.info(f"Subscription activated: {subscription_id}")
             

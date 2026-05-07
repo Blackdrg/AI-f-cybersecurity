@@ -107,15 +107,15 @@ class TestFAISSIntegration:
         """Verify HNSW parameters are set correctly."""
         if faiss_index is None:
             pytest.skip("FAISS not available")
-        
-        # M parameter (connectivity)
-        m = faiss_index.hnsw.M
+
+        # M parameter (connectivity) - different FAISS versions use different attribute names
+        m = getattr(faiss_index.hnsw, 'M', None) or getattr(faiss_index.hnsw, 'nb_neighbors', None)
         assert m == 32  # Expected value from conftest
-        
+
         # efConstruction affects build quality
         ef_construction = faiss_index.hnsw.efConstruction
         assert ef_construction == 40
-        
+
         # efSearch affects query accuracy/speed tradeoff
         ef_search = faiss_index.hnsw.efSearch
         assert ef_search == 16

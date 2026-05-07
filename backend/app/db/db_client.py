@@ -150,21 +150,70 @@ class DBClient:
 
     async def _create_tables(self):
         async with self.pool.acquire() as conn:
-            # Enable pgvector
+            # Enable pgvector extension for vector operations
             await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-
-            # Persons table
+            # Enable pgcrypto for UUID generation functions
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto;")
+            
+            # Users table
             await conn.execute("""
-                CREATE TABLE IF NOT EXISTS persons (
-                    person_id UUID PRIMARY KEY,
-                    org_id UUID REFERENCES organizations(org_id) ON DELETE CASCADE,
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id TEXT PRIMARY KEY,
+                    email TEXT UNIQUE,
                     name TEXT,
-                    age INTEGER,
-                    gender TEXT,
-                    created_at TIMESTAMP DEFAULT NOW(),
-                    updated_at TIMESTAMP DEFAULT NOW(),
-                    consent_record_id UUID
-                );
+                    full_name TEXT,
+                    hashed_password TEXT,
+                    subscription_tier TEXT DEFAULT 'free',
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            # Plans table
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS plans (
+                    plan_id TEXT PRIMARY KEY,
+                    name TEXT,
+                    price FLOAT,
+                    currency TEXT,
+                    interval TEXT,
+                    features JSONB,
+                    limits JSONB
+                )
+            """)
+            # Subscriptions table (references users, plans)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS subscriptions (
+                    subscription_id TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(user_id),
+                    plan_id TEXT REFERENCES plans(plan_id),
+                    status TEXT,
+                    current_period_end TIMESTAMP,
+                    expires_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            # Audit log table (for audit integration tests)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS audit_log (
+                    id SERIAL PRIMARY KEY,
+                    action TEXT,
+                    person_id UUID,
+                    timestamp TIMESTAMP DEFAULT NOW(),
+                    details JSONB,
+                    previous_hash TEXT,
+                    hash TEXT
+                )
+            """)
+            # Webhook events table (for webhook persistence test)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS webhook_events (
+                    id SERIAL PRIMARY KEY,
+                    stripe_event_id TEXT UNIQUE,
+                    event_type TEXT,
+                    payload JSONB,
+                    received_at TIMESTAMP DEFAULT NOW(),
+                    processed_at TIMESTAMP,
+                    status TEXT DEFAULT 'pending'
+                )
             """)
 
     # Direct query passthrough for backward compatibility
@@ -1115,6 +1164,44 @@ class DBClient:
             """, new_end_date, subscription_id)
             return result == "UPDATE 1"
     
+    async def update_subscription(self, subscription_id: str, user_id: Optional[str] = None, plan_id: Optional[str] = None, status: Optional[str] = None) -> bool:
+        """Update subscription fields. If subscription does not exist and user_id+plan_id provided, insert new."""
+        async with self.pool.acquire() as conn:
+            # Try UPDATE first
+            set_parts = []
+            args = []
+            if user_id is not None:
+                set_parts.append(f"user_id = ${len(args)+1}")
+                args.append(user_id)
+            if plan_id is not None:
+                set_parts.append(f"plan_id = ${len(args)+1}")
+                args.append(plan_id)
+            if status is not None:
+                set_parts.append(f"status = ${len(args)+1}")
+                args.append(status)
+            if set_parts:
+                args.append(subscription_id)
+                query = f"UPDATE subscriptions SET {', '.join(set_parts)} WHERE subscription_id = ${len(args)}"
+                result = await conn.execute(query, *args)
+                if result == "UPDATE 1":
+                    return True
+            # If no rows updated and we have both user_id and plan_id, try INSERT (upsert)
+            if user_id is not None and plan_id is not None:
+                try:
+                    await conn.execute("""
+                        INSERT INTO subscriptions (subscription_id, user_id, plan_id, status, created_at, expires_at)
+                        VALUES ($1, $2, $3, $4, NOW(), NOW() + interval '30 days')
+                        ON CONFLICT (subscription_id) DO UPDATE SET
+                            user_id = EXCLUDED.user_id,
+                            plan_id = EXCLUDED.plan_id,
+                            status = EXCLUDED.status
+                    """, subscription_id, user_id, plan_id, status or 'active')
+                    return True
+                except Exception:
+                    # Possibly duplicate or other error
+                    pass
+            return False
+
     async def mark_payment_failed(self, payment_intent_id: str) -> bool:
         """Mark a payment as failed."""
         async with self.pool.acquire() as conn:
@@ -1743,6 +1830,11 @@ class DBClient:
         async with self.pool.acquire() as conn:
             rows = await conn.fetch("SELECT * FROM edge_devices WHERE status = 'active'")
             return [dict(row) for row in rows]
+
+    async def close(self):
+        """Close the connection pool."""
+        if hasattr(self, 'pool') and self.pool is not None:
+            await self.pool.close()
 
 
 # Global instance

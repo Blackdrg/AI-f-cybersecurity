@@ -371,12 +371,14 @@ def get_mock_db():
 
 # --- Patch get_db and init_db ---
 get_db_patcher = patch('app.db.db_client.get_db', side_effect=get_mock_db)
-get_db_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    get_db_patcher.start()
 
 async def _init_db_mock():
     pass
 init_db_patcher = patch('app.db.db_client.init_db', side_effect=_init_db_mock)
-init_db_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    init_db_patcher.start()
 
 # --- Mock Redis ---
 try:
@@ -388,14 +390,17 @@ def _fake_redis_from_url(url, *args, **kwargs):
     return AsyncFakeRedis()
 
 redis_async_patcher = patch('redis.asyncio.from_url', side_effect=_fake_redis_from_url)
-redis_async_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    redis_async_patcher.start()
 redis_sync_patcher = patch('redis.from_url', side_effect=_fake_redis_from_url)
-redis_sync_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    redis_sync_patcher.start()
 
 def _fake_get_encrypted_redis_client(url):
     return AsyncFakeRedis()
 enc_redis_patcher = patch('app.security.get_encrypted_redis_client', side_effect=_fake_get_encrypted_redis_client)
-enc_redis_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    enc_redis_patcher.start()
 
 # --- Mock Stripe ---
 stripe_customer_patcher = patch('stripe.Customer.create', MagicMock(return_value=MagicMock(id='cus_test')))
@@ -417,18 +422,24 @@ stripe_webhook_patcher = patch(
         }
     }
 )
-stripe_customer_patcher.start()
-stripe_subscription_patcher.start()
-stripe_pi_patcher.start()
-stripe_webhook_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    stripe_customer_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    stripe_subscription_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    stripe_pi_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    stripe_webhook_patcher.start()
 
 class _MockStripeError(Exception):
     pass
 stripe_error_patcher = patch('stripe.error.StripeError', _MockStripeError)
-stripe_error_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    stripe_error_patcher.start()
 
 stripe_sub_modify_patcher = patch('stripe.Subscription.modify', MagicMock(return_value=MagicMock(id='sub_test')))
-stripe_sub_modify_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    stripe_sub_modify_patcher.start()
 
 # --- Mock OpenAI ---
 class _MockChatCompletion:
@@ -448,7 +459,8 @@ class _MockOpenAI:
         self.chat = _MockChatCompletion()
 
 openai_patcher = patch('openai.OpenAI', side_effect=_MockOpenAI)
-openai_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    openai_patcher.start()
 
 # --- Mock InsightFace & ONNX ---
 import sys
@@ -459,9 +471,11 @@ mock_insightface.app.FaceAnalysis = MagicMock()
 sys.modules['insightface'] = mock_insightface
 sys.modules['insightface.app'] = mock_insightface.app
 insightface_patcher = patch('insightface.app.FaceAnalysis', MagicMock())
-insightface_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    insightface_patcher.start()
 onnx_patcher = patch('onnxruntime.InferenceSession', MagicMock())
-onnx_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    onnx_patcher.start()
 
 # --- Mock GeoIP ---
 class _MockGeoIP2Reader:
@@ -486,7 +500,8 @@ class _MockGeoIP2Reader:
             subdivisions=[MagicMock(most_specific=Subdivision())]
         )
 geoip_patcher = patch('geoip2.database.Reader', _MockGeoIP2Reader)
-geoip_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    geoip_patcher.start()
 
 # --- Mock OAuth HTTP calls ---
 class _MockHTTPXClient:
@@ -513,17 +528,21 @@ class _MockHTTPXClient:
                 return {"access_token":"mock","id_token":"mock_id","expires_in":3600}
         return _Resp()
 httpx_patcher = patch('httpx.AsyncClient', _MockHTTPXClient)
-httpx_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    httpx_patcher.start()
 
 # --- Mock boto3 (AWS SDK) ---
 boto3_patcher = patch('boto3.client', MagicMock())
-boto3_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    boto3_patcher.start()
 
 # --- Mock PyTorch CUDA (force CPU) ---
 torch_cuda_patcher = patch('torch.cuda.is_available', return_value=False)
-torch_cuda_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    torch_cuda_patcher.start()
 torch_device_count_patcher = patch('torch.cuda.device_count', return_value=0)
-torch_device_count_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    torch_device_count_patcher.start()
 
 # --- Mock SpeechBrain (voice) ---
 import sys
@@ -533,19 +552,17 @@ sys.modules['speechbrain.inference'] = MagicMock()
 sys.modules['speechbrain.inference.speaker'] = MagicMock()
 sys.modules['speechbrain.inference.speaker'].EncoderClassifier = MagicMock()
 speechbrain_patcher = patch('speechbrain.inference.speaker.EncoderClassifier', MagicMock())
-speechbrain_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    speechbrain_patcher.start()
 
 # --- Mock PubSub and WebSocket initialization during app startup ---
 pubsub_init_patcher = patch('app.pubsub.pubsub_manager.initialize', new_callable=AsyncMock)
-pubsub_init_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    pubsub_init_patcher.start()
 conn_mgr_init_patcher = patch('app.websocket_manager.connection_manager.initialize', new_callable=AsyncMock)
-conn_mgr_init_patcher.start()
+if os.environ.get('ENVIRONMENT') != 'integration':
+    conn_mgr_init_patcher.start()
 
-# --- Mock PubSub and WebSocket initialization during app startup ---
-pubsub_init_patcher = patch('app.pubsub.pubsub_manager.initialize', new_callable=AsyncMock)
-pubsub_init_patcher.start()
-conn_mgr_init_patcher = patch('app.websocket_manager.connection_manager.initialize', new_callable=AsyncMock)
-conn_mgr_init_patcher.start()
 
 # =============================================================================
 # Session cleanup

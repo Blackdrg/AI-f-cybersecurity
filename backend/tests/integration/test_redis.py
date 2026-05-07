@@ -12,6 +12,7 @@ import pytest
 import asyncio
 import time
 import json
+import os
 from datetime import datetime, timedelta
 
 
@@ -61,18 +62,18 @@ class TestRedisIntegration:
         user_id = "test_user_456"
         route = "/api/enroll"
         limit = 3
-        
+
         key = f"rate_limit:{user_id}:{route}"
-        
-        # Simulate 4 requests
-        now = time.time()
-        for _ in range(4):
-            await real_redis.zadd(key, {str(now): now})
+
+        # Simulate 4 requests with unique identifiers
+        for i in range(4):
+            now = time.time()
+            await real_redis.zadd(key, {f"req_{i}": now})
             await real_redis.zremrangebyscore(key, 0, now - 60)
             count = await real_redis.zcard(key)
             if count >= limit:
                 break
-        
+
         assert count >= limit
 
     @pytest.mark.redis
@@ -89,7 +90,7 @@ class TestRedisIntegration:
         
         # Check it exists
         stored_expiry = await real_redis.get(key)
-        assert stored_expiry == str(expiry)
+        assert stored_expiry == str(expiry).encode()
         
         # Verify is_revoked returns True
         is_revoked = await real_redis.exists(key)
@@ -198,9 +199,10 @@ class TestRedisIntegration:
         
         await real_redis.set(test_key, test_value)
         
-        # Reconnect (create new client)
+        # Reconnect (create new client) using the same URL
         import redis.asyncio as redis
-        new_client = redis.from_url(str(real_redis.connection_pool.connection_kwargs.get('url', 'redis://localhost:6379')))
+        redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+        new_client = redis.from_url(redis_url)
         retrieved = await new_client.get(test_key)
         await new_client.close()
         

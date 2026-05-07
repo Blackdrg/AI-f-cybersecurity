@@ -10,6 +10,7 @@ Tests real PostgreSQL + pgvector operations including:
 
 import pytest
 import time
+import json
 import numpy as np
 from datetime import datetime
 from typing import Optional
@@ -50,7 +51,7 @@ class TestDatabaseIntegration:
                     id SERIAL PRIMARY KEY,
                     embedding vector(512),
                     label TEXT
-                ) ON COMMIT DROP
+                )
             """)
             
             # Insert a vector
@@ -71,6 +72,8 @@ class TestDatabaseIntegration:
                 test_vector
             )
             assert result['distance'] < 1e-6  # Should be nearly identical
+            # Drop temp table
+            await conn.execute("DROP TABLE IF EXISTS test_vectors")
 
     @pytest.mark.database
     @pytest.mark.vector_search
@@ -87,7 +90,7 @@ class TestDatabaseIntegration:
                     id SERIAL PRIMARY KEY,
                     embedding vector(512),
                     created_at TIMESTAMPTZ DEFAULT NOW()
-                ) ON COMMIT DROP
+                )
             """)
             
             await conn.execute("""
@@ -118,6 +121,8 @@ class TestDatabaseIntegration:
             
             assert len(results) == 10
             assert elapsed < 1.0  # Should complete in under 1 second even with 1000 vectors
+            # Drop temp table
+            await conn.execute("DROP TABLE IF EXISTS hnsw_test")
 
     @pytest.mark.database
     @pytest.mark.integration
@@ -179,22 +184,19 @@ class TestDatabaseIntegration:
             """)
             
             if exists:
-                # Insert a test audit event
+                # Insert a test audit event using actual schema
+                test_person_id = "11111111-1111-1111-1111-111111111111"
                 await conn.execute("""
-                    INSERT INTO audit_log 
-                    (event_type, user_id, details, timestamp, ip_address)
-                    VALUES ($1, $2, $3, $4, $5)
-                """, 
-                "test_integration", 
-                "test_user_123",
-                '{"test": "integration"}',
-                datetime.utcnow(),
-                "127.0.0.1"
-                )
+                    INSERT INTO audit_log (action, person_id, details)
+                    VALUES ($1, $2, $3)
+                """,
+                "test_integration",
+                test_person_id,
+                json.dumps({"test": "integration"}))
                 
                 # Verify it was stored
                 count = await conn.fetchval(
-                    "SELECT COUNT(*) FROM audit_log WHERE event_type = $1",
+                    "SELECT COUNT(*) FROM audit_log WHERE action = $1",
                     "test_integration"
                 )
                 assert count >= 1
@@ -208,7 +210,7 @@ class TestDatabaseIntegration:
                 CREATE TEMP TABLE json_test (
                     id SERIAL PRIMARY KEY,
                     data JSONB
-                ) ON COMMIT DROP
+                )
             """)
             
             # Insert JSON data
@@ -235,3 +237,5 @@ class TestDatabaseIntegration:
                 ['read']
             )
             assert has_read is True
+            # Drop temp table
+            await conn.execute("DROP TABLE IF EXISTS json_test")
