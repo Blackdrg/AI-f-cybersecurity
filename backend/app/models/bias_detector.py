@@ -1,5 +1,8 @@
 import numpy as np
+import logging
 from typing import Dict, List, Any
+
+logger = logging.getLogger(__name__)
 
 try:
     from fairlearn.metrics import (

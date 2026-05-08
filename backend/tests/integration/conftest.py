@@ -106,8 +106,10 @@ async def real_redis() -> AsyncGenerator:
         pytest.skip("redis-py not installed")
         return
     
-    client = redis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379'))
+    client = None
+    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
     try:
+        client = redis.from_url(redis_url)
         await client.ping()
         # Ensure clean state before test
         try:
@@ -115,13 +117,21 @@ async def real_redis() -> AsyncGenerator:
         except Exception:
             pass
         yield client
+    except Exception as e:
+        # Redis server not available - skip tests that require it
+        pytest.skip(f"Redis connection failed: {e}")
+        return
     finally:
         # Cleanup: flush all data to ensure test isolation
-        try:
-            await client.flushdb()
-        except Exception:
-            pass
-        await client.close()
+        if client is not None:
+            try:
+                await client.flushdb()
+            except Exception:
+                pass
+            try:
+                await client.close()
+            except Exception:
+                pass
 
 
 # =============================================================================

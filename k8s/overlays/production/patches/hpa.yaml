@@ -1,0 +1,70 @@
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 3
+  maxReplicas: 50
+  metrics:
+    # Resource-based metrics
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+    # External metric: Redis queue length
+    - type: External
+      external:
+        metric:
+          name: redis_queue_length
+          selector:
+            matchLabels:
+              queue: celery
+        target:
+          type: AverageValue
+          averageValue: "1000"
+    # External metric: Stripe webhook latency
+    - type: External
+      external:
+        metric:
+          name: stripe_webhook_latency_seconds
+        target:
+          type: AverageValue
+          averageValue: "1"
+    # Custom metric: GPU utilization (if available)
+    - type: Object
+      object:
+        metric:
+          name: nvidia_gpu_utilization
+        describedObject:
+          apiVersion: v1
+          kind: Node
+          name: gpu-node-1
+        target:
+          type: Value
+          value: "80"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60

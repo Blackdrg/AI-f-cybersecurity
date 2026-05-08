@@ -57,12 +57,7 @@ def aggregate_federated_updates(self, round_id: str, client_updates: list):
                 "metrics": metrics
             }
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(aggregate())
-        finally:
-            loop.close()
+        return asyncio.run(aggregate())
     except Exception as exc:
         logger.error(f"Aggregation failed: {exc}", exc_info=True)
         raise self.retry(exc=exc, countdown=300)
@@ -79,12 +74,7 @@ def trigger_federated_round(self, round_config: dict = None):
             round_id = await orchestrator.start_round(round_config or {})
             return {"round_id": round_id, "status": "started"}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(trigger())
-        finally:
-            loop.close()
+        return asyncio.run(trigger())
     except Exception as exc:
         raise self.retry(exc=exc, countdown=600)
 
@@ -114,12 +104,7 @@ def distribute_model_update(self, model_version: str, target_clients: list = Non
             
             return {"model": model_version, "devices": len(devices), "jobs_created": len(jobs)}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(distribute())
-        finally:
-            loop.close()
+        return asyncio.run(distribute())
     except Exception as exc:
         raise self.retry(exc=exc)
 
@@ -135,11 +120,6 @@ def verify_client_update(self, client_id: str, round_id: str, update_proof: dict
             valid = zkp_verifier.verify_update(update_proof)
             return {"client_id": client_id, "round_id": round_id, "valid": valid}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(verify())
-        finally:
-            loop.close()
+        return asyncio.run(verify())
     except Exception as exc:
         raise self.retry(exc=exc)

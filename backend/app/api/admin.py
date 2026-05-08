@@ -372,11 +372,39 @@ async def get_active_sessions(user: dict = Depends(require_admin)):
         logger.warning(f"Session fetch error: {e}")
         # Return empty sessions; could use mock data if needed
     return {
-        "sessions": sessions_list,
-        "metrics": {
-            "total_active": len(sessions_list),
-            "avg_confidence": sum(s.get('confidence', 0) for s in sessions_list) / max(len(sessions_list), 1),
-            "avg_risk": sum(s.get('risk_score', 0) for s in sessions_list) / max(len(sessions_list), 1),
-            "drift_alerts": 0
+         "sessions": sessions_list,
+         "metrics": {
+             "total_active": len(sessions_list),
+             "avg_confidence": sum(s.get('confidence', 0) for s in sessions_list) / max(len(sessions_list), 1),
+             "avg_risk": sum(s.get('risk_score', 0) for s in sessions_list) / max(len(sessions_list), 1),
+             "drift_alerts": 0
+         }
+     }
+
+
+# Attestation endpoints
+@router.get("/attestation/status")
+async def get_attestation_status(user: dict = Depends(require_admin)):
+    """Get continuous attestation status."""
+    from ..main import get_continuous_attestor
+    attestor = get_continuous_attestor()
+    if not attestor:
+        return {
+            "status": "not_initialized",
+            "message": "Continuous attestation not running"
         }
+    return attestor.get_status()
+
+
+@router.get("/attestation/reports")
+async def get_attestation_reports(limit: int = 10, user: dict = Depends(require_admin)):
+    """Get recent attestation reports."""
+    from ..main import get_continuous_attestor
+    attestor = get_continuous_attestor()
+    if not attestor:
+        return {"reports": [], "count": 0}
+    reports = attestor.get_reports(limit=limit)
+    return {
+        "reports": reports,
+        "count": len(reports)
     }

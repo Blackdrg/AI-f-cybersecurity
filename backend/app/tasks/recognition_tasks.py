@@ -61,12 +61,7 @@ def process_recognition_batch(self, image_batch, camera_ids, threshold=0.7, top_
                     results.append({"camera_id": camera_id, "error": str(e), "faces": []})
             return {"batch_size": len(image_batch), "results": results, "processed_at": datetime.utcnow().isoformat()}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(process())
-        finally:
-            loop.close()
+        return asyncio.run(process())
     except Exception as exc:
         logger.error(f"Recognition batch failed: {exc}", exc_info=True)
         raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
@@ -114,12 +109,7 @@ def enroll_person_async(self, person_data, images, voice_files=None, gait_video=
             await db.log_audit_event(action="enroll", person_id=person_id, details={"proof": proof.to_dict()}, zkp_proof=proof.to_dict())
             return {"person_id": person_id, "embeddings": len(face_embeddings), "audit_proof": True}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(process())
-        finally:
-            loop.close()
+        return asyncio.run(process())
     except Exception as exc:
         logger.error(f"Enrollment failed: {exc}", exc_info=True)
         raise self.retry(exc=exc, countdown=120 * (2 ** self.request.retries))
@@ -140,12 +130,7 @@ def cleanup_stale_sessions(self, max_age_hours=24):
                 "deleted_cache": await db.cleanup_redis_cache()
             }
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(cleanup())
-        finally:
-            loop.close()
+        return asyncio.run(process())
     except Exception as exc:
         raise self.retry(exc=exc)
 
@@ -169,12 +154,7 @@ def verify_audit_chain_integrity(self, start_id=None, end_id=None):
             invalid = [l['id'] for l in logs if l.get('zkp_proof') and not zkp.verify_audit_proof(l['zkp_proof'])]
             return {"total": len(logs), "chain_valid": len(broken)==0, "broken_links": broken, "invalid_proofs": len(invalid)}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(verify())
-        finally:
-            loop.close()
+        return asyncio.run(verify())
     except Exception as exc:
         raise self.retry(exc=exc)
 
@@ -193,12 +173,7 @@ def retrain_model_async(self, model_name: str, training_data_path: str, epochs: 
             result = await calibrator.retrain_model(model_name, training_data_path, epochs)
             return result
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(train())
-        finally:
-            loop.close()
+        return asyncio.run(train())
     except Exception as exc:
         logger.error(f"Model training failed: {exc}", exc_info=True)
         raise self.retry(exc=exc, countdown=600)
@@ -243,11 +218,6 @@ def process_video_recognition(self, video_path: str, camera_id: str, org_id: str
             await db.log_video_recognition(video_path, camera_id, org_id, frame_idx, len(recognitions))
             return {"video": video_path, "frames": frame_idx, "recognitions": len(recognitions)}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(process())
-        finally:
-            loop.close()
+        return asyncio.run(process())
     except Exception as exc:
         raise self.retry(exc=exc, countdown=300)

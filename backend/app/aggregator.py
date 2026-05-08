@@ -19,6 +19,13 @@ except ImportError:
     _WIKIPEDIA_AVAILABLE = False
     WikipediaProvider = None
 
+try:
+    from .providers.threat_intel_provider import ThreatIntelProvider
+    _THREAT_INTEL_AVAILABLE = True
+except ImportError:
+    _THREAT_INTEL_AVAILABLE = False
+    ThreatIntelProvider = None
+
 
 class ResultAggregator:
     """Aggregates and ranks results from multiple providers."""
@@ -31,11 +38,26 @@ class ResultAggregator:
             self.providers["bing"] = BingProvider()
         if _WIKIPEDIA_AVAILABLE:
             self.providers["wikipedia"] = WikipediaProvider()
+        if _THREAT_INTEL_AVAILABLE:
+            self.providers["threat_intel"] = ThreatIntelProvider()
 
     async def enrich(self, query: str, providers: List[str], limit: int = 10) -> List[Dict[str, Any]]:
         """Enrich query using specified providers and aggregate results."""
+        # Map provider aliases
+        alias_map = {
+            "threatIntel": "threat_intel",
+            "darkweb": None  # Not implemented
+        }
+        normalized = []
+        for p in providers:
+            if p in alias_map:
+                if alias_map[p]:
+                    normalized.append(alias_map[p])
+            else:
+                normalized.append(p)
+
         # Validate providers
-        valid_providers = [p for p in providers if p in self.providers]
+        valid_providers = [p for p in normalized if p in self.providers]
 
         if not valid_providers:
             valid_providers = ["mock"]  # Fallback to mock

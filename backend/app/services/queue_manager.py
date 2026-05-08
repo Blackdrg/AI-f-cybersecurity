@@ -11,8 +11,7 @@ from typing import Dict
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
+# No global event loop - each task manages its own loop safely
 
 async def get_db_async():
     db = await get_db()
@@ -25,7 +24,7 @@ def process_frame(self, camera_id: str, top_k: int = 1, threshold: float = 0.6):
     """Celery task for frame processing (stable queue)."""
     start_time = time.time()
     
-    # Get frame from RTSP buffer
+    # Get frame from RTSP buffer (synchronous)
     frame_bytes = rtsp_manager.get_frame(camera_id)
     if not frame_bytes:
         return {'status': 'no_frame', 'camera_id': camera_id}
@@ -40,24 +39,28 @@ def process_frame(self, camera_id: str, top_k: int = 1, threshold: float = 0.6):
     detector = FaceDetector()
     faces = detector.detect_faces(img)
     
-    loop.run_until_complete(get_db_async())  # Temp sync call
-    # db = _db_client  # Global from db_client
-    db = loop.run_until_complete(get_db())
-    results = []
-
-    for face in faces:
-        # Process face (stub - full in stream_recognize)
-        query_emb = np.random.randn(512).astype(np.float32)  # Placeholder
-        matches = db.recognize_faces(query_emb, top_k, threshold, camera_id)
-        results.append({'face': face['bbox'], 'matches': matches})
+    async def _process():
+        db = await get_db()
+        results = []
+        for face in faces:
+            # Process face (stub - full in stream_recognize)
+            query_emb = np.random.randn(512).astype(np.float32)  # Placeholder
+            matches = await db.recognize_faces(query_emb, top_k, threshold, camera_id)
+            results.append({'face': face['bbox'], 'matches': matches})
+        return {
+            'camera_id': camera_id,
+            'faces': results,
+            'latency': (time.time() - start_time)
+        }
     
-    latency = time.time() - start_time
+    result = asyncio.run(_process())
+    latency = result['latency']
     recognition_latency.observe(latency)
     
     if latency > 0.3:  # >300ms
         self.retry(countdown=1)
     
-    return {'camera_id': camera_id, 'faces': results, 'latency': latency}
+    return {'camera_id': camera_id, 'faces': result['faces'], 'latency': latency}
 
 @app.task
 def multi_camera_fuse(camera_ids: list):

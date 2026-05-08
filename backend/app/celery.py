@@ -20,6 +20,7 @@ app = Celery(
         "app.tasks.enrichment_tasks",
         "app.tasks.maintenance_tasks",
         "app.tasks.federated_learning_tasks",
+        "app.tasks.payment_tasks",
     ]
 )
 

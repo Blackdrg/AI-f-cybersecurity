@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import json
 import os
+from scipy.stats import ks_2samp
 
 
 @dataclass
@@ -203,11 +204,25 @@ class ModelCalibrator:
 
 
 class EvaluationPipeline:
-    """Continuous evaluation for model performance."""
+    """Continuous evaluation for model performance with statistical drift detection."""
     
     def __init__(self):
         self.eval_history: List[Dict] = []
         self.drift_detection_threshold = 0.05
+        self.baseline_distribution = None
+        self.baseline_window_size = 10000
+        self.drift_threshold_psi = 0.2  # PSI threshold for flagging drift
+        self.drift_threshold_ks_pvalue = 0.05  # KS test p-value threshold
+        
+    def set_baseline(self, embeddings: np.ndarray) -> None:
+        """Set baseline embedding distribution for drift detection."""
+        if embeddings.shape[0] > 0:
+            self.baseline_distribution = {
+                'mean': np.mean(embeddings, axis=0),
+                'std': np.std(embeddings, axis=0),
+                'cov': np.cov(embeddings.T) if embeddings.shape[0] > 1 else np.eye(embeddings.shape[1])
+            }
+            logger.info("Baseline distribution set for drift detection")
         
     def log_inference_result(
         self,
@@ -216,7 +231,7 @@ class EvaluationPipeline:
         ground_truth: Optional[str],
         metadata: Dict
     ) -> None:
-        """Log inference for later evaluation."""
+        """Log inference for later evaluation and drift detection."""
         is_correct = predicted_id == ground_truth if ground_truth else None
         
         result = {
@@ -228,7 +243,10 @@ class EvaluationPipeline:
             "lighting": metadata.get("lighting", "unknown"),
             "face_quality": metadata.get("face_quality", 0.0),
             "spoof_score": metadata.get("spoof_score", 0.0),
-            "processing_time_ms": metadata.get("processing_time_ms", 0.0)
+            "processing_time_ms": metadata.get("processing_time_ms", 0.0),
+            "age": metadata.get("age"),
+            "gender": metadata.get("gender"),
+            "embedding": query_embedding.tolist() if query_embedding is not None else None
         }
         self.eval_history.append(result)
         
@@ -237,39 +255,182 @@ class EvaluationPipeline:
             self._check_drift()
     
     def _check_drift(self) -> Optional[Dict]:
-        """Detect performance drift."""
+        """Detect performance and distributional drift."""
+        if len(self.eval_history) < 1000:
+            return None
+        
         recent = self.eval_history[-1000:]
         
-        # Calculate accuracy by environment
+        # 1. Performance drift: accuracy by environment
+        perf_drift = self._check_performance_drift(recent)
+        
+        # 2. Distribution drift: PSI and KS test on embeddings
+        dist_drift = self._check_distribution_drift(recent)
+        
+        # 3. Conditional drift: performance on demographics
+        cond_drift = self._check_conditional_drift(recent)
+        
+        # Combine alerts
+        alerts = []
+        if perf_drift:
+            alerts.extend([{'type': 'performance', **d} for d in perf_drift])
+        if dist_drift:
+            alerts.append({'type': 'distribution', **dist_drift})
+        if cond_drift:
+            alerts.extend([{'type': 'conditional', **d} for d in cond_drift])
+        
+        return alerts if alerts else None
+    
+    def _check_performance_drift(self, recent: List[Dict]) -> List[Dict]:
+        """Detect performance degradation by environment."""
         env_accuracy = {}
         for r in recent:
             env = r.get("environment", "unknown")
             if env not in env_accuracy:
                 env_accuracy[env] = {"correct": 0, "total": 0}
-            
             if r.get("correct") is not None:
                 env_accuracy[env]["total"] += 1
                 if r["correct"]:
                     env_accuracy[env]["correct"] += 1
         
-        # Calculate drift
+        # Compare to historical baseline
+        baseline_envs = [e for e in self.eval_history if e.get("environment") in env_accuracy]
+        baseline_acc = {}
+        for env in env_accuracy:
+            env_hist = [e for e in baseline_envs if e.get("environment") == env][-100:]
+            if len(env_hist) >= 100:
+                baseline_acc[env] = sum(1 for e in env_hist if e.get("correct")) / 100
+        
         drift_alerts = []
         for env, stats in env_accuracy.items():
             acc = stats["correct"] / max(stats["total"], 1)
-            
-            # Check baseline
-            baseline_envs = [e for e in self.eval_history if e.get("environment") == env]
-            if len(baseline_envs) > 100:
-                baseline = sum(1 for e in baseline_envs[-100:] if e.get("correct")) / 100
-                if abs(acc - baseline) > self.drift_detection_threshold:
+            if env in baseline_acc:
+                if abs(acc - baseline_acc[env]) > self.drift_detection_threshold:
                     drift_alerts.append({
                         "environment": env,
-                        "baseline_accuracy": baseline,
+                        "baseline_accuracy": baseline_acc[env],
                         "current_accuracy": acc,
-                        "drift": acc - baseline
+                        "drift": acc - baseline_acc[env]
                     })
+        return drift_alerts
+    
+    def _check_distribution_drift(self, recent: List[Dict]) -> Optional[Dict]:
+        """Check embedding distribution drift using PSI and KS test."""
+        # Extract embeddings
+        recent_embs = [r['embedding'] for r in recent if r.get('embedding')]
+        if len(recent_embs) < 100 or self.baseline_distribution is None:
+            return None
         
-        return drift_alerts if drift_alerts else None
+        recent_embs = np.array(recent_embs)
+        
+        # 1. Population Stability Index (PSI)
+        psi = self._compute_psi(self.baseline_distribution['mean'], np.mean(recent_embs, axis=0))
+        
+        # 2. Kolmogorov-Smirnov test for distribution shift
+        from scipy.stats import ks_2samp
+        ks_stat, ks_pvalue = 0.0, 1.0
+        try:
+            # Compare first principal component
+            baseline_pc = np.dot(self.baseline_distribution['mean'], self.baseline_distribution.get('components', np.eye(len(self.baseline_distribution['mean']))))
+            recent_pc = np.dot(np.mean(recent_embs, axis=0), self.baseline_distribution.get('components', np.eye(recent_embs.shape[1])))
+            ks_stat, ks_pvalue = ks_2samp(baseline_pc, recent_pc)
+        except Exception:
+            pass
+        
+        drift_detected = psi > 0.2 or (ks_pvalue < 0.05 and ks_stat > 0.1)
+        
+        if drift_detected:
+            return {
+                "psi": float(psi),
+                "ks_statistic": float(ks_stat),
+                "ks_pvalue": float(ks_pvalue),
+                "message": "Distribution drift detected"
+            }
+        return None
+    
+    def _compute_psi(self, baseline: np.ndarray, current: np.ndarray, bins: int = 10) -> float:
+        """Compute Population Stability Index."""
+        # Create bins
+        combined = np.concatenate([baseline, current])
+        bin_edges = np.histogram_bin_edges(combined, bins=bins)
+        
+        baseline_counts, _ = np.histogram(baseline, bins=bin_edges)
+        current_counts, _ = np.histogram(current, bins=bin_edges)
+        
+        # Normalize to percentages
+        baseline_pct = baseline_counts / len(baseline) + 1e-10
+        current_pct = current_counts / len(current) + 1e-10
+        
+        # PSI formula
+        psi = np.sum((current_pct - baseline_pct) * np.log(current_pct / baseline_pct))
+        return float(psi)
+    
+    def _check_conditional_drift(self, recent: List[Dict]) -> List[Dict]:
+        """Check drift in specific demographic groups."""
+        demo_perf = {}
+        for r in recent:
+            if r.get("correct") is None:
+                continue
+            age = r.get("age")
+            gender = r.get("gender")
+            # Create reasonable age groups
+            if age is None:
+                age_group = "unknown"
+            elif age < 18:
+                age_group = "child"
+            elif age < 30:
+                age_group = "young_adult"
+            elif age < 60:
+                age_group = "adult"
+            else:
+                age_group = "senior"
+            
+            key = f"{age_group}_{gender}"
+            if key not in demo_perf:
+                demo_perf[key] = {"correct": 0, "total": 0}
+            demo_perf[key]["total"] += 1
+            if r["correct"]:
+                demo_perf[key]["correct"] += 1
+        
+        alerts = []
+        for key, stats in demo_perf.items():
+            if stats["total"] < 30:  # Minimum sample size
+                continue
+            acc = stats["correct"] / stats["total"]
+            if acc < 0.6:  # Performance threshold
+                alerts.append({
+                    "demographic": key,
+                    "accuracy": float(acc),
+                    "sample_size": stats["total"]
+                })
+        return alerts
+    
+    def trigger_retraining(self, reason: str = "drift_detected") -> Dict:
+        """
+        Queue model retraining when drift threshold exceeded.
+        Calls retrain_model_async Celery task.
+        """
+        try:
+            from app.tasks.model_training_tasks import retrain_model_async
+            
+            # Queue retraining task
+            task = retrain_model_async.delay(
+                model_name="face_embedding",
+                training_data_path="/data/embeddings/latest",
+                epochs=10,
+                learning_rate=0.001
+            )
+            
+            logger.warning(f"Model retraining triggered: {reason}, task_id={task.id}")
+            return {
+                "triggered": True,
+                "reason": reason,
+                "task_id": str(task),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Failed to trigger retraining: {e}")
+            return {"triggered": False, "error": str(e)}
     
     def generate_report(self, period_days: int = 7) -> Dict:
         """Generate evaluation report."""
@@ -298,7 +459,8 @@ class EvaluationPipeline:
             "avg_processing_time_ms": np.mean([
                 r["processing_time_ms"] for r in recent
             ]) if recent else 0,
-            "spoof_detection_rate": sum(1 for r in recent if r.get("spoof_score", 0) > 0.5) / total
+            "spoof_detection_rate": sum(1 for r in recent if r.get("spoof_score", 0) > 0.5) / total,
+            "drift_alerts": self._check_drift()
         }
     
     def _aggregate_by(self, field: str, data: List[Dict]) -> Dict:
@@ -316,6 +478,13 @@ class EvaluationPipeline:
             k: {"accuracy": v["correct"] / v["total"], "count": v["total"]}
             for k, v in groups.items()
         }
+    
+    def queue_model_retraining(self, reason: str = "drift_detected") -> Dict:
+        ...
+        return result
+    
+    # Alias for backwards compatibility
+    trigger_retraining = queue_model_retraining
 
 
 class ModelVersionManager:

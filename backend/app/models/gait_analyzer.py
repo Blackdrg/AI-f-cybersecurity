@@ -56,7 +56,7 @@ class GaitAnalyzer:
         return gait_vec.astype(np.float32)
 
     def _hu_fallback(self, frames):
-        """Hu moments backward compat."""
+        """Hu moments backward compat, padded to 1280-d for DB."""
         hu_features = []
         for frame in frames:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -73,7 +73,10 @@ class GaitAnalyzer:
             avg_hu = np.ones(7, dtype=np.float32) * 1e-3
             norm = np.linalg.norm(avg_hu)
         avg_hu = avg_hu / norm
-        return avg_hu.astype(np.float32)
+        
+        # Pad to 1280 for DB compatibility (GaitSet standard)
+        padded = np.zeros(1280, dtype=np.float32)
+        padded[:7] = avg_hu
+        return padded
 
 analyzer = GaitAnalyzer()
-

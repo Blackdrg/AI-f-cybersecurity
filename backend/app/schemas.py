@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple, Union, Callable
 from uuid import UUID
 
 
@@ -59,6 +59,13 @@ class DetectedFace(BaseModel):
     age: Optional[int] = None
     gender: Optional[str] = None
     behavior: Optional[Dict[str, Any]] = None
+    identity_score: float
+    decision: str
+    risk_level: str
+    decision_factors: List[Dict[str, Any]]
+    # New AI reliability fields
+    hallucination_risk: Optional[Dict[str, Any]] = None
+    confidence_interval: Optional[Tuple[float, float]] = None
 
 
 class RecognizeResponse(BaseModel):

@@ -36,12 +36,7 @@ def retrain_model_async(self, model_name: str, training_data_path: str, epochs: 
             result = await calibrator.retrain_model(model_name, training_data_path, epochs, learning_rate)
             return result
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(train())
-        finally:
-            loop.close()
+        return asyncio.run(train())
     except Exception as exc:
         logger.error(f"Training failed: {exc}", exc_info=True)
         raise self.retry(exc=exc, countdown=600)
@@ -58,12 +53,7 @@ def evaluate_model_pipeline(self, model_version: str, test_dataset_path: str):
             result = await evaluation_pipeline.evaluate(model_version, test_dataset_path)
             return result
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(evaluate())
-        finally:
-            loop.close()
+        return asyncio.run(evaluate())
     except Exception as exc:
         raise self.retry(exc=exc, countdown=300)
 
@@ -124,11 +114,6 @@ def publish_model_to_registry(self, model_name: str, version: str, model_path: s
             await db.store_model_version(model_name, version, model_path, metrics, changelog)
             return {"published": True, "model": model_name, "version": version}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(publish())
-        finally:
-            loop.close()
+        return asyncio.run(publish())
     except Exception as exc:
         raise self.retry(exc=exc)

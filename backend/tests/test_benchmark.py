@@ -5,7 +5,6 @@ Validates SLAs and performance characteristics.
 import pytest
 import time
 import numpy as np
-from app.main import app
 from fastapi.testclient import TestClient
 import io
 import cv2
@@ -15,7 +14,12 @@ from unittest.mock import patch, MagicMock, AsyncMock
 import os
 os.environ["CI"] = "true"
 
-client = TestClient(app)
+from app.main import app
+from app.security import create_token
+
+# Create authenticated test client for benchmark runs
+_benchmark_token = create_token("benchmark_user", "admin")
+client = TestClient(app, headers={"Authorization": f"Bearer {_benchmark_token}"})
 
 
 def create_test_image():

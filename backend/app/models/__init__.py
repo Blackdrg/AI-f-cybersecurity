@@ -86,6 +86,9 @@ try:
     from .bias_detector import BiasDetector
     from .privacy_engine import dp_engine
     from .behavioral_predictor import BehavioralPredictor
+    from .hallucination_detector import HallucinationDetector, hallucination_detector
+    from .uncertainty_estimator import UncertaintyEstimator, uncertainty_estimator
+    from ..scoring_engine import ConfidenceCalibrator, confidence_calibrator
 except ImportError as e:
     logger.warning(f"Model import failed: {e}")
 
@@ -93,5 +96,8 @@ __all__ = [
     "registry", "ModelRegistry",
     "FaceDetector", "FaceEmbedder", "SpoofDetector", "FaceReconstructor",
     "EmotionDetector", "AgeGenderEstimator", "VoiceEmbedder", "GaitAnalyzer",
-    "BiasDetector", "dp_engine", "BehavioralPredictor"
+    "BiasDetector", "dp_engine", "BehavioralPredictor",
+    "HallucinationDetector", "hallucination_detector",
+    "UncertaintyEstimator", "uncertainty_estimator",
+    "ConfidenceCalibrator", "confidence_calibrator"
 ]

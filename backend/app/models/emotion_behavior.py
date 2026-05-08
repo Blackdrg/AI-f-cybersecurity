@@ -26,6 +26,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 import joblib
 import os
+from .behavioral_predictor import behavioral_predictor
 
 logger = logging.getLogger(__name__)
 
@@ -495,6 +496,7 @@ class EmotionBehaviorEngine:
         self.emotion_detector = EmotionDetector()
         self.behavior_tracker = BehaviorTracker()
         self.rules_engine = RulesEngine()
+        self.lstm_predictor = behavioral_predictor
         
         # Per-person tracking
         self.person_tracks: Dict[str, BehaviorTracker] = {}
@@ -539,7 +541,23 @@ class EmotionBehaviorEngine:
         # Calculate behavior metrics
         emotion_volatility = tracker.calculate_emotion_volatility()
         arousal_trend = tracker.calculate_arousal_trend()
+        
+        # LSTM Behavioral Prediction (Advanced)
+        lstm_result = self.lstm_predictor.predict_behavior(
+            {"emotions": {emotion_sample.emotion: emotion_sample.confidence}},
+            {"gaze_focus": (emotion_sample.arousal + 1) / 2}, # Proxy
+            update_history=True
+        )
+        
         anomaly_score = tracker.detect_behavior_anomaly(context)
+        # Combine LSTM with rule-based anomaly
+        if lstm_result.get('confidence', 0) > 0.6:
+            # Boost anomaly score if LSTM detects aggression or high fatigue
+            if lstm_result.get('dominant_behavior') == 'aggression':
+                anomaly_score = max(anomaly_score, 0.8)
+            elif lstm_result.get('dominant_behavior') == 'fatigue':
+                anomaly_score = max(anomaly_score, 0.4)
+        
         behavior_state = tracker.get_behavior_state(anomaly_score)
         
         # Calculate risk score

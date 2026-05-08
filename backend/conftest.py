@@ -441,6 +441,11 @@ stripe_sub_modify_patcher = patch('stripe.Subscription.modify', MagicMock(return
 if os.environ.get('ENVIRONMENT') != 'integration':
     stripe_sub_modify_patcher.start()
 
+# Mock Stripe Checkout Session
+stripe_session_patcher = patch('stripe.checkout.Session.create', MagicMock(return_value=MagicMock(id='cs_test_123', url='http://test.url/payment')))
+if os.environ.get('ENVIRONMENT') != 'integration':
+    stripe_session_patcher.start()
+
 # --- Mock OpenAI ---
 class _MockChatCompletion:
     @staticmethod
@@ -573,7 +578,7 @@ def pytest_sessionfinish(session, exitstatus):
         get_db_patcher, init_db_patcher,
         redis_async_patcher, redis_sync_patcher, enc_redis_patcher,
         stripe_customer_patcher, stripe_subscription_patcher, stripe_pi_patcher,
-        stripe_webhook_patcher, stripe_error_patcher, stripe_sub_modify_patcher,
+        stripe_webhook_patcher, stripe_error_patcher, stripe_sub_modify_patcher, stripe_session_patcher,
         openai_patcher, insightface_patcher, onnx_patcher,
         geoip_patcher, httpx_patcher, boto3_patcher,
         torch_cuda_patcher, torch_device_count_patcher, speechbrain_patcher,
@@ -589,12 +594,8 @@ def pytest_sessionfinish(session, exitstatus):
 # Fixtures
 # =============================================================================
 
-@pytest.fixture(scope='session')
-def event_loop():
-    """Create a session‑scoped event loop for async tests."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# Note: asyncio_mode = auto in pytest.ini manages event loop automatically.
+# Manual event_loop fixture removed to prevent conflicts with pytest-asyncio.
 
 @pytest.fixture
 def client():

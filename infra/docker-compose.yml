@@ -1,12 +1,15 @@
 # Docker Compose for AI-F (version auto-detected, no version key needed)
+env_file:
+  - .env
 
 services:
   postgres:
     image: pgvector/pgvector:pg15
+    restart: unless-stopped
     environment:
       POSTGRES_DB: face_recognition
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init_pgvector.sql:/docker-entrypoint-initdb.d/01-pgvector.sql
@@ -21,6 +24,7 @@ services:
 
   redis-master:
     image: redis:7.2.3-alpine
+    restart: unless-stopped
     command: redis-server --appendonly yes --appendfilename "redis-master.aof" --dir /data --requirepass "${REDIS_PASSWORD:-redis_pass}" --masterauth "${REDIS_PASSWORD:-redis_pass}"
     volumes:
       - redis_master_data:/data
@@ -28,33 +32,41 @@ services:
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_pass}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
   
   redis-replica:
     image: redis:7.2.3-alpine
+    restart: unless-stopped
     command: redis-server --replicaof redis-master 6379 --requirepass "${REDIS_PASSWORD:-redis_pass}" --masterauth "${REDIS_PASSWORD:-redis_pass}"
     volumes:
       - redis_replica_data:/data
     depends_on:
-      - redis-master
+      redis-master:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_pass}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
     ports:
       - "6380:6379"
 
   backend:
     build: ../backend
+    restart: unless-stopped
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: password
+      DB_PASSWORD: ${DB_PASSWORD:-password}
       DB_NAME: face_recognition
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis-master:6379/0
-      JWT_SECRET: secret
-      ENCRYPTION_KEY: your-32-byte-secret-key-here123456789012
+      JWT_SECRET: ${JWT_SECRET:-secret}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-your-32-byte-secret-key-here123456789012}
       AWS_REGION: us-east-1
       KMS_KEY_ID: alias/face-recognition-key
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_...}
@@ -72,16 +84,30 @@ services:
         condition: service_healthy
       redis-master:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   ui:
     build: ../ui/react-app
+    restart: unless-stopped
     ports:
       - "3000:3000"
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   enclave:
     image: ai-f-enclave:eif
+    restart: unless-stopped
     # Note: In production, run via nitro-cli run-enclave, not Docker
     # This is for local mock/development
     build:
@@ -98,6 +124,7 @@ services:
 
   nginx:
     image: nginx:alpine
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
@@ -108,6 +135,12 @@ services:
     depends_on:
       - backend
       - ui
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     command: >
       sh -c "
       openssl req -x509 -nodes -days 365 -newkey rsa:2048
@@ -118,6 +151,7 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.45.0
+    restart: unless-stopped
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
@@ -125,15 +159,16 @@ services:
 
   celery-worker:
     build: ../backend
+    restart: unless-stopped
     command: celery -A app.celery worker --loglevel=info -Q celery,faiss_sync
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: password
+      DB_PASSWORD: ${DB_PASSWORD:-password}
       DB_NAME: face_recognition
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis-master:6379/0
-      JWT_SECRET: secret
+      JWT_SECRET: ${JWT_SECRET:-secret}
       ENCLAVE_VSOCK_CID: 3
       ENCLAVE_VSOCK_PORT: 5000
 
@@ -148,9 +183,16 @@ services:
         condition: service_started
       enclave:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery inspect ping -d celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   faiss:
     image: faiss/faiss:latest
+    restart: unless-stopped
     command: faiss_index_server /faiss/index --host 0.0.0.0 --port 50051 --enable-grpc
     volumes:
       - faiss_index:/faiss/index

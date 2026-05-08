@@ -48,12 +48,7 @@ def automated_data_retention_purge(self):
                 "temp_purged": purged_temp
             }
             
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(purge())
-        finally:
-            loop.close()
+        return asyncio.run(purge())
     except Exception as exc:
         logger.error(f"Data retention purge failed: {exc}")
         raise self.retry(exc=exc, countdown=3600)
@@ -96,12 +91,7 @@ def generate_sar_export(self, person_id: str, request_id: str):
             
             return {"success": True, "download_url": download_url}
             
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(export())
-        finally:
-            loop.close()
+        return asyncio.run(export())
     except Exception as exc:
         logger.error(f"SAR export failed for {person_id}: {exc}")
         raise self.retry(exc=exc, countdown=300)
@@ -139,13 +129,8 @@ def run_compliance_auto_audit(self):
             await db.log_compliance_audit(report)
             
             return report
-            
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(audit())
-        finally:
-            loop.close()
+         
+        return asyncio.run(audit())
     except Exception as exc:
         logger.error(f"Compliance audit failed: {exc}")
         return {"success": False, "error": str(exc)}

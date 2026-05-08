@@ -41,12 +41,7 @@ def check_model_health(self):
                     retrain_model_async.delay(model_name, f"/data/{model_name}_training", epochs=5)
             return {"degraded": len(degraded_models) > 0, "models": degraded_models}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(check())
-        finally:
-            loop.close()
+        return asyncio.run(check())
     except Exception as exc:
         raise self.retry(exc=exc, countdown=300)
 
@@ -64,16 +59,11 @@ def verify_audit_chain_integrity(self):
             if broken:
                 logger.error(f"Audit chain broken at {len(broken)} points")
                 # Send alert
-                from app.middleware.alerting import send_critical_alert
-                send_critical_alert("AUDIT_CHAIN_BROKEN", {"broken_links": broken})
+                from app.middleware.alerting import send_critical_alert as alerting_send_critical
+        alerting_send_critical("AUDIT_CHAIN_BROKEN", {"broken_links": broken})
             return {"valid": len(broken) == 0, "broken_count": len(broken)}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(verify())
-        finally:
-            loop.close()
+        return asyncio.run(verify())
     except Exception as exc:
         raise self.retry(exc=exc)
 
@@ -92,12 +82,7 @@ def cleanup_stale_sessions(self, max_age_hours: int = 24):
             cache = await db.cleanup_redis_cache(pattern="session:*")
             return {"deleted_sessions": sessions, "deleted_cache_keys": cache}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(cleanup())
-        finally:
-            loop.close()
+        return asyncio.run(cleanup())
     except Exception as exc:
         raise self.retry(exc=exc, countdown=180)
 
@@ -113,12 +98,7 @@ def rotate_encryption_keys(self):
             new_key = await key_manager.rotate_keys()
             return {"rotated": True, "new_key_version": new_key.version}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(rotate())
-        finally:
-            loop.close()
+        return asyncio.run(rotate())
     except Exception as exc:
         raise self.retry(exc=exc, countdown=600)
 
@@ -143,11 +123,6 @@ def backup_database(self):
             url = await upload_backup(backup_file)
             return {"backup_url": url, "timestamp": timestamp}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(backup())
-        finally:
-            loop.close()
+        return asyncio.run(backup())
     except Exception as exc:
         raise self.retry(exc=exc)

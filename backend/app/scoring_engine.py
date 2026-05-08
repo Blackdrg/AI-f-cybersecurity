@@ -1,9 +1,23 @@
+"""
+Confidence Calibrator - AI Reliability Feature
+Calibrates confidence scores using Platt scaling and provides confidence intervals.
+"""
+
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 import asyncio
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.isotonic import IsotonicRegression
+import pickle
+import logging
+from scipy.stats import bootstrap
+
+
+logger = logging.getLogger(__name__)
 
 
 class DecisionStrategy(Enum):
@@ -186,13 +200,19 @@ class IdentityScoringEngine:
         elif face_result:
             spoof_score = face_result[0].get("spoof_score", 0.0) if face_result else 0.0
         
-        # Calculate identity score using weighted fusion
-        identity_score = (
-            face_score * self.weights["face"] +
-            voice_score * self.weights["voice"] +
-            gait_score * self.weights["gait"] +
-            (1.0 - spoof_score) * self.weights["spoof"]
-        )
+        # Collect scores for fusion
+        results_for_fusion = [
+            {"source": "face", "score": face_score},
+            {"source": "voice", "score": voice_score},
+            {"source": "gait", "score": gait_score}
+        ]
+        
+        # Calculate base identity score using weighted fusion
+        weights = [self.weights["face"], self.weights["voice"], self.weights["gait"]]
+        identity_score = MultiModalFusion.weighted_average(results_for_fusion, weights)
+        
+        # Apply spoof penalty
+        identity_score = identity_score * (1.0 - spoof_score * self.weights["spoof"])
         
         # Determine primary match
         all_matches = face_matches + voice_matches + gait_matches
@@ -206,30 +226,40 @@ class IdentityScoringEngine:
                     person_scores[match.person_id] = []
                 person_scores[match.person_id].append(match.score)
         
-        # Average scores per person
+        # Calculate consensus per person
+        fused_matches = []
         for pid, scores in person_scores.items():
-            person_scores[pid] = np.mean(scores)
+            consensus_score = MultiModalFusion.geometric_fusion([{"score": s} for s in scores])
+            fused_matches.append({
+                "person_id": pid,
+                "score": consensus_score,
+                "count": len(scores)
+            })
         
         # Find best consistent match
         primary_match = None
-        if person_scores:
-            best_pid = max(person_scores.keys(), key=lambda p: person_scores[p])
+        if fused_matches:
+            fused_matches.sort(key=lambda x: x["score"], reverse=True)
+            best = fused_matches[0]
             primary_match = IdentityMatch(
-                person_id=best_pid,
-                name=next((m.name for m in all_matches if m.person_id == best_pid), None),
-                score=person_scores[best_pid],
+                person_id=best["person_id"],
+                name=next((m.name for m in all_matches if m.person_id == best["person_id"]), "Unknown"),
+                score=best["score"],
                 source="fused"
             )
+            
+            # Boost identity_score if sources agree on the same person
+            if best["count"] >= 2:
+                boost = 0.1 * (best["count"] - 1)
+                identity_score = min(1.0, identity_score + boost)
+                factors.append({
+                    "factor": "multi_source_consensus",
+                    "sources_count": best["count"],
+                    "impact": boost
+                })
         
-        # Detect cross-source agreement
-        unique_sources = set(m.source for m in all_matches)
-        if len(unique_sources) >= 2:
-            factors.append({
-                "factor": "multi_source_verification",
-                "sources": list(unique_sources),
-                "impact": 0.1
-            })
-            identity_score *= 1.1  # Boost for multi-source
+        # Final calibration
+        identity_score = self.calibrator.calibrate(identity_score)
         
         # Make decision
         decision = "review"
@@ -435,6 +465,236 @@ class MultiModalFusion:
         scores = np.clip(scores, 0.01, 1.0)
         
         return float(np.exp(np.mean(np.log(scores))))
+
+
+@dataclass
+class CalibrationMetrics:
+    """Metrics for calibration quality."""
+    brier_score: float
+    log_loss: float
+    expected_calibration_error: float
+    reliability_diagram: List[Dict]
+    num_samples: int
+    last_calibrated: str
+
+
+class ConfidenceCalibrator:
+    """
+    Calibrates raw similarity scores to well-calibrated probabilities.
+    
+    Uses Platt scaling (logistic regression) and bootstrapping for confidence intervals.
+    Stores calibration curves from validation set for ongoing monitoring.
+    """
+    
+    def __init__(
+        self,
+        method: str = "sigmoid",
+        n_bins: int = 10,
+        store_history: bool = True
+    ):
+        self.method = method
+        self.n_bins = n_bins
+        self.store_history = store_history
+        
+        self.calibrator = None
+        self.validation_history = []
+        self.calibration_curve = []
+        self.calibration_metrics = CalibrationMetrics(
+            brier_score=0.0,
+            log_loss=0.0,
+            expected_calibration_error=0.0,
+            reliability_diagram=[],
+            num_samples=0,
+            last_calibrated=""
+        )
+    
+    def fit(self, raw_scores: np.ndarray, labels: np.ndarray) -> CalibrationMetrics:
+        scores_2d = raw_scores.reshape(-1, 1)
+        
+        if self.method == "sigmoid":
+            self.calibrator = LogisticRegression(solver='lbfgs')
+        else:
+            self.calibrator = IsotonicRegression(out_of_bounds='clip')
+        
+        self.calibrator.fit(scores_2d, labels)
+        calibrated_probs = self.calibrator.predict_proba(scores_2d)[:, 1]
+        
+        sorted_indices = np.argsort(raw_scores)
+        step = max(1, len(raw_scores) // 100)
+        self.calibration_curve = [
+            (float(raw_scores[i]), float(calibrated_probs[i]))
+            for i in sorted_indices[::step]
+        ]
+        
+        metrics = self._compute_metrics(raw_scores, labels, calibrated_probs)
+        self.calibration_metrics = metrics
+        self.calibration_metrics.last_calibrated = datetime.utcnow().isoformat()
+        
+        logger.info(
+            f"Calibration complete: ECE={metrics.expected_calibration_error:.4f}, "
+            f"Brier={metrics.brier_score:.4f}"
+        )
+        return metrics
+    
+    def calibrate(self, raw_score: float) -> float:
+        if self.calibrator is None:
+            logger.warning("Calibrator not fitted, using sigmoid fallback")
+            return 1.0 / (1.0 + np.exp(-raw_score))
+        
+        score_2d = np.array([[raw_score]])
+        calibrated = self.calibrator.predict_proba(score_2d)[0, 1]
+        return float(calibrated)
+    
+    def calibrate_batch(self, raw_scores: np.ndarray) -> np.ndarray:
+        if self.calibrator is None:
+            return 1.0 / (1.0 + np.exp(-raw_scores))
+        
+        scores_2d = raw_scores.reshape(-1, 1)
+        calibrated = self.calibrator.predict_proba(scores_2d)[:, 1]
+        return calibrated
+    
+    def get_confidence_interval(
+        self,
+        embedding: np.ndarray,
+        matches: List[Dict[str, Any]],
+        num_bootstrap_samples: int = 1000,
+        confidence_level: float = 0.95
+    ) -> Tuple[float, float]:
+        if not matches:
+            return (0.0, 0.0)
+        
+        score = matches[0].get('score', 0.0)
+        
+        if len(self.validation_history) < 100:
+            margin = 0.1 if 0.4 < score < 0.6 else 0.05
+            return (max(0.0, score - margin), min(1.0, score + margin))
+        
+        val_scores = np.array([s for s, _ in self.validation_history])
+        val_labels = np.array([l for _, l in self.validation_history])
+        bootstrap_scores = []
+        
+        for _ in range(num_bootstrap_samples):
+            indices = np.random.choice(len(val_scores), size=len(val_scores), replace=True)
+            sample_scores = val_scores[indices]
+            sample_labels = val_labels[indices]
+            
+            try:
+                bs_calibrator = LogisticRegression(solver='lbfgs')
+                bs_calibrator.fit(sample_scores.reshape(-1, 1), sample_labels)
+                bs_prob = bs_calibrator.predict_proba(np.array([[score]]))[0, 1]
+                bootstrap_scores.append(bs_prob)
+            except Exception:
+                bootstrap_scores.append(score)
+        
+        alpha = (1.0 - confidence_level) / 2.0
+        lower = np.percentile(bootstrap_scores, alpha * 100)
+        upper = np.percentile(bootstrap_scores, (1 - alpha) * 100)
+        
+        return (float(lower), float(upper))
+    
+    def add_validation_sample(self, raw_score: float, is_correct: bool) -> None:
+        self.validation_history.append((raw_score, is_correct))
+        
+        if len(self.validation_history) > 10000:
+            self.validation_history = self.validation_history[-10000:]
+        
+        if len(self.validation_history) % 1000 == 0 and len(self.validation_history) >= 1000:
+            self._refit_on_recent()
+    
+    def _refit_on_recent(self) -> None:
+        if len(self.validation_history) < 100:
+            return
+        
+        recent = self.validation_history[-5000:]
+        scores = np.array([s for s, _ in recent])
+        labels = np.array([l for _, l in recent])
+        
+        if np.sum(labels) < 10 or np.sum(1 - labels) < 10:
+            return
+        
+        try:
+            self.fit(scores, labels)
+            logger.info("Refitted calibrator on recent validation data")
+        except Exception as e:
+            logger.error(f"Calibrator refit failed: {e}")
+    
+    def _compute_metrics(
+        self,
+        scores: np.ndarray,
+        labels: np.ndarray,
+        probs: np.ndarray
+    ) -> CalibrationMetrics:
+        """Compute calibration quality metrics."""
+        # Brier score
+        brier = np.mean((probs - labels) ** 2)
+        
+        # Log loss
+        eps = 1e-15
+        probs_clipped = np.clip(probs, eps, 1 - eps)
+        logloss = -np.mean(labels * np.log(probs_clipped) + (1 - labels) * np.log(1 - probs_clipped))
+        
+        # Expected Calibration Error (ECE)
+        bins = np.linspace(0, 1, self.n_bins + 1)
+        bin_indices = np.digitize(probs, bins) - 1
+        ece = 0.0
+        reliability = []
+        
+        for i in range(self.n_bins):
+            mask = bin_indices == i
+            if np.any(mask):
+                bin_probs = probs[mask]
+                bin_labels = labels[mask]
+                bin_acc = np.mean(bin_labels)
+                bin_conf = np.mean(bin_probs)
+                bin_count = np.sum(mask)
+                ece += (bin_count / len(labels)) * abs(bin_acc - bin_conf)
+                reliability.append({
+                    "bin": i,
+                    "accuracy": float(bin_acc),
+                    "confidence": float(bin_conf),
+                    "count": int(bin_count)
+                })
+        
+        return CalibrationMetrics(
+            brier_score=float(brier),
+            log_loss=float(logloss),
+            expected_calibration_error=float(ece),
+            reliability_diagram=reliability,
+            num_samples=len(scores),
+            last_calibrated=""
+        )
+    
+    def save(self, path: str) -> None:
+        state = {
+            'calibrator': self.calibrator,
+            'calibration_curve': self.calibration_curve,
+            'calibration_metrics': self.calibration_metrics,
+            'validation_history': self.validation_history[-5000:],
+            'method': self.method,
+            'n_bins': self.n_bins
+        }
+        with open(path, 'wb') as f:
+            pickle.dump(state, f)
+    
+    def load(self, path: str) -> bool:
+        try:
+            with open(path, 'rb') as f:
+                state = pickle.load(f)
+            self.calibrator = state['calibrator']
+            self.calibration_curve = state['calibration_curve']
+            self.calibration_metrics = state['calibration_metrics']
+            self.validation_history = state.get('validation_history', [])
+            self.method = state.get('method', self.method)
+            self.n_bins = state.get('n_bins', self.n_bins)
+            logger.info(f"Loaded calibrator from {path}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to load calibrator: {e}")
+            return False
+
+
+# Global singleton
+confidence_calibrator = ConfidenceCalibrator()
 
 
 # Global scoring engine

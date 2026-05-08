@@ -5,49 +5,90 @@ metadata:
   name: backend
   labels:
     app: ai-f-backend
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: ai-f-backend
+ spec:
+   replicas: 3
+   strategy:
+     type: RollingUpdate
+     rollingUpdate:
+       maxSurge: 25%
+       maxUnavailable: 0
+   selector:
+     matchLabels:
+       app: ai-f-backend
   template:
     metadata:
       labels:
         app: ai-f-backend
-    spec:
-      serviceAccountName: ai-f-backend
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
-      containers:
-        - name: backend
-          image: ghcr.io/owner/ai-f-backend:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8000
-              name: http
-            - containerPort: 50051
-              name: grpc
-          envFrom:
-            - configMapRef:
-                name: app-config
-            - secretRef:
-                name: app-secrets
-          resources:
-            limits:
-              cpu: "4"
-              memory: "16Gi"
-              nvidia.com/gpu: 1
-            requests:
-              cpu: "2"
-              memory: "8Gi"
-          volumeMounts:
-            - name: models
-              mountPath: /app/models
-              readOnly: true
-            - name: tmp
-              mountPath: /tmp
+     spec:
+       serviceAccountName: ai-f-backend
+       securityContext:
+         runAsNonRoot: true
+         runAsUser: 1000
+         fsGroup: 1000
+       containers:
+         - name: backend
+           image: ghcr.io/owner/ai-f-backend:latest
+           imagePullPolicy: IfNotPresent
+           ports:
+             - containerPort: 8000
+               name: http
+             - containerPort: 50051
+               name: grpc
+           envFrom:
+             - configMapRef:
+                 name: app-config
+             - secretRef:
+                 name: app-secrets
+           resources:
+             limits:
+               cpu: "4"
+               memory: "16Gi"
+               nvidia.com/gpu: 1
+             requests:
+               cpu: "2"
+               memory: "8Gi"
+           # Startup probe: gives container time to start
+           startupProbe:
+             httpGet:
+               path: /healthz
+               port: 8000
+             initialDelaySeconds: 30
+             periodSeconds: 10
+             timeoutSeconds: 5
+             failureThreshold: 30
+           # Liveness probe: detects when container needs restart
+           livenessProbe:
+             httpGet:
+               path: /health
+               port: 8000
+             initialDelaySeconds: 5
+             periodSeconds: 10
+             timeoutSeconds: 5
+             failureThreshold: 3
+           # Readiness probe: detects when container is ready for traffic
+           readinessProbe:
+             httpGet:
+               path: /health
+               port: 8000
+             initialDelaySeconds: 5
+             periodSeconds: 5
+             timeoutSeconds: 3
+             failureThreshold: 3
+           securityContext:
+             runAsNonRoot: true
+             readOnlyRootFilesystem: true
+             allowPrivilegeEscalation: false
+             capabilities:
+               drop:
+                 - ALL
+               add:
+                 - NET_BIND_SERVICE
+           volumeMounts:
+             - name: models
+               mountPath: /app/models
+               readOnly: true
+             - name: tmp
+               mountPath: /tmp
       volumes:
         - name: models
           persistentVolumeClaim:

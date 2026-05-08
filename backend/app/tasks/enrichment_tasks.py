@@ -41,12 +41,7 @@ def generate_bias_report(self, org_id: str = None, days_back: int = 30):
             await db.store_bias_report(org_id, report)
             return report
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(compute())
-        finally:
-            loop.close()
+        return asyncio.run(compute())
     except Exception as exc:
         logger.error(f"Bias report failed: {exc}", exc_info=True)
         raise self.retry(exc=exc, countdown=120)
@@ -80,12 +75,7 @@ def enrich_identity_with_external_data(self, person_id: str, sources: list = Non
             await db.update_person_metadata(person_id, enriched)
             return {"person_id": person_id, "enriched": True, "sources": list(enriched.keys())}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(enrich())
-        finally:
-            loop.close()
+        return asyncio.run(enrich())
     except Exception as exc:
         raise self.retry(exc=exc, countdown=60)
 
@@ -111,12 +101,7 @@ def calculate_risk_scores_batch(self, org_id: str = None, batch_size: int = 1000
             avg = total_risk / scored if scored else 0
             return {"scored": scored, "avg_risk": avg}
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(score_batch())
-        finally:
-            loop.close()
+        return asyncio.run(score_batch())
     except Exception as exc:
         raise self.retry(exc=exc, countdown=120)
 
@@ -133,11 +118,6 @@ def generate_consent_report(self, user_id: str):
             report = await generate_dsar_report(user_id)
             return report
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(gen())
-        finally:
-            loop.close()
+        return asyncio.run(gen())
     except Exception as exc:
         raise self.retry(exc=exc)

@@ -19,9 +19,8 @@ sentry_sdk.init(
 from .api import enroll, recognize, video_recognize, stream_recognize, admin, federated_learning
 from .api import users, plans, subscriptions, payments, usage, ai_assistant, support, public_enrich
 from .api import orgs, cameras, events, alerts, compliance, mfa, oauth
-from .api import plugins
+from .api import plugins, mpc  # add mpc
 from .api import revocation
-# Import v1 subpackage routers for versioned endpoints (disabled - missing files)
 from .api.v1 import admin as admin_v1
 from .api.v1 import compliance as compliance_v1
 from .grpc.server import serve_grpc
@@ -52,6 +51,8 @@ from .models.enhanced_spoof import enhanced_spoof_detector
 from .models.privacy_engine import dp_engine
 from .middleware.usage_limiter import init_usage_limiter, get_usage_limiter
 from .middleware.policy_enforcement import PolicyContext
+# Continuous Attestation for runtime integrity monitoring
+from .models.attestation import ContinuousAttestor, ContinuousAttestationConfig, AttestationStatus
 
 # Import core models (lightweight - instantiated lazily in endpoints)
 from .models.face_detector import FaceDetector
@@ -95,6 +96,14 @@ _production_systems_ready = False
 # Global usage limiter instance
 _usage_limiter = None
 
+# Global continuous attestor
+_continuous_attestor = None
+
+def get_continuous_attestor():
+    """Get the global continuous attestor instance."""
+    global _continuous_attestor
+    return _continuous_attestor
+
 # Startup event to initialize all production systems
 @app.on_event("startup")
 async def startup_event():
@@ -108,6 +117,17 @@ async def startup_event():
             await init_db()
             db_initialized = True
             logger.info("Database initialized successfully")
+            
+            # Initialize database monitoring after DB is ready
+            try:
+                from app.monitoring.db_monitor import init_monitor, get_monitor
+                db = await get_db()
+                init_monitor(db)
+                monitor = get_monitor()
+                await monitor.start_background_monitoring()
+                logger.info("Database monitoring initialized")
+            except Exception as e:
+                logger.warning(f"DB monitoring init failed: {e}")
         except Exception as e:
             retries -= 1
             logger.warning(f"Database init failed: {e}. Retrying in 5s... ({retries} left)")
@@ -199,6 +219,28 @@ async def startup_event():
             except Exception as e:
                 logger.warning(f"Failed to parse ENABLED_PLUGINS: {e}")
 
+        # 10. Continuous Attestation for runtime integrity monitoring
+        logger.info("Initializing Continuous Attestation...")
+        try:
+            attestation_config = ContinuousAttestationConfig(
+                check_interval_seconds=300,  # 5 minutes
+                critical_file_paths=[
+                    __file__,  # main app file
+                    os.path.join(os.path.dirname(__file__), 'security', 'encryption.py'),
+                    os.path.join(os.path.dirname(__file__), 'db', 'db_client.py')
+                ]
+            )
+            _continuous_attestor = ContinuousAttestor(
+                config=attestation_config,
+                alert_callback=lambda report: logger.warning(
+                    f"Attestation alert [{report.status.value}]: {report.details}"
+                )
+            )
+            _continuous_attestor.start()
+            logger.info("Continuous Attestation started")
+        except Exception as e:
+            logger.warning(f"Continuous Attestation initialization failed: {e}")
+
         _production_systems_ready = True
         logger.info("All production systems initialized successfully")
     except Exception as e:
@@ -281,6 +323,9 @@ app.include_router(recognition_v2_router, prefix="/api/v2", tags=["recognition_v
 
 # Plugin management
 app.include_router(plugins.router, tags=["plugins"])
+
+# MPC cross-org matching
+app.include_router(mpc.router, prefix="/api/v1", tags=["mpc"])
 
 # Setup security, metrics, and rate limiting
 setup_security(app)

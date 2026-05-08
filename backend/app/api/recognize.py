@@ -10,6 +10,7 @@ import logging
 import json
 import socket
 import struct
+import asyncio
 from ..models.face_detector import FaceDetector
 from ..models.face_embedder import FaceEmbedder
 from ..models.voice_embedder import VoiceEmbedder
@@ -18,6 +19,7 @@ from ..models.emotion_detector import EmotionDetector
 from ..models.age_gender_estimator import AgeGenderEstimator
 from ..models.behavioral_predictor import BehavioralPredictor
 from ..models.bias_detector import BiasDetector
+from ..models.hallucination_detector import HallucinationRisk, hallucination_detector
 from ..models.emotion_behavior import get_emotion_behavior_engine, BehaviorContext
 from ..db.db_client import get_db
 from ..schemas import StandardResponse
@@ -26,6 +28,7 @@ from ..metrics import recognition_count, recognition_latency
 from ..middleware.policy_enforcement import require_recognize_policy
 from ..decision_engine import decision_engine
 from ..models.explainable_ai import decision_breakdown_engine
+from ..services.logger import get_logger
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -39,6 +42,8 @@ emotion_detector = EmotionDetector()
 age_gender_estimator = AgeGenderEstimator()
 behavioral_predictor = BehavioralPredictor()
 bias_detector = BiasDetector()
+# Use singleton from module
+hallucination_detector = hallucination_detector
 
 from ..services.reliability import ai_model_circuit_breaker, db_circuit_breaker, CircuitBreakerOpenException
 
@@ -118,10 +123,11 @@ async def recognize_faces(
         if img is None:
             return StandardResponse(success=False, error="Invalid image")
 
-        # Detect faces
+        # Detect faces (offloaded to threadpool to avoid blocking event loop)
+        async def do_detect():
+            return detector.detect_faces(img, check_spoof=enable_spoof_check, reconstruct=True)
         try:
-            faces = await ai_model_circuit_breaker(lambda: detector.detect_faces(
-                img, check_spoof=enable_spoof_check, reconstruct=True))()
+            faces = await ai_model_circuit_breaker(do_detect)()
         except CircuitBreakerOpenException:
             return StandardResponse(success=False, error="AI service unavailable")
         except Exception:
@@ -170,10 +176,12 @@ async def recognize_faces(
             if enable_spoof_check and face['spoof_score'] > 0.5:
                 continue
 
-            # Embed
+            # Embed (offloaded to threadpool)
             aligned = detector.align_face(img, face['landmarks'])
             try:
-                query_emb = await ai_model_circuit_breaker(lambda: embedder.get_embedding(aligned))()
+                async def get_emb():
+                    return embedder.get_embedding(aligned)
+                query_emb = await ai_model_circuit_breaker(get_emb)()
             except Exception:
                 continue
 
@@ -183,7 +191,8 @@ async def recognize_faces(
                 "embedding": query_emb.flatten().tolist()  # Send as flat list
             }
             
-            enclave_response = send_request_to_enclave(enclave_request)
+            # Enclave communication is blocking; offload to thread
+            enclave_response = await asyncio.to_thread(send_request_to_enclave, enclave_request)
             
             if not enclave_response.get("success", False):
                 logger.warning(f"Enclave request failed: {enclave_response.get('error')}")
@@ -230,13 +239,61 @@ async def recognize_faces(
                     {"person_id": m['person_id'], "name": m['name'], "score": m['score']}
                     for m in db_matches
                 ],
-                "spoof_score": face['spoof_score']
+                "spoof_score": face['spoof_score'],
+                "embedding": query_emb  # Include embedding for hallucination detection
             }
             de_result = decision_engine.make_decision(
                 face_result=de_face,
                 liveness_result={"spoof_score": face['spoof_score']},
-                metadata={"camera_id": camera_id, "user_id": user.get("user_id")}
+                metadata={
+                    "camera_id": camera_id,
+                    "user_id": user.get("user_id"),
+                    "embedding": query_emb,
+                    "age": age_gender.get('age') if age_gender else None,
+                    "gender": age_gender.get('gender') if age_gender else None,
+                    "enrolled_age": age_gender.get('age') if age_gender else None,
+                    "enrolled_gender": age_gender.get('gender') if age_gender else None
+                }
             )
+
+            # === Hallucination Detection (post-recognition) ===
+            hallucination_risk = None
+            try:
+                # Build context for hallucination detection
+                h_context = {
+                    "enrolled_age": age_gender.get('age') if age_gender else None,
+                    "detected_age": age_gender.get('age') if age_gender else None,
+                    "enrolled_gender": age_gender.get('gender') if age_gender else None,
+                    "detected_gender": age_gender.get('gender') if age_gender else None,
+                    "voice_result": {
+                        "matches": [{"person_id": m['person_id']} for m in (voice_embedding or [])]
+                    } if voice_embedding else None,
+                    "gait_result": {
+                        "matches": [{"person_id": m['person_id']} for m in (gait_embedding or [])]
+                    } if gait_embedding else None
+                }
+                hallucination_risk: HallucinationRisk = hallucination_detector.detect_hallucination(
+                    face_result=de_face,
+                    context=h_context
+                )
+                
+                # Log high-risk hallucination events
+                if hallucination_risk and hallucination_risk.flagged:
+                    logger.warning(
+                        f"HALLUCINATION_DETECTED: risk={hallucination_risk.risk_score:.3f}, "
+                        f"person_id={db_matches[0]['person_id'] if db_matches else 'unknown'}, "
+                        f"factors={hallucination_risk.factors}",
+                        extra={
+                            "event": "hallucination",
+                            "risk_score": hallucination_risk.risk_score,
+                            "factors": hallucination_risk.factors,
+                            "person_id": db_matches[0]['person_id'] if db_matches else None,
+                            "camera_id": camera_id,
+                            "user_id": user.get("user_id")
+                        }
+                    )
+            except Exception as e:
+                logger.error(f"Hallucination detection error: {e}", exc_info=True)
 
             # Bias mitigation (simple boost)
             emotion = emotion_detector.detect_emotion(img, face['bbox']) if enable_emotion else None
@@ -302,6 +359,18 @@ async def recognize_faces(
             ]
 
             # Build response face
+            # Compute confidence interval from calibrator
+            try:
+                from ..scoring_engine import confidence_calibrator
+                ci_lower, ci_upper = confidence_calibrator.get_confidence_interval(
+                    embedding=query_emb,
+                    matches=db_matches
+                )
+                confidence_interval = (ci_lower, ci_upper)
+            except Exception as e:
+                logger.error(f"Confidence interval error: {e}")
+                confidence_interval = None
+            
             resp_face = {
                 "face_box": face['bbox'],
                 "face_embedding_id": str(uuid.uuid4()),
@@ -317,7 +386,15 @@ async def recognize_faces(
                 "identity_score": float(de_result.confidence),
                 "decision": de_result.decision,
                 "risk_level": de_result.risk_level.value if hasattr(de_result.risk_level, 'value') else str(de_result.risk_level),
-                "decision_factors": de_result.factors
+                "decision_factors": de_result.factors,
+                # New AI reliability fields
+                "hallucination_risk": {
+                    "score": hallucination_risk.risk_score if hallucination_risk else None,
+                    "flagged": hallucination_risk.flagged if hallucination_risk else False,
+                    "factors": hallucination_risk.factors if hallucination_risk else {},
+                    "recommendation": hallucination_risk.recommendation if hallucination_risk else None
+                },
+                "confidence_interval": confidence_interval
             }
 
             if include_explanations:

@@ -1,7 +1,12 @@
 """E2E Tests for Frontend + Backend flows using pytest-playwright."""
 import pytest
+
+# Skip entire module if playwright not available
+pytest.importorskip("playwright")
+
 from playwright.sync_api import sync_playwright
 import time
+
 
 @pytest.fixture(scope="session")
 def browser():
@@ -9,6 +14,7 @@ def browser():
         browser = p.chromium.launch(headless=True)
         yield browser
         browser.close()
+
 
 def test_signup_login_recognize(browser):
     """E2E: signup -> login -> enroll -> recognize -> dashboard."""
@@ -21,6 +27,7 @@ def test_signup_login_recognize(browser):
     assert "dashboard" in page.url
     page.close()
 
+
 def test_billing_flow(browser):
     """E2E: Subscription -> webhook -> quota."""
     page = browser.new_page()
@@ -31,6 +38,6 @@ def test_billing_flow(browser):
     assert "checkout.stripe" in page.url or "subscription" in page.content()
     page.close()
 
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
-

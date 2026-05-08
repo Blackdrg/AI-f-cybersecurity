@@ -74,14 +74,16 @@ class DBClient:
                 db_port = int(os.getenv('DB_PORT', 5432))
             
                 # Initialize primary connection pool
+                pool_max_size = int(os.getenv('DB_POOL_MAX_SIZE', '50'))
+                pool_min_size = int(os.getenv('DB_POOL_MIN_SIZE', '5'))
                 self.pool = await asyncpg.create_pool(
                     user=db_user,
                     password=db_password,
                     database=db_name,
                     host=db_host,
                     port=db_port,
-                    min_size=5,
-                    max_size=20
+                    min_size=pool_min_size,
+                    max_size=pool_max_size
                 )
                 await self._create_tables()
                 
@@ -109,8 +111,8 @@ class DBClient:
                     # Full connection string
                     replica_pool = await asyncpg.create_pool(
                         replica_url,
-                        min_size=2,
-                        max_size=10
+                        min_size=int(os.getenv('DB_REPLICA_POOL_MIN', '2')),
+                        max_size=int(os.getenv('DB_REPLICA_POOL_MAX', '10'))
                     )
                 else:
                     # host:port format
@@ -127,8 +129,8 @@ class DBClient:
                         database=db_name,
                         host=replica_host,
                         port=replica_port,
-                        min_size=2,
-                        max_size=10
+                        min_size=int(os.getenv('DB_REPLICA_POOL_MIN', '2')),
+                        max_size=int(os.getenv('DB_REPLICA_POOL_MAX', '10'))
                     )
                 
                 self.read_replica_pools.append(replica_pool)
@@ -216,6 +218,38 @@ class DBClient:
                 )
             """)
 
+    async def is_webhook_event_processed(self, stripe_event_id: str) -> bool:
+        """Check if a Stripe webhook event has already been processed (idempotency)."""
+        if self.pool is None:
+            return False
+        row = await self.fetchrow(
+            "SELECT 1 FROM webhook_events WHERE stripe_event_id = $1 AND status = 'processed'",
+            stripe_event_id
+        )
+        return row is not None
+
+    async def record_webhook_event(self, stripe_event_id: str, event_type: str, payload: Dict[str, Any]):
+        """Record a webhook event for idempotency tracking."""
+        if self.pool is None:
+            return
+        await self.execute(
+            """
+            INSERT INTO webhook_events (stripe_event_id, event_type, payload, status)
+            VALUES ($1, $2, $3, 'pending')
+            ON CONFLICT (stripe_event_id) DO NOTHING
+            """,
+            stripe_event_id, event_type, json.dumps(payload)
+        )
+
+    async def mark_webhook_processed(self, stripe_event_id: str):
+        """Mark a webhook event as successfully processed."""
+        if self.pool is None:
+            return
+        await self.execute(
+            "UPDATE webhook_events SET status = 'processed', processed_at = NOW() WHERE stripe_event_id = $1",
+            stripe_event_id
+        )
+
     # Direct query passthrough for backward compatibility
     async def fetch(self, query: str, *args):
         """Execute query and return all rows."""
@@ -246,7 +280,7 @@ class DBClient:
                     person_id UUID REFERENCES persons(person_id),
                     embedding VECTOR(512),  -- Face embedding
                     voice_embedding VECTOR(192),  -- Voice embedding (optional)
-                    gait_embedding VECTOR(7),  -- Gait embedding (Hu Moments, 7-d)
+                    gait_embedding VECTOR(1280),  -- GaitSet silhouette set dim (1280)
                     camera_id TEXT,
                     created_at TIMESTAMP DEFAULT NOW()
                 );
@@ -446,6 +480,12 @@ class DBClient:
                     timestamp TIMESTAMP DEFAULT NOW()
                 );
             """)
+            
+            # Index for recognition queries by org and time (critical for alert queries)
+            try:
+                await conn.execute("CREATE INDEX IF NOT EXISTS idx_recognition_events_org_timestamp ON recognition_events (org_id, timestamp DESC)")
+            except Exception:
+                pass  # Index may already exist or permission denied; ignore
 
             # Rule Engine & Alerts
             await conn.execute("""
