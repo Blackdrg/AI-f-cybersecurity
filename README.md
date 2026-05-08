@@ -589,7 +589,7 @@ TOTAL (+voice):    ~180-280ms
 
 ---
 
-## ğŸ””ï¿½ï¿½Â Security & Authentication
+## ğŸ”””ï¿½ï¿½Â Security & Authentication
 
 ### Multi-Factor Authentication (TOTP)
 
@@ -771,7 +771,7 @@ The platform supports **Self-Sovereign Identity (SSI)** via W3C compliant Decent
 
 LEVI-AI exposes a comprehensive REST API organized by functional domain. All endpoints are prefixed with `/api` and require JWT authentication unless otherwise noted.
 
-### ğŸ””ï¿½ï¿½Â Authentication & Authorization
+### ğŸ”””ï¿½ï¿½Â Authentication & Authorization
 
 | Endpoint | Method | Permission | Description |
 |----------|--------|-------------|-------------|
@@ -883,7 +883,7 @@ LEVI-AI exposes a comprehensive REST API organized by functional domain. All end
 | `POST /api/federated/aggregate/{round_id}` | Aggregate updates | Admin | Server-side secure aggregation |
 | `GET /api/federated/history` | FL round history | Admin | Past rounds + metrics |
 
-### ğŸ””ï¿½ï¿½Â OSINT Enrichment
+### ğŸ”””ï¿½ï¿½Â OSINT Enrichment
 
 | Endpoint | Method | Permission | Description |
 |----------|--------|-------------|-------------|
@@ -917,7 +917,7 @@ LEVI-AI exposes a comprehensive REST API organized by functional domain. All end
 | `GET /api/consent/history` | Consent audit trail | Auditor | All consent events |
 | `GET /api/consent/active` | Active consents | User | Current grants |
 
-### ğŸ””ï¿½ï¿½ Plugin System
+### ğŸ”””ï¿½ï¿½ Plugin System
 
 | Endpoint | Method | Permission | Description |
 |----------|--------|-------------|-------------|
@@ -1152,7 +1152,7 @@ Additional validation scripts:
 
 **Quality Gates:** >=80% code coverage, 0 critical vulnerabilities, all benchmarks passed, automatic rollback on SLA breach.
 
-### ğŸ””ï¿½ï¿½Â Role-Based Access Control (RBAC) & Permissions
+### ğŸ”””ï¿½ï¿½Â Role-Based Access Control (RBAC) & Permissions
 LEVI-AI implements a unified 8-role security model enforced across both the backend (FastAPI) and frontend (React).
 - **Roles**: `super_admin`, `admin`, `operator`, `auditor`, `analyst`, `viewer`, `security`, `hr`.
 - **Granular Permissions**: 30+ specific permissions (e.g., `ENROLL_IDENTITY`, `VERIFY_CHAIN`, `ESCALATE_INCIDENT`, `VIEW_BIAS_REPORTS`).
@@ -1207,7 +1207,7 @@ LEVI-AI enforces zero-trust security through advanced multi-factor and federated
 - **SSO (OAuth2/OIDC)**: Deep integration with **Azure Active Directory** and **Google Workspace** for enterprise-wide identity synchronization.
 - **Session Revocation**: Real-time distributed token revocation via Redis Bloom filters for active session management.
 
-### ğŸ””ï¿½ï¿½ External Provider Integrations
+### ğŸ”””ï¿½ï¿½ External Provider Integrations
 The Sovereign OS orchestrates a mesh of third-party services to enrich the identity experience.
 - **Payments (Stripe)**: Automated billing, subscription management, and webhook-driven account provisioning.
 - **Search (Bing & Wikipedia)**: Real-time public profile enrichment to enhance identity confidence.
@@ -1233,7 +1233,7 @@ Built-in frameworks for global regulatory alignment and ethical AI oversight.
 
 ---
 
-## ğŸ””ï¿½ï¿½Â Public Enrichment & OSINT Integration
+## ğŸ”””ï¿½ï¿½Â Public Enrichment & OSINT Integration
 
 The LEVI-AI platform includes a secure intelligence aggregator for public profile enrichment, enabling high-confidence identity verification via OSINT (Open Source Intelligence).
 
@@ -1542,7 +1542,7 @@ String health = client.getHealth();
 
 ---
 
-## ğŸ””ï¿½ï¿½â€” Audit Trail: Hash-Chain + ZKP
+## ğŸ”””ï¿½ï¿½â€” Audit Trail: Hash-Chain + ZKP
 
 ### Immutable Ledger
 
@@ -1726,7 +1726,7 @@ CREATE POLICY embeddings_org_isolation ON embeddings
 
 ---
 
-### ğŸ””ï¿½ï¿½â€ Alerting & Notification Engine
+### ğŸ”””ï¿½ï¿½â€ Alerting & Notification Engine
 LEVI-AI features a highly configurable alerting system (`backend/app/api/alerts.py`) for real-time operational response.
 - **Multi-Channel Delivery**: Native support for **SMTP Email**, **WhatsApp (Twilio)**, and **Slack Webhooks**.
 - **Rule-Based Triggers**: Configure alerts based on confidence thresholds, policy violations, or specific identity detection.
@@ -1742,7 +1742,7 @@ Expanding the Sovereign OS into business intelligence, AI-f now includes a suite
 
 ---
 
-### ğŸ””ï¿½ï¿½â€ Schema Management & Migrations (Alembic)
+### ğŸ”””ï¿½ï¿½â€ Schema Management & Migrations (Alembic)
 
 AI-f uses **Alembic** for robust, version-controlled database migrations. This ensures schema consistency across development, staging, and production environments.
 
@@ -2281,7 +2281,7 @@ helm upgrade --install ai-f helm/ai-f/ \
   --set image.tag=v2.0.0
 ```
 
-### ğŸ””ï¿½ï¿½â€” Webhooks & External Notifications
+### ğŸ”””ï¿½ï¿½â€” Webhooks & External Notifications
 AI-f supports secure, real-time event notifications via HMAC-SHA256 signed webhooks.
 - **Stripe Billing**: Idempotent handling of `checkout.session.completed` and subscription lifecycle events.
 - **Biometric Events**: Outbound notifications for `MATCH_FOUND`, `SPOOF_ATTEMPT`, and `POLICY_DENIED` events.
@@ -2945,7 +2945,7 @@ pg_restore -d face_recognition -t embeddings s3://backups/embeddings_2026-04-27.
 
 ---
 
-## ğŸ””ï¿½ï¿½Â Compliance Evidence & Audit Artifacts
+## ğŸ”””ï¿½ï¿½Â Compliance Evidence & Audit Artifacts
 
 ### Data Protection Impact Assessment (DPIA)
 
@@ -3628,25 +3628,25 @@ Uploaded to:
 
 **Planned Features:**
 
-- ğŸ””ï¿½ï¿½â€ **Homomorphic Encryption (HE)** - CKKS scheme for encrypted inference (TenSEAL)
+- ğŸ”””ï¿½ï¿½â€ **Homomorphic Encryption (HE)** - CKKS scheme for encrypted inference (TenSEAL)
 
-- ğŸ””ï¿½ï¿½â€ **W3C Decentralized Identifiers (DID)** - Self-sovereign identity layer
+- ğŸ”””ï¿½ï¿½â€ **W3C Decentralized Identifiers (DID)** - Self-sovereign identity layer
 
-- ğŸ””ï¿½ï¿½â€ **Multi-party Computation (MPC)** - Cross-org matching without data sharing
+- ğŸ”””ï¿½ï¿½â€ **Multi-party Computation (MPC)** - Cross-org matching without data sharing
 
-- ğŸ””ï¿½ï¿½â€ **Privacy-Preserving Cross-Match** - Private set intersection (PSI) for multi-tenant search
+- ğŸ”””ï¿½ï¿½â€ **Privacy-Preserving Cross-Match** - Private set intersection (PSI) for multi-tenant search
 
-- ğŸ””ï¿½ï¿½â€ **Edge SDKs** - iOS (Core ML), Android (TFLite), Embedded (Rust/WASM)
+- ğŸ”””ï¿½ï¿½â€ **Edge SDKs** - iOS (Core ML), Android (TFLite), Embedded (Rust/WASM)
 
-- ğŸ””ï¿½ï¿½â€ **Zero-Knowledge Machine Learning (zkML)** - Verify model inference integrity
+- ğŸ”””ï¿½ï¿½â€ **Zero-Knowledge Machine Learning (zkML)** - Verify model inference integrity
 
-- ğŸ””ï¿½ï¿½â€ **Advanced XAI** - Integrated gradients + LIME + counterfactuals
+- ğŸ”””ï¿½ï¿½â€ **Advanced XAI** - Integrated gradients + LIME + counterfactuals
 
-- ğŸ””ï¿½ï¿½â€ **Automated Model Retraining** - Scheduled retraining with Canary deployment
+- ğŸ”””ï¿½ï¿½â€ **Automated Model Retraining** - Scheduled retraining with Canary deployment
 
-- ğŸ””ï¿½ï¿½â€ **GraphQL API** - Alternative to REST for complex queries
+- ğŸ”””ï¿½ï¿½â€ **GraphQL API** - Alternative to REST for complex queries
 
-- ğŸ””ï¿½ï¿½â€ **Real-Time Anomaly Detection** - Behavioral biometrics anomaly scoring
+- ğŸ”””ï¿½ï¿½â€ **Real-Time Anomaly Detection** - Behavioral biometrics anomaly scoring
 
 
 
@@ -3950,7 +3950,7 @@ UPDATE audit_log SET details = '{"redacted": true}' WHERE person_id = 'pers_xxx'
 
 
 
-## ğŸ””ï¿½ï¿½â€ Disaster Recovery & Business Continuity
+## ğŸ”””ï¿½ï¿½â€ Disaster Recovery & Business Continuity
 
 
 
@@ -5846,7 +5846,7 @@ fetchMetrics() {
 
 
 
-## ğŸ””ï¿½ï¿½Â Login Flow & MFA Enrollment
+## ğŸ”””ï¿½ï¿½Â Login Flow & MFA Enrollment
 
 
 
@@ -6212,7 +6212,7 @@ async def version():
 
 
 
-## ğŸ””ï¿½ï¿½Â Deeper Technical Implementation
+## ğŸ”””ï¿½ï¿½Â Deeper Technical Implementation
 
 
 
@@ -8446,7 +8446,7 @@ settings = {
 
 
 
-## ğŸ””ï¿½ï¿½Â Security Model & Threat Analysis
+## ğŸ”””ï¿½ï¿½Â Security Model & Threat Analysis
 
 
 

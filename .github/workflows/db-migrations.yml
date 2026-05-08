@@ -2,10 +2,10 @@ name: Database Migrations
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'backend/alembic/**'
-      - 'backend/app/db/**'
+      - "backend/alembic/**"
+      - "backend/app/db/**"
 
 jobs:
   migrate:
@@ -26,36 +26,36 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-        
-    - name: Install dependencies
-      run: |
-        cd backend
-        pip install alembic psycopg2-binary sqlalchemy
-        
-    - name: Run Migrations (Dry Run)
-      env:
-        DB_HOST: localhost
-        DB_PORT: 5432
-        DB_USER: ai_f_user
-        DB_PASSWORD: changeme
-        DB_NAME: face_recognition
-      run: |
-        cd backend
-        alembic upgrade head --sql
-        
-    - name: Run Migrations (Integration Test)
-      env:
-        DB_HOST: localhost
-        DB_PORT: 5432
-        DB_USER: ai_f_user
-        DB_PASSWORD: changeme
-        DB_NAME: face_recognition
-      run: |
-        cd backend
-        alembic upgrade head
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install alembic psycopg2-binary sqlalchemy
+
+      - name: Run Migrations (Dry Run)
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: ai_f_user
+          DB_PASSWORD: changeme
+          DB_NAME: face_recognition
+        run: |
+          cd backend
+          alembic upgrade head --sql
+
+      - name: Run Migrations (Integration Test)
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: ai_f_user
+          DB_PASSWORD: changeme
+          DB_NAME: face_recognition
+        run: |
+          cd backend
+          alembic upgrade head
