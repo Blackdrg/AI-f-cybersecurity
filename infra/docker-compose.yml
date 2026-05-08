@@ -1,11 +1,11 @@
 # Docker Compose for AI-F (version auto-detected, no version key needed)
-env_file:
-  - .env
 
 services:
   postgres:
     image: pgvector/pgvector:pg15
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: face_recognition
       POSTGRES_USER: postgres

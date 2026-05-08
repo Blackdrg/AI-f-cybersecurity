@@ -1,0 +1,39 @@
+# Production Inventory Example
+# Copy this file to production.yml and fill in actual values
+
+all:
+  children:
+    app_servers:
+      hosts:
+        app01:
+          ansible_host: 192.168.1.10
+          ansible_user: deploy
+          app_name: ai-f
+          python_version: "3.12"
+          enable_gpu: true
+          gpu_type: "t4"
+      vars:
+        environment: production
+        DATABASE_URL: "postgresql://user:pass@db01.example.com:5432/face_recognition"
+        REDIS_URL: "redis://:redispass@cache01.example.com:6379/0"
+        ENCRYPTION_KEY: "your-32-byte-base64-key"
+        JWT_SECRET: "your-64-byte-secret"
+        STRIPE_SECRET_KEY: "sk_live_..."
+        OPENAI_API_KEY: "sk-..."
+        BING_API_KEY: "..."
+    database_servers:
+      hosts:
+        db01:
+          ansible_host: 192.168.1.20
+          ansible_user: postgres
+      vars:
+        postgres_version: "15"
+        pgvector_enabled: true
+    cache_servers:
+      hosts:
+        cache01:
+          ansible_host: 192.168.1.30
+          ansible_user: redis
+      vars:
+        redis_version: "7.2"
+        redisAOFEncrypt: true

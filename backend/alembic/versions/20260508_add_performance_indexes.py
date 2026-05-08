@@ -46,7 +46,7 @@ def upgrade() -> None:
     op.create_index(
         'idx_persons_org_created',
         'persons',
-        ['org_id', 'created_at DESC'],
+        ['org_id', sa.text('created_at DESC')],
         unique=False
     )
     
@@ -143,7 +143,7 @@ def upgrade() -> None:
     op.create_index(
         'idx_recognition_events_person',
         'recognition_events',
-        ['person_id', 'timestamp DESC'],
+        ['person_id', sa.text('timestamp DESC')],
         unique=False
     )
     
@@ -151,7 +151,7 @@ def upgrade() -> None:
     op.create_index(
         'idx_recognition_events_org',
         'recognition_events',
-        ['org_id', 'timestamp DESC'],
+        ['org_id', sa.text('timestamp DESC')],
         unique=False
     )
     
@@ -159,7 +159,7 @@ def upgrade() -> None:
     op.create_index(
         'idx_recognition_events_timestamp',
         'recognition_events',
-        ['timestamp DESC'],
+        [sa.text('timestamp DESC')],
         unique=False
     )
     
@@ -167,7 +167,7 @@ def upgrade() -> None:
     op.create_index(
         'idx_recognition_events_org_camera_time',
         'recognition_events',
-        ['org_id', 'camera_id', 'timestamp DESC'],
+        ['org_id', 'camera_id', sa.text('timestamp DESC')],
         unique=False
     )
     
@@ -195,7 +195,7 @@ def upgrade() -> None:
     op.create_index(
         'idx_audit_log_timestamp',
         'audit_log',
-        ['timestamp DESC'],
+        [sa.text('timestamp DESC')],
         unique=False
     )
     
@@ -203,7 +203,7 @@ def upgrade() -> None:
     op.create_index(
         'idx_audit_log_action_time',
         'audit_log',
-        ['action', 'timestamp DESC'],
+        ['action', sa.text('timestamp DESC')],
         unique=False
     )
     
@@ -231,7 +231,7 @@ def upgrade() -> None:
     op.create_index(
         'idx_edge_devices_last_seen',
         'edge_devices',
-        ['last_seen DESC'],
+        [sa.text('last_seen DESC')],
         unique=False
     )
     
@@ -243,7 +243,7 @@ def upgrade() -> None:
     op.create_index(
         'idx_support_tickets_user',
         'support_tickets',
-        ['user_id', 'created_at DESC'],
+        ['user_id', sa.text('created_at DESC')],
         unique=False
     )
     
@@ -303,7 +303,7 @@ def upgrade() -> None:
     op.create_index(
         'idx_federated_updates_device',
         'federated_updates',
-        ['device_id', 'timestamp DESC'],
+        ['device_id', sa.text('timestamp DESC')],
         unique=False
     )
 

@@ -43,6 +43,8 @@ class ThreatIntelProvider(BaseProvider):
         self.webhook_url = os.getenv("THREAT_INTEL_WEBHOOK_URL")
         self._cache: Dict[str, Dict[str, Any]] = {}
         self._cache_timestamps: Dict[str, datetime] = {}
+        # Air-gapped mode check
+        self.air_gapped = os.getenv("AIR_GAPPED", "false").lower() == "true"
 
     def _is_cached(self, key: str) -> bool:
         """Check if cached entry is still valid."""
@@ -72,6 +74,8 @@ class ThreatIntelProvider(BaseProvider):
         Returns:
             List of threat intel results
         """
+        if self.air_gapped:
+            return []  # Air-gapped mode disables external calls
         cached = self._get_cache(f"search:{query}")
         if cached:
             return cached

@@ -576,6 +576,40 @@ class ContinuousAttestor:
             AttestationStatus.EXPIRED
         ):
             self.alert_callback(report)
+        # Third-party verifier integration: forward report to configured webhook
+        webhook_url = os.getenv("ATTESTATION_WEBHOOK_URL")
+        if webhook_url:
+            try:
+                import httpx
+                payload = {
+                    "status": report.status.value,
+                    "details": report.details,
+                    "timestamp": report.timestamp.isoformat(),
+                    "enclave_id": self.enclave_session.enclave_id if self.enclave_session else None,
+                }
+                # Fire and forget (no await) - could be async but this method may be sync? Actually it's called from _perform_attestation_cycle which is sync.
+                # We'll spawn a thread or just ignore; simplest: try async in separate task if loop exists
+                try:
+                    import asyncio
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        loop.create_task(self._post_webhook(webhook_url, payload))
+                    else:
+                        # Fallback sync request
+                        import requests
+                        requests.post(webhook_url, json=payload, timeout=5)
+                except Exception:
+                    pass
+            except Exception as e:
+                logger.warning(f"Failed to send attestation webhook: {e}")
+
+    async def _post_webhook(self, url, json):
+        import httpx
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.post(url, json=json, timeout=5.0)
+        except Exception:
+            pass
     
     def _perform_attestation_cycle(self) -> AttestationReport:
         now = datetime.utcnow()

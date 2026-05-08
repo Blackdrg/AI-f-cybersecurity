@@ -397,6 +397,35 @@ async def recognize_faces(
                 "confidence_interval": confidence_interval
             }
 
+            # Log recognition event for audit & alerting
+            try:
+                event_id = await db.log_recognition_event(
+                    org_id=user.get("org_id"),
+                    person_id=db_matches[0]['person_id'] if db_matches else None,
+                    camera_id=camera_id,
+                    confidence=float(de_result.confidence),
+                    metadata={
+                        "user_id": user.get("user_id"),
+                        "decision": de_result.decision,
+                        "risk_level": str(de_result.risk_level),
+                        "num_matches": len(db_matches),
+                        "spoof_score": face.get('spoof_score', 0.0),
+                        "emotion": emotion,
+                        "age": age_gender.get('age') if age_gender else None,
+                        "gender": age_gender.get('gender') if age_gender else None,
+                    }
+                )
+                # Trigger rule-based alerts asynchronously
+                from app.api.alerts import process_event_rules
+                asyncio.create_task(process_event_rules(
+                    event_id=event_id,
+                    org_id=user.get("org_id"),
+                    person_id=db_matches[0]['person_id'] if db_matches else None,
+                    camera_id=camera_id or ''
+                ))
+            except Exception as e:
+                logger.error(f"Failed to log recognition event: {e}", exc_info=True)
+
             if include_explanations:
                 from ..models.explainable_ai import ExplainableDecision, DecisionFactor
                 factors = [

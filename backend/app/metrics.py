@@ -1,7 +1,9 @@
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
 import time
+import os
+from fastapi import Depends, Header, HTTPException, Response
 
-# Metrics
+# Global metric definitions
 recognition_count = Counter(
     'face_recognition_requests_total', 'Total recognition requests')
 enroll_count = Counter('face_enroll_requests_total', 'Total enroll requests')
@@ -32,13 +34,22 @@ tasks_failed = Counter('celery_tasks_failed_total', 'Total failed Celery tasks')
 task_duration_seconds = Histogram('celery_task_duration_seconds', 'Task execution duration', ['task_name'])
 
 
+def verify_metrics_token(x_metrics_token: str = Header(None, alias="X-Metrics-Token")) -> bool:
+    """Simple token auth for /metrics endpoint."""
+    expected_token = os.getenv("METRICS_TOKEN")
+    # If no token configured, allow unauth
+    if not expected_token:
+        return True
+    if x_metrics_token != expected_token:
+        raise HTTPException(status_code=403, detail="Invalid metrics token")
+    return True
+
 
 def setup_metrics(app):
     from fastapi import Response
-    from fastapi.routing import APIRoute
 
     @app.get("/metrics")
-    def metrics():
+    def metrics(authorized: bool = Depends(verify_metrics_token)):
         return Response(generate_latest(), media_type="text/plain")
 
     # Middleware to measure latency

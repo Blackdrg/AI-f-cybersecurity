@@ -21,20 +21,34 @@ class ExternalAnchorService:
         Anchor the current chain root hash to an external source.
         """
         try:
-            # Simulate external call latency
-            # In real life: response = requests.post("https://btc-anchor.io/api", json={"hash": root_hash})
-            
-            self.last_anchored_hash = root_hash
-            self.last_anchoring_time = datetime.utcnow()
-            
-            logger.info(f"Successfully anchored hash {root_hash} to external ledger")
-            
-            return {
-                "success": True,
-                "anchor_id": f"sim_tx_{hashlib.sha256(root_hash.encode()).hexdigest()[:16]}",
-                "timestamp": self.last_anchoring_time.isoformat(),
-                "ledger": "Bitcoin (Simulated)"
-            }
+            # Check for configured anchoring service URL
+            anchor_url = os.getenv("ANCHOR_SERVICE_URL")
+            if anchor_url:
+                # Use external service
+                import httpx
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(
+                        anchor_url,
+                        json={"hash": root_hash, "timestamp": datetime.utcnow().isoformat()},
+                        timeout=10.0
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    return {
+                        "success": True,
+                        "anchor_id": data.get("tx_id") or data.get("anchor_id", "unknown"),
+                        "timestamp": data.get("timestamp", datetime.utcnow().isoformat()),
+                        "ledger": data.get("ledger", "custom")
+                    }
+            else:
+                # Simulate external call latency
+                logger.info(f"Simulated anchoring of hash {root_hash} (no ANCHOR_SERVICE_URL configured)")
+                return {
+                    "success": True,
+                    "anchor_id": f"sim_tx_{hashlib.sha256(root_hash.encode()).hexdigest()[:16]}",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "ledger": "Simulated"
+                }
         except Exception as e:
             logger.error(f"External anchoring failed: {str(e)}")
             return {"success": False, "error": str(e)}

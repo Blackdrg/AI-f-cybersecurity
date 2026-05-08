@@ -11,9 +11,12 @@ class BingProvider(BaseProvider):
         api_key = os.getenv('BING_API_KEY')
         super().__init__("bing", api_key)
         self.base_url = "https://api.bing.microsoft.com/v7.0/search"
+        self.air_gapped = os.getenv("AIR_GAPPED", "false").lower() == "true"
 
     async def search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Search using Bing Web Search API."""
+        if self.air_gapped:
+            return []  # Disabled in air-gapped mode
         if not self.api_key:
             return []  # Return empty if no API key
 

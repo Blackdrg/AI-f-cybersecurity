@@ -25,14 +25,15 @@ class OpenAIProvider(LLMProvider):
         if not OPENAI_AVAILABLE:
             raise ImportError("OpenAI Python package is not installed. Install with: pip install openai")
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        if self.api_key:
+        self.air_gapped = os.getenv("AIR_GAPPED", "false").lower() == "true"
+        if self.api_key and not self.air_gapped:
             self.client = openai.OpenAI(api_key=self.api_key)
         else:
             self.client = None
 
     async def chat_completion(self, messages: List[Dict[str, str]], model: str, max_tokens: int = 500, temperature: float = 0.7) -> str:
-        if not self.client:
-            raise ValueError("OpenAI client not configured")
+        if self.air_gapped or not self.client:
+            raise ValueError("OpenAI client not available (air-gapped mode or missing API key)")
         
         try:
             response = self.client.chat.completions.create(

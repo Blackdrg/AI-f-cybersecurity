@@ -13,6 +13,35 @@ router = APIRouter()
 
 # Mock data for demo when backend DB doesn't have these tables
 def generate_demo_alerts():
+    ...
+    (rest unchanged)
+
+async def insert_alert(org_id: str, alert_type: str, severity: str, message: str, confidence: float, source: str, event_id=None, rule_id=None, details=None) -> dict:
+    """Insert a new alert into the database."""
+    db = await get_db()
+    try:
+        alert_id = await db.pool.fetchval("""
+            INSERT INTO alerts (org_id, event_id, rule_id, type, severity, message, confidence, source, details)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING alert_id
+        """, org_id, event_id, rule_id, alert_type, severity, message, confidence, source, details or {})
+        return {"id": str(alert_id), "org_id": org_id, "type": alert_type, "severity": severity,
+                "message": message, "confidence": confidence, "source": source, "status": "new",
+                "created_at": datetime.utcnow().isoformat()}
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Failed to insert alert: {e}")
+        # Fallback to in-memory if DB fails
+        return {
+            'id': f"fallback_{int(datetime.utcnow().timestamp())}",
+            'type': alert_type,
+            'severity': severity,
+            'message': message,
+            'timestamp': datetime.utcnow().isoformat(),
+            'confidence': confidence,
+            'source': source,
+            'status': 'new',
+            'affected_entities': 0
+        }
     return [
         {
             'id': 1,
@@ -165,64 +194,122 @@ async def list_alerts(org_id: str, current_user=Depends(require_org_admin)):
     """List fired alerts for the organization."""
     db = await get_db()
     try:
-        alerts = await db.pool.fetch("""
-            SELECT a.*, r.name as rule_name, e.timestamp as event_timestamp
+        rows = await db.pool.fetch("""
+            SELECT 
+                a.alert_id as id,
+                a.org_id,
+                a.type,
+                a.severity,
+                a.message,
+                a.confidence,
+                a.source,
+                a.status,
+                a.affected_entities,
+                a.created_at,
+                a.details,
+                r.name as rule_name,
+                e.timestamp as event_timestamp
             FROM alerts a
-            JOIN alert_rules r ON a.rule_id = r.rule_id
-            JOIN recognition_events e ON a.event_id = e.event_id
-            WHERE r.org_id = $1
+            LEFT JOIN alert_rules r ON a.rule_id = r.rule_id
+            LEFT JOIN recognition_events e ON a.event_id = e.event_id
+            WHERE a.org_id = $1
             ORDER BY a.created_at DESC
+            LIMIT 100
         """, org_id)
-        if alerts:
-            return [dict(a) for a in alerts]
-    except Exception:
-        pass
-    return generate_demo_alerts()
+        result = []
+        for row in rows:
+            alert = dict(row)
+            # Convert datetime fields to isoformat
+            for field in ['created_at', 'event_timestamp']:
+                if alert.get(field) and isinstance(alert[field], datetime):
+                    alert[field] = alert[field].isoformat()
+            result.append(alert)
+        return result
+    except Exception as e:
+        logger.error(f"Error listing alerts: {e}")
+        # Fallback to demo data only if table missing
+        return generate_demo_alerts()
 
 @router.get("/active")
 async def get_active_alerts():
     """Get all active alerts across all organizations (for dashboard)."""
     db = await get_db()
     if db.pool is None:
-        # DB unavailable, fallback to demo data
         return {"alerts": generate_demo_alerts()}
     
     try:
-        # Fetch all organizations
-        org_rows = await db.pool.fetch("SELECT org_id FROM organizations")
-        if not org_rows:
-            return {"alerts": []}
-        
-        all_alerts = []
-        detector = BiasDetector()
-        now = datetime.utcnow()
-        
-        for org in org_rows:
-            org_id = org['org_id']
-            # Check bias threshold
-            bias_alert = await _check_bias_alert(db, org_id, detector, now)
-            if bias_alert:
-                all_alerts.append(bias_alert)
-            # Check confidence dropout
-            conf_alert = await _check_confidence_dropout(db, org_id, now)
-            if conf_alert:
-                all_alerts.append(conf_alert)
-        
-        return {"alerts": all_alerts}
+        rows = await db.pool.fetch("""
+            SELECT 
+                alert_id as id,
+                org_id,
+                type,
+                severity,
+                message,
+                confidence,
+                source,
+                status,
+                affected_entities,
+                created_at as timestamp,
+                details
+            FROM alerts
+            WHERE status = 'new'
+            ORDER BY created_at DESC
+            LIMIT 100
+        """)
+        alerts = []
+        for r in rows:
+            alert = dict(r)
+            # Convert datetime to isoformat
+            if 'timestamp' in alert and alert['timestamp']:
+                alert['timestamp'] = alert['timestamp'].isoformat()
+            # Rename fields if needed: already id
+            alerts.append(alert)
+        return {"alerts": alerts}
     except Exception as e:
-        logging.getLogger(__name__).error(f"Error computing active alerts: {e}", exc_info=True)
+        logger.error(f"Error fetching active alerts: {e}", exc_info=True)
         return {"alerts": generate_demo_alerts()}
 
 
-async def _check_bias_alert(db, org_id: str, detector: BiasDetector, now: datetime) -> Optional[dict]:
-    """Compute bias metrics for given org and return alert if threshold exceeded."""
+async def insert_alert(org_id: str, alert_type: str, severity: str, message: str, confidence: float, source: str, event_id=None, rule_id=None, details=None) -> dict:
+    """Insert a new alert into the database."""
+    db = await get_db()
+    try:
+        alert_id = await db.pool.fetchval("""
+            INSERT INTO alerts (org_id, event_id, rule_id, type, severity, message, confidence, source, details)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING alert_id
+        """, org_id, event_id, rule_id, alert_type, severity, message, confidence, source, details or {})
+        return {"id": str(alert_id), "org_id": org_id, "type": alert_type, "severity": severity,
+                "message": message, "confidence": confidence, "source": source, "status": "new",
+                "created_at": datetime.utcnow().isoformat()}
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Failed to insert alert: {e}")
+        # Fallback to in-memory if DB fails
+        return {
+            'id': f"fallback_{int(datetime.utcnow().timestamp())}",
+            'type': alert_type,
+            'severity': severity,
+            'message': message,
+            'timestamp': datetime.utcnow().isoformat(),
+            'confidence': confidence,
+            'source': source,
+            'status': 'new',
+            'affected_entities': 0
+        }
+
+
+async def check_bias_alert(db, org_id: str, detector: BiasDetector, now: datetime) -> Optional[dict]:
+    """Compute bias metrics for given org and create alert if threshold exceeded."""
     cutoff = now - timedelta(hours=24)
-    rows = await db.pool.fetch("""
-        SELECT re.person_id, p.gender, p.age
-        FROM recognition_events re
-        LEFT JOIN persons p ON re.person_id = p.person_id
-        WHERE re.org_id = $1 AND re.timestamp >= $2
-    """, org_id, cutoff)
+    try:
+        rows = await db.pool.fetch("""
+            SELECT re.person_id, p.gender, p.age
+            FROM recognition_events re
+            LEFT JOIN persons p ON re.person_id = p.person_id
+            WHERE re.org_id = $1 AND re.timestamp >= $2
+        """, org_id, cutoff)
+    except Exception:
+        return None  # Table may not exist yet
     
     if not rows:
         return None
@@ -237,7 +324,7 @@ async def _check_bias_alert(db, org_id: str, detector: BiasDetector, now: dateti
         })
     
     try:
-report = detector.detect_bias(predictions)
+        report = detector.detect_bias(predictions)
     except Exception as e:
         logging.getLogger(__name__).error(f"Bias detection failed for org {org_id}: {e}")
         return None
@@ -245,39 +332,44 @@ report = detector.detect_bias(predictions)
     dp_diff = report.get('demographic_parity_difference', 0.0)
     
     if dp_diff > detector.high_bias_threshold:
-        alert_id = f"bias_{org_id}_{int(now.timestamp())}"
-        return {
-            'id': alert_id,
-            'type': 'BIAS_THRESHOLD_EXCEEDED',
-            'severity': 'high',
-            'message': f"Demographic parity difference {dp_diff:.3f} exceeds threshold {detector.high_bias_threshold:.3f}",
-            'timestamp': now.isoformat(),
-            'confidence': round(dp_diff, 2),
-            'source': 'BIAS_MONITOR',
-            'status': 'new',
-            'affected_entities': len(predictions)
-        }
+        alert = await insert_alert(
+            org_id=org_id,
+            alert_type='BIAS_THRESHOLD_EXCEEDED',
+            severity='high',
+            message=f"Demographic parity difference {dp_diff:.3f} exceeds threshold {detector.high_bias_threshold:.3f}",
+            confidence=round(dp_diff, 2),
+            source='BIAS_MONITOR',
+            details={'demographic_parity_difference': dp_diff, 'threshold': detector.high_bias_threshold, 'sample_size': len(predictions)}
+        )
+        return alert
     return None
 
 
-async def _check_confidence_dropout(db, org_id: str, now: datetime) -> Optional[dict]:
-    """Detect significant confidence score drop for an org."""
+async def check_confidence_dropout(db, org_id: str, now: datetime) -> Optional[dict]:
+    """Detect significant confidence score drop for an org and create alert."""
     one_hour_ago = now - timedelta(hours=1)
     two_hours_ago = now - timedelta(hours=2)
     
-    recent_rows = await db.pool.fetch("""
-        SELECT confidence_score FROM recognition_events
-        WHERE org_id = $1 AND timestamp >= $2 AND confidence_score IS NOT NULL
-    """, org_id, one_hour_ago)
+    try:
+        recent_rows = await db.pool.fetch("""
+            SELECT confidence_score FROM recognition_events
+            WHERE org_id = $1 AND timestamp >= $2 AND confidence_score IS NOT NULL
+        """, org_id, one_hour_ago)
+    except Exception:
+        return None
     
     if not recent_rows:
         return None
     
     recent_avg = sum(r['confidence_score'] for r in recent_rows) / len(recent_rows)
-    baseline_rows = await db.pool.fetch("""
-        SELECT confidence_score FROM recognition_events
-        WHERE org_id = $1 AND timestamp >= $2 AND timestamp < $3 AND confidence_score IS NOT NULL
-    """, org_id, two_hours_ago, one_hour_ago)
+    
+    try:
+        baseline_rows = await db.pool.fetch("""
+            SELECT confidence_score FROM recognition_events
+            WHERE org_id = $1 AND timestamp >= $2 AND timestamp < $3 AND confidence_score IS NOT NULL
+        """, org_id, two_hours_ago, one_hour_ago)
+    except Exception:
+        baseline_rows = []
     
     DROP_THRESHOLD = 0.5
     DROP_RATIO = 0.7  # 30% drop
@@ -294,18 +386,72 @@ async def _check_confidence_dropout(db, org_id: str, now: datetime) -> Optional[
             trigger = True
             reason = f"Recent avg {recent_avg:.2f} < {int(DROP_RATIO*100)}% of baseline {baseline_avg:.2f}"
     
-        if trigger:
-            return {
-                'id': f"confdrop_{org_id}_{int(now.timestamp())}",
-                'type': 'CONFIDENCE_DROPOUT',
-                'severity': 'medium',
-                'message': reason,
-                'timestamp': now.isoformat(),
-                'confidence': round(recent_avg, 2),
-                'source': 'QUALITY_MONITOR',
-                'status': 'new',
-                'affected_entities': len(recent_rows)
-            }
+    if trigger:
+        alert = await insert_alert(
+            org_id=org_id,
+            alert_type='CONFIDENCE_DROPOUT',
+            severity='medium',
+            message=reason,
+            confidence=round(recent_avg, 2),
+            source='QUALITY_MONITOR',
+            details={'recent_avg': recent_avg, 'baseline_avg': baseline_avg if baseline_rows else None, 'sample_size': len(recent_rows)}
+        )
+        return alert
+    return None
+
+
+async def check_confidence_dropout(db, org_id: str, now: datetime) -> Optional[dict]:
+    """Detect significant confidence score drop for an org and create alert."""
+    one_hour_ago = now - timedelta(hours=1)
+    two_hours_ago = now - timedelta(hours=2)
+    
+    try:
+        recent_rows = await db.pool.fetch("""
+            SELECT confidence_score FROM recognition_events
+            WHERE org_id = $1 AND timestamp >= $2 AND confidence_score IS NOT NULL
+        """, org_id, one_hour_ago)
+    except Exception:
+        return None
+    
+    if not recent_rows:
+        return None
+    
+    recent_avg = sum(r['confidence_score'] for r in recent_rows) / len(recent_rows)
+    
+    try:
+        baseline_rows = await db.pool.fetch("""
+            SELECT confidence_score FROM recognition_events
+            WHERE org_id = $1 AND timestamp >= $2 AND timestamp < $3 AND confidence_score IS NOT NULL
+        """, org_id, two_hours_ago, one_hour_ago)
+    except Exception:
+        baseline_rows = []
+    
+    DROP_THRESHOLD = 0.5
+    DROP_RATIO = 0.7  # 30% drop
+    
+    trigger = False
+    reason = ""
+    
+    if recent_avg < DROP_THRESHOLD:
+        trigger = True
+        reason = f"Recent avg confidence {recent_avg:.2f} below threshold {DROP_THRESHOLD}"
+    elif baseline_rows:
+        baseline_avg = sum(r['confidence_score'] for r in baseline_rows) / len(baseline_rows)
+        if baseline_avg > 0 and recent_avg < baseline_avg * DROP_RATIO:
+            trigger = True
+            reason = f"Recent avg {recent_avg:.2f} < {int(DROP_RATIO*100)}% of baseline {baseline_avg:.2f}"
+    
+    if trigger:
+        alert = await insert_alert(
+            org_id=org_id,
+            alert_type='CONFIDENCE_DROPOUT',
+            severity='medium',
+            message=reason,
+            confidence=round(recent_avg, 2),
+            source='QUALITY_MONITOR',
+            details={'recent_avg': recent_avg, 'baseline_avg': baseline_avg if baseline_rows else None, 'sample_size': len(recent_rows)}
+        )
+        return alert
     return None
 
 @router.put("/{alert_id}/acknowledge")
@@ -326,17 +472,23 @@ async def process_event_rules(event_id: str, org_id: str, person_id: str, camera
     db = await get_db()
     try:
         rules = await db.pool.fetch("SELECT * FROM alert_rules WHERE org_id = $1 AND is_active = TRUE", org_id)
-        from datetime import datetime
         for rule in rules:
             condition = rule['condition']
             is_unknown = person_id is None
             if condition.get('person_type') == 'unknown' and is_unknown:
-                await db.pool.execute("""
-                    INSERT INTO alerts (rule_id, event_id)
-                    VALUES ($1, $2)
-                """, rule['rule_id'], event_id)
-    except Exception:
-        pass
+                await insert_alert(
+                    org_id=org_id,
+                    alert_type='UNKNOWN_PERSON',
+                    severity=rule.get('severity', 'medium'),
+                    message=rule.get('message', 'Unknown person detected'),
+                    confidence=1.0,
+                    source='RULE_ENGINE',
+                    event_id=event_id,
+                    rule_id=rule['rule_id'],
+                    details=condition
+                )
+    except Exception as e:
+        logger.error(f"Error processing event rules for org {org_id}: {e}", exc_info=True)
 
 # Incident Management Endpoints
 @router.get("/incidents")

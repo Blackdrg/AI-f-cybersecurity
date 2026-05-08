@@ -1,0 +1,241 @@
+# Istio Service Mesh Configuration for AI-f
+# Provides secure service-to-service communication, traffic management, and observability
+
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: ai-f-istio
+  namespace: istio-system
+spec:
+  profile: production
+  values:
+    global:
+      meshID: ai-f-mesh
+      multiCluster:
+        clusterName: ai-f-cluster
+      network: ai-f-network
+      trustDomain: ai-f.local
+      defaultNamespace: ai-f-default
+      
+      # Enable SDS for certificate management
+      sds:
+        token:
+          aud: ai-f.istio.io
+      
+      # Enable telemetry
+      telemetry:
+        enabled: true
+        v2:
+          enabled: true
+          prometheus:
+            config:
+              handler:
+                metric:
+                  overrides:
+                    attributes:
+                      server_request_bytes:
+                        value: "REQUEST_SIZE"
+                      server_response_bytes:
+                        value: "RESPONSE_SIZE"
+  
+  components:
+    ingressGateways:
+      - name: istio-ingressgateway
+        label:
+          istio: ingressgateway
+        k8s:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 2000m
+              memory: 1024Mi
+          service:
+            type: LoadBalancer
+          serviceAnnotations:
+            service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+ 
+---
+# Destination Rules for AI-f Services
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: face-recognition-backend
+  namespace: default
+spec:
+  host: face-recognition-backend
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 1000
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 60s
+    loadBalancer:
+      simple: LEAST_REQUEST
+      localityLbSetting:
+        enabled: true
+    tls:
+      mode: ISTIO_MUTUAL
+  
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+      trafficPolicy:
+        loadBalancer:
+          simple: ROUND_ROBIN
+---
+# Virtual Service for Traffic Management
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: face-recognition-api
+  namespace: default
+spec:
+  hosts:
+    - api.ai-f.example.com
+  gateways:
+    - istio-system/istio-ingressgateway
+  http:
+    - match:
+        - uri:
+            prefix: /api/v1/
+      route:
+        - destination:
+            host: face-recognition-backend
+            subset: v1
+          weight: 100
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: connect-failure,refused-stream
+      
+    - match:
+        - uri:
+            prefix: /api/admin/
+      route:
+        - destination:
+            host: face-recognition-backend
+          weight: 100
+      corsPolicy:
+        allowOrigins:
+          - exact: "https://ai-f.example.com"
+        allowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+        allowHeaders:
+          - authorization
+          - content-type
+        exposeHeaders:
+          - x-request-id
+        maxAge: 300
+---
+# Authorization Policy for Zero-Trust Security
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: backend-authz
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: face-recognition-backend
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/default/sa/default"]
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT", "DELETE"]
+            paths: ["/api/*"]
+      when:
+        - key: request.auth.claims[roles]
+          values: ["admin", "operator", "analyst"]
+---
+# PeerAuthentication for Mutual TLS
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: ai-f-mtls
+  namespace: default
+spec:
+  mtls:
+    mode: STRICT
+---
+# Gateway Configuration
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: ai-f-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: ai-f-tls-cert
+      hosts:
+        - "api.ai-f.example.com"
+        - "*.api.ai-f.example.com"
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "api.ai-f.example.com"
+        - "*.api.ai-f.example.com"
+      redirectToHttps:
+        port: 443
+---
+# Telemetry Configuration
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: ai-f-telemetry
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  metrics:
+    - providers:
+        - name: prometheus
+      overrides:
+        - tagOverrides:
+            request_operation:
+              value: "request.headers['x-extenal-id']"
+            custom_dimension: "custom header"
+---
+# Sidecar Configuration for Reduced Resource Usage
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: default
+  namespace: default
+spec:
+  egress:
+    - hosts:
+        - "default/face-recognition-backend.default.svc.cluster.local"
+      ports:
+        - number: 8000
+          protocol: HTTP
+          name: http-face-rec
+        - number: 5432
+          protocol: TCP
+          name: tcp-postgres"
+        - number: 6379
+          protocol: TCP
+          name: tcp-redis"

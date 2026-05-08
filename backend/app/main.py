@@ -107,6 +107,9 @@ def get_continuous_attestor():
 # Startup event to initialize all production systems
 @app.on_event("startup")
 async def startup_event():
+    # Declare globals that will be modified
+    global _usage_limiter, _production_systems_ready, _continuous_attestor
+
     logger.info("Starting up Face Recognition Service...")
 
     # Resilient DB initialization
@@ -222,6 +225,7 @@ async def startup_event():
         # 10. Continuous Attestation for runtime integrity monitoring
         logger.info("Initializing Continuous Attestation...")
         try:
+            from .models.attestation import ContinuousAttestationConfig, ContinuousAttestor
             attestation_config = ContinuousAttestationConfig(
                 check_interval_seconds=300,  # 5 minutes
                 critical_file_paths=[
@@ -240,6 +244,43 @@ async def startup_event():
             logger.info("Continuous Attestation started")
         except Exception as e:
             logger.warning(f"Continuous Attestation initialization failed: {e}")
+
+        # 11. Start System Alerts background task
+        logger.info("Starting system-level alert monitoring...")
+        try:
+            from app.services.system_alerts import start_system_alerts
+            asyncio.create_task(start_system_alerts())
+            logger.info("System alerts background task scheduled")
+        except Exception as e:
+            logger.warning(f"System alerts init failed: {e}")
+
+        # 12. Validate required environment variables for production
+        logger.info("Validating critical environment variables...")
+        env = os.getenv("ENVIRONMENT", "development").lower()
+        if env in ("production", "prod"):
+            required_vars = {
+                "JWT_SECRET": "JWT signing secret",
+                "DATABASE_URL": "PostgreSQL connection string",
+                "REDIS_URL": "Redis connection string",
+                "ENCRYPTION_KEY": "Envelope encryption key (32-byte base64)",
+            }
+            # Optionally require external keys if features enabled
+            feature_flags = {
+                "STRIPE_SECRET_KEY": "Stripe billing",
+                "OPENAI_API_KEY": "OpenAI AI assistant",
+                "BING_API_KEY": "Bing search enrichment",
+                "OTX_API_KEY": "OTX threat intelligence",
+                "SENTRY_DSN": "Sentry error tracking",
+            }
+            missing_core = [k for k in required_vars if not os.getenv(k)]
+            if missing_core:
+                logger.error(f"FATAL: Missing core environment variables: {missing_core}")
+                raise RuntimeError(f"Missing required environment variables: {missing_core}")
+            missing_features = [k for k, desc in feature_flags.items() if not os.getenv(k)]
+            if missing_features:
+                logger.warning(f"Optional feature APIs not configured (graceful degradation): {missing_features}")
+        else:
+            logger.info("Non-production environment; skipping strict env validation")
 
         _production_systems_ready = True
         logger.info("All production systems initialized successfully")
