@@ -1,17 +1,17 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.tsx'],
+  setupFilesAfterEnv: ['<rootDir>/public/src/setupTests.tsx'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/(.*)$': '<rootDir>/public/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/index.tsx',
-    '!src/reportWebVitals.ts',
-    '!src/setupTests.tsx',
+    'public/src/**/*.{js,jsx,ts,tsx}',
+    '!public/src/**/*.d.ts',
+    '!public/src/index.tsx',
+    '!public/src/reportWebVitals.ts',
+    '!public/src/setupTests.tsx',
   ],
   coverageThreshold: {
     global: {
@@ -33,7 +33,8 @@ module.exports = {
     '/node_modules/(?!(@?react-native)/)',
   ],
   testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
-    '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
+    '<rootDir>/public/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
+    '<rootDir>/public/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
   ],
+  rootDir: '.',
 };

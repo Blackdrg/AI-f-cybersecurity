@@ -7,6 +7,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 // Mock components for testing
 const Login = () => (
@@ -55,14 +56,6 @@ const AdminPanel = () => (
 const RBACGuard = ({ children, requiredPermission }: { children?: React.ReactNode, requiredPermission?: string }) => (
   React.createElement('div', null, children)
 );
-
-const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
-  try {
-    return React.createElement(React.Fragment, null, children);
-  } catch (error: any) {
-    return React.createElement('div', null, 'Something went wrong');
-  }
-};
 
 // Test utilities
 const renderWithRouter = (component: React.ReactElement, { route = '/' } = {}) => {
@@ -139,12 +132,25 @@ describe('Admin Panel', () => {
 });
 
 describe('Error Handling', () => {
-  test('error boundary catches errors', () => {
+  test('error boundary renders children when no error', () => {
+    const GoodComponent = () => <div>Test Child</div>;
+    
+    const { container } = renderWithRouter(
+      React.createElement(ErrorBoundary, null,
+        React.createElement(GoodComponent)
+      )
+    );
+    
+    expect(container).toHaveTextContent('Test Child');
+  });
+
+  test('error boundary catches errors and shows fallback', () => {
     const BadComponent = () => {
-      // In tests, error boundaries don't catch errors from render
-      // This is expected behavior - errors propagate in test environment
-      return null;
+      throw new Error('Test error');
     };
+    
+    // Suppress console.error for this test
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     
     const { container } = renderWithRouter(
       React.createElement(ErrorBoundary, null,
@@ -152,7 +158,9 @@ describe('Error Handling', () => {
       )
     );
     
-    // ErrorBoundary renders children when no error
-    expect(container.firstChild).toBeTruthy();
+    // Error boundary should catch and display fallback UI
+    expect(container).toHaveTextContent('Something went wrong');
+    
+    consoleSpy.mockRestore();
   });
 });

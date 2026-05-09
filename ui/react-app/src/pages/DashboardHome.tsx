@@ -20,7 +20,35 @@ import API from '../services/api';
 import './Dashboard.css';
 
 const DashboardHome: React.FC<{ orgId?: string }> = ({ orgId }) => {
-  const [metrics, setMetrics] = useState({
+  interface Metric {
+    totalRecognitions: number;
+    totalEnrollments: number;
+    activeSessions: number;
+    riskScore: number;
+    avgConfidence: number;
+    deepfakeDetected: number;
+    accuracy: number;
+  }
+  interface Event {
+    timestamp: string;
+    person_name: string;
+    method: string;
+    confidence: number;
+    risk_score: number;
+    decision: string;
+  }
+  interface Session {
+    person_name: string;
+    device_id: string;
+    last_active: string;
+    confidence: number;
+  }
+  interface Threat {
+    type: string;
+    confidence: number;
+    timestamp: string;
+  }
+  const [metrics, setMetrics] = useState<Metric>({
     totalRecognitions: 0,
     totalEnrollments: 0,
     activeSessions: 0,
@@ -29,9 +57,9 @@ const DashboardHome: React.FC<{ orgId?: string }> = ({ orgId }) => {
     deepfakeDetected: 0,
     accuracy: 0
   });
-  const [events, setEvents] = useState([]);
-  const [sessions, setSessions] = useState([]);
-  const [threats, setThreats] = useState([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [threats, setThreats] = useState<Threat[]>([]);
   const [timeframe, setTimeframe] = useState('24h');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,10 +111,8 @@ const DashboardHome: React.FC<{ orgId?: string }> = ({ orgId }) => {
       const threatsData = threatsRes.data;
       if (Array.isArray(threatsData)) {
         setThreats(threatsData);
-        setStats({});
       } else {
         setThreats(threatsData.threats || []);
-        setStats(threatsData.stats || {});
       }
 
       setError(null);
@@ -97,7 +123,6 @@ const DashboardHome: React.FC<{ orgId?: string }> = ({ orgId }) => {
       setEvents(demoEvents);
       setSessions(demoSessions);
       setThreats(demoThreats);
-      setStats({});
     } finally {
       setLoading(false);
     }

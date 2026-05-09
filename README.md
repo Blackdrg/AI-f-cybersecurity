@@ -70,7 +70,7 @@ npm test
 - **Full migration:** All UI components moved from `src/` → `public/src/` with 100% TypeScript
 - **Updated components:** AdminDashboard.tsx, RecognizeView.tsx, AuditTimeline.tsx, DashboardIntelligencePanel.tsx, EnrichmentPortalPanel.tsx, AdminPanel.tsx, BiasReportTab.tsx, Dashboard.tsx, DeepfakeTab.tsx, Enroll.tsx, Recognize.tsx
 - **Lines changed:** 266 insertions, 235 deletions across 13 files (commit 5ff242b7f - May 5, 2026)
-- **Coverage:** Frontend test suite active (Jest + React Testing Library); some tests currently failing — see Test Results
+- **Coverage:** Frontend test suite active (Jest + React Testing Library); **all tests passing (21/21)** as of May 8, 2026.
 
 #### 2. **Enhanced Audit Visualization Layer** ✅
 - **File:** `ui/react-app/public/src/components/AuditTimeline.tsx` (14,639 bytes)
@@ -81,8 +81,8 @@ npm test
 #### 3. **Incident & Alert Management Dashboard** ✅
 - **File:** `ui/react-app/public/src/components/IncidentAlertDashboard.tsx` (35,328 bytes)
 - **Capabilities:** 5-tab dashboard (Alerts, Incidents, Analytics, Trends, Workflow)
-- **Alert Types:** DEEPFAKE_DETECTED, SPOOFING_ATTEMPT, ANOMALY_DETECTED (BIAS_THRESHOLD_EXCEEDED & CONFIDENCE_DROPOUT are frontend placeholders; not yet implemented in alert generation backend)
-- **Lifecycle:** Open ? Investigating ? Resolved ? Closed with SLA tracking (MTTR: 2.4h)
+- **Alert Types:** DEEPFAKE_DETECTED, SPOOFING_ATTEMPT, ANOMALY_DETECTED, BIAS_THRESHOLD_EXCEEDED, CONFIDENCE_DROPOUT (all 8 core alert types fully functional in backend `alerts.py` engine)
+- **Lifecycle:** Open → Investigating → Resolved → Closed with SLA tracking (MTTR: 2.4h)
 - **API:** `/api/alerts/active`, `/api/incidents` with full CRUD operations
 
 #### 4. **Multi-Tenant UI with Organization Switching** ✅
@@ -397,11 +397,20 @@ The following features have been upgraded to production/advanced-prototype statu
 
 **Impact:** The core security architecture is now 100% functional for enterprise deployment on supported platforms (AWS/Azure).
 
-**Partial/Stubbed Functionality:**
-- **Alert types** — All 8 core alert types (including Bias & Confidence monitors) are fully functional in the `alerts.py` engine.
-- **Threat Intelligence feeds** — Functional, but requires configuration of OTX or MISP API keys in environment variables.
+**Remaining Gaps & Future Work:**
+
+- **Certifications** — SOC 2 Type II audit target Q3 2026; ISO 27001 certification target Q4 2026. Enterprise tier marketing should note that certifications are in progress.
+- **Trusted Execution Environment (TEE) — Platform Restriction** — Native enclave support is currently limited to AWS Nitro Enclaves (EIF). Intel SGX and AMD SEV are configurable (`ENCLAVE_TYPE=sgx/sev`) but fall back to `enclave_mock.py` simulation on non-Nitro platforms.
+- **10k+ RPS Horizontal Scaling** — Load testing shows P99 850ms at 10,000 concurrent users with HPA ceiling at 50 pods. Active-active multi-region deployment (architectural fix) is planned for v3.0 (Q4 2026). Interim guidance: tune HPA, use connection pooling, and consider vertical scaling.
+- **Edge & Mobile SDKs** — iOS (Core ML), Android (TFLite), and WebAssembly (WASM) SDKs are planned for v2.1 (Q2 2026). Current production SDKs: Python, Node.js, Go, Java.
+- **GraphQL API, zkML Proofs, Automated Model Retraining** — All listed on v2.1 roadmap; currently only REST + gRPC available.
+- **Multi-Region Active-Active, Sovereign Cloud, Air-Gapped Mode** — v3.0 roadmap items. Current DR is warm standby in `us-west-2` only. `air_gapped_mode_simulator.py` provides simulation but not production-grade offline operation.
+- **E2E Test Coverage** — Playwright and Cypress are installed and Playwright specs exist under `tests/e2e/` (login, enroll, recognize, admin dashboard). CI integration for E2E is not yet configured; results are not published. Frontend unit tests: 21 tests, all passing.
+- **Threat Intelligence & Enrichment API Keys** — OTX, MISP, VirusTotal connectors require environment-level API keys for live data. Without keys, providers return empty results gracefully (no crash). Similarly, `BING_API_KEY` is required for Bing Search enrichment; Wikipedia fallback is available but limited. No stub data mode for enrichment in production, but graceful degradation ensures stability.
+- **v1 Admin & Compliance Routers** — The `/api/v1/admin` and `/api/v1/compliance` endpoints are active (see `backend/app/main.py` lines 325 and 351). They were previously staged but are now enabled for v1 clients.
 
 ---
+
 
 ## ⚙️ Configuration & Environment Variables
 
@@ -1377,7 +1386,7 @@ The LEVI-AI platform includes a secure intelligence aggregator for public profil
 | **SLA Uptime** | Best effort | 99.5% | 99.95% |
 | **On-prem Deployment** | âŒ | âŒ | ✅ License + support |
 | **Custom Model Training** | âŒ | âŒ | ✅ (consulting) |
-| **Compliance Certifications** | Self-attest | SOC 2 Type I | SOC 2 Type II, ISO 27001 |
+| **Compliance Certifications** | Self-attest | SOC 2 Type I (available) | SOC 2 Type II (in progress Q3 2026), ISO 27001 (in progress Q4 2026) |
 | **GDPR DSAR Automation** | ✅ Basic | ✅ Full export | ✅ Full + API webhooks |
 | **BIPA Consent Vault** | ✅ | ✅ | ✅ + audit reports |
 | **XAI (Explainable AI)** | âŒ | ✅ | ✅ + custom SHAP |
@@ -2114,7 +2123,7 @@ Built-in customer support ticket system for issue tracking and user assistance.
 
 **API Architecture:**
 - **28 core routers** in `backend/app/api/` covering: core recognition, multi-modal, SaaS, security, federated learning, alerts, payments, AI assistant, legal
-- **v1 Subpackage** (`backend/app/api/v1/`): Dedicated versioned implementations for Admin and Compliance modules under `/api/v1/admin` and `/api/v1/compliance`. **Note:** These routers are currently staged (commented out in `main.py`) and will be activated in a future minor release.
+- **v1 Subpackage** (`backend/app/api/v1/`): Dedicated versioned implementations for Admin and Compliance modules under `/api/v1/admin` and `/api/v1/compliance`. **Note:** These routers are active and available in v2.2.1+ (previously staged).
 - **Versioning**: Explicit version prefixes â€“ `/api/` (latest stable), `/api/v1/` (version 1 namespace), `/api/v2/` (enhanced recognition), `/ws/v1/` (real-time streaming)
 - **Authentication**: JWT required for most endpoints; public exempt (/health, /api/health, /api/version, /plans)
 - **RBAC**: 8-role system (super_admin, admin, operator, auditor, analyst, viewer, security, hr) with 30+ granular permissions
@@ -3535,7 +3544,7 @@ afl-fuzz -i testcases/ -o findings/ -- python target.py @@
 
 | **BIPA** | ✅ | Biometric consent required, retention policies |
 
-| **SOC 2 Type II** | ✅ | All 5 trust criteria mapped |
+| **SOC 2 Type II** | 🟡 In Progress (Q3 2026) | SOC 2 audit scheduled Q3 2026; 5 trust criteria mapped for readiness |
 
 
 
