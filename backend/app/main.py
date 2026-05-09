@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import asyncio
 import time
+import socket
+import struct
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 
@@ -86,6 +88,77 @@ if JWT_SECRET == "dev-secret-change-me" and os.getenv("ENVIRONMENT", "developmen
     logger.critical("FATAL: Default JWT secret detected in production environment!")
     raise RuntimeError("Insecure JWT secret configuration - please set JWT_SECRET environment variable")
 
+# Required environment variables for production operation
+# These must be present; otherwise features will fail silently
+REQUIRED_ENV_VARS = {
+    "STRIPE_SECRET_KEY": "Stripe billing and subscription provisioning (required for paid features)",
+    "OPENAI_API_KEY": "OpenAI GPT assistant integration (required for AI assistant features)",
+    "ENCRYPTION_KEY": "32-byte AES-256-GCM key for encrypting biometric templates at rest (required)",
+}
+
+# Optional but important env vars that degrade features if missing
+FEATURE_ENV_VARS = {
+    "BING_API_KEY": "Bing Search API for enrichment portal (degrades without it)",
+    "OTX_API_KEY": "AlienVault OTX threat intelligence feed",
+    "MISP_API_KEY": "MISP threat intelligence platform",
+    "VIRUS_TOTAL_API_KEY": "VirusTotal threat intelligence",
+    "AZURE_TENANT_ID": "Azure AD SSO integration",
+    "GOOGLE_CLIENT_ID": "Google OAuth SSO integration",
+}
+
+def validate_required_env_vars():
+    """Validate that all required environment variables are set and not using placeholder defaults."""
+    missing_required = []
+    insecure = []
+    env = os.getenv("ENVIRONMENT", "development")
+
+    # Check hard-required vars (fail in prod if missing/insecure)
+    for var, description in REQUIRED_ENV_VARS.items():
+        value = os.getenv(var)
+        if not value:
+            if env in ["production", "prod"]:
+                missing_required.append(f"{var} ({description})")
+            else:
+                logger.warning(f"Env var {var} not set. {description}")
+        else:
+            # Check for placeholder/test defaults
+            if var == "STRIPE_SECRET_KEY" and value.startswith(("sk_test_", "sk_test_mock")):
+                if env in ["production", "prod"]:
+                    insecure.append(f"{var} uses test key; production key required")
+            elif var == "OPENAI_API_KEY" and value in ["sk-test-mock-openai", "", "sk-"]:
+                if env in ["production", "prod"]:
+                    insecure.append(f"{var} uses mock key; real API key required")
+            elif var == "ENCRYPTION_KEY":
+                if len(value) < 32:
+                    insecure.append(f"{var} must be ≥32 bytes; got {len(value)}")
+                if value in ["fallback-key-32bytes-for-dev!!!", "dev-encryption-key-change-me", "your-32-byte-secret-key-here123456789012"]:
+                    if env in ["production", "prod"]:
+                        insecure.append(f"{var} uses development fallback key")
+
+    # Check feature-critical vars (warn in prod, but don't fail startup)
+    for var, description in FEATURE_ENV_VARS.items():
+        value = os.getenv(var)
+        if not value or value.startswith(("your-", "test", "placeholder")):
+            env_local = os.getenv("ENVIRONMENT", "development")
+            if env_local in ["production", "prod"]:
+                logger.warning(f"Feature degradation: {var} not configured. {description}")
+            else:
+                logger.debug(f"Dev mode: {var} not set. {description}")
+
+    # Validate metrics endpoint security
+    if os.getenv("PROMETHEUS_ENABLED", "true").lower() == "true":
+        if not os.getenv("METRICS_TOKEN"):
+            if env in ["production", "prod"]:
+                missing_required.append("METRICS_TOKEN (required when PROMETHEUS_ENABLED=true)")
+            else:
+                logger.warning("Metrics endpoint accessible without token — set METRICS_TOKEN for security")
+
+    if missing_required:
+        raise RuntimeError(f"Missing required env vars in production: {', '.join(missing_required)}")
+
+    if insecure:
+        raise RuntimeError(f"Insecure env configuration: {'; '.join(insecure)}")
+
 # Add middlewares (order matters: auth first, then rate limit)
 app.add_middleware(AuthenticationMiddleware, secret_key=JWT_SECRET)
 app.add_middleware(RateLimitMiddleware, redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"))
@@ -111,6 +184,10 @@ async def startup_event():
     global _usage_limiter, _production_systems_ready, _continuous_attestor
 
     logger.info("Starting up Face Recognition Service...")
+
+    # Validate required environment variables before anything else
+    validate_required_env_vars()
+    logger.info("Environment validation passed - all required secrets present")
 
     # Resilient DB initialization
     db_initialized = False
@@ -138,6 +215,57 @@ async def startup_event():
 
     if not db_initialized:
         logger.error("DB init failed after retries. Continuing in degraded mode.")
+
+    # 0.5. TEE Enclave Validation (if enabled)
+    _enclave_enabled = os.getenv("ENCLAVE_ENABLED", "false").lower() == "true"
+    _enclave_mode = os.getenv("ENCLAVE_MODE", "nitro").lower()
+    _enclave_strict = os.getenv("ENCLAVE_STRICT", "true").lower() == "true"
+    
+    # Production guard: block SGX/SEV simulation in prod
+    _env = os.getenv("ENVIRONMENT", "development").lower()
+    if _env in ["production", "prod"]:
+        if _enclave_enabled and _enclave_mode not in ["nitro"]:
+            logger.critical(f"FATAL: Unsupported TEE mode '{_enclave_mode}' in production. Only AWS Nitro Enclaves are supported. Set ENCLAVE_MODE=nitro or disable ENCLAVE_ENABLED.")
+            raise RuntimeError(f"Invalid TEE configuration: {_enclave_mode} not supported in production. Use AWS Nitro Enclaves or disable TEE.")
+        
+        # Check that enclave_mock is NOT being imported/used
+        import sys
+        mock_modules = [m for m in sys.modules if 'enclave_mock' in m.lower() or 'mock' in m.lower()]
+        if mock_modules:
+            logger.critical(f"FATAL: TEE mock modules detected in production: {mock_modules}")
+            raise RuntimeError("TEE simulation modules loaded in production - this is a security violation")
+    
+    if _enclave_enabled:
+        # Only Nitro supported in production
+        if _enclave_mode not in ["nitro"]:
+            logger.error(f"ENCLAVE_MODE '{_enclave_mode}' is not production-ready. Only 'nitro' is currently supported.")
+            if _enclave_strict:
+                raise RuntimeError(f"Unsupported TEE mode: {_enclave_mode}. Set ENCLAVE_MODE=nitro.")
+            else:
+                logger.warning(f"WARNING: Using unsupported TEE mode '{_enclave_mode}' - lower security guarantees")
+        
+        # Verify enclave VSOCK connectivity
+        try:
+            test_sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
+            test_sock.settimeout(3.0)
+            test_sock.connect((3, int(os.getenv("ENCLAVE_VSOCK_PORT", "5000"))))
+            test_sock.close()
+            logger.info("TEE enclave VSOCK connection verified — Nitro Enclave is reachable")
+        except Exception as e:
+            logger.critical(f"TEE enclave VSOCK connection failed: {e}")
+            if _enclave_strict:
+                raise RuntimeError(
+                    "Hardware-backed TEE enclave unreachable. "
+                    "Deploy AWS Nitro Enclave or set ENCLAVE_ENABLED=false to run without TEE (less secure)."
+                )
+            else:
+                logger.warning("TEE enclave unavailable — continuing WITHOUT hardware-backed security (DEGRADED)")
+    else:
+        if _env in ["production", "prod"]:
+            logger.warning(
+                "ENCLAVE_ENABLED=false in production — biometric templates processed without hardware-backed isolation. "
+                "Consider enabling TEE for compliance (requires AWS Nitro Enclaves)."
+            )
 
     # Initialize production systems
     global _production_systems_ready
@@ -194,6 +322,17 @@ async def startup_event():
         EmotionDetector()
         AgeGenderEstimator()
 
+        # 6b. Verify Behavioral Predictor LSTM weights loaded
+        from .models.behavioral_predictor import behavioral_predictor
+        model_info = behavioral_predictor.get_model_info()
+        if not model_info.get('weights_loaded'):
+            logger.warning(
+                "Behavioral predictor LSTM weights not found at expected path. "
+                "Model operating in fallback mode. Train model or place weights at backend/models/behavioral_lstm.pt"
+            )
+        else:
+            logger.info(f"Behavioral predictor ready: {model_info}")
+
         # 7. Initialize Emotion + Behavior Engine
         logger.info("Initializing Emotion + Behavior Engine...")
         from .models.emotion_behavior import get_emotion_behavior_engine
@@ -248,62 +387,72 @@ async def startup_event():
         # 11. Start System Alerts background task
         logger.info("Starting system-level alert monitoring...")
         try:
-            from app.services.system_alerts import start_system_alerts
+            from .services.system_alerts import start_system_alerts
             asyncio.create_task(start_system_alerts())
             logger.info("System alerts background task scheduled")
         except Exception as e:
             logger.warning(f"System alerts init failed: {e}")
 
-        # 12. Validate required environment variables for production
-        logger.info("Validating critical environment variables...")
-        env = os.getenv("ENVIRONMENT", "development").lower()
-        if env in ("production", "prod"):
-            required_vars = {
-                "JWT_SECRET": "JWT signing secret",
-                "DATABASE_URL": "PostgreSQL connection string",
-                "REDIS_URL": "Redis connection string",
-                "ENCRYPTION_KEY": "Envelope encryption key (32-byte base64)",
-            }
-            # Optionally require external keys if features enabled
-            feature_flags = {
-                "STRIPE_SECRET_KEY": "Stripe billing",
-                "OPENAI_API_KEY": "OpenAI AI assistant",
-                "BING_API_KEY": "Bing search enrichment",
-                "OTX_API_KEY": "OTX threat intelligence",
-                "SENTRY_DSN": "Sentry error tracking",
-            }
-            missing_core = [k for k in required_vars if not os.getenv(k)]
-            if missing_core:
-                logger.error(f"FATAL: Missing core environment variables: {missing_core}")
-                raise RuntimeError(f"Missing required environment variables: {missing_core}")
-            missing_features = [k for k, desc in feature_flags.items() if not os.getenv(k)]
-            if missing_features:
-                logger.warning(f"Optional feature APIs not configured (graceful degradation): {missing_features}")
-        else:
-            logger.info("Non-production environment; skipping strict env validation")
+        # ========================================================================
+        # PRODUCTION GUARDS - Validate simulation modes not active in prod
+        # ========================================================================
+        _env = os.getenv("ENVIRONMENT", "development").lower()
+        if _env in ["production", "prod"]:
+            # Check Homomorphic Encryption simulation mode
+            try:
+                from .models.homomorphic_encryption import HomomorphicEncryptionEngine
+                # Don't instantiate full engine if not needed; just warn if TenSEAL missing
+                import importlib
+                tenseal_spec = importlib.util.find_spec("tenseal")
+                if tenseal_spec is None:
+                    logger.critical(
+                        "FATAL: TenSEAL not installed — Homomorphic Encryption unavailable. "
+                        "HE is REQUIRED for encrypted search in production. Install: pip install tenseal"
+                    )
+                    raise RuntimeError("Missing TenSEAL dependency for HE in production")
+            except ImportError as e:
+                logger.critical(f"HE dependency check failed: {e}")
+                raise RuntimeError(f"HE requirement: {e}")
 
+            # Check that behavioral predictor model is present
+            from .models.behavioral_predictor import behavioral_predictor
+            model_info = behavioral_predictor.get_model_info()
+            if not model_info.get('weights_loaded'):
+                logger.warning(
+                    "Behavioral predictor LSTM weights not loaded. "
+                    "Model operating in fallback mode — upgrade to production model for v2.1 compliance."
+                )
+        
+        # Mark production systems as ready
         _production_systems_ready = True
-        logger.info("All production systems initialized successfully")
+        logger.info("✅ All production systems initialized and ready")
+        
     except Exception as e:
-        logger.warning(f"Production systems partial init: {e}")
+        logger.error(f"Production systems initialization failed: {e}", exc_info=True)
         _production_systems_ready = False
+        raise
 
 # Security Headers Middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
+    # Strict Content Security Policy - Block all inline scripts, only allow trusted sources
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "script-src 'self' https://cdn.jsdelivr.net; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "img-src 'self' data: https:; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "connect-src 'self' ws: wss:;"
+        "connect-src 'self' ws: wss:; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
     )
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
 # CORS for UI - restrict to known origins in production
@@ -367,6 +516,11 @@ app.include_router(plugins.router, tags=["plugins"])
 
 # MPC cross-org matching
 app.include_router(mpc.router, prefix="/api/v1", tags=["mpc"])
+
+# GraphQL API (v2.2.1+)
+from .api.graphql_api import graphql_router
+app.add_route("/graphql", graphql_router)
+app.add_route("/graphql/", graphql_router)  # trailing slash
 
 # Setup security, metrics, and rate limiting
 setup_security(app)

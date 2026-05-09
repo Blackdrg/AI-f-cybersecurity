@@ -1,7 +1,10 @@
 from typing import List, Dict, Any
 import os
+import logging
 import aiohttp
 from .base import BaseProvider
+
+logger = logging.getLogger(__name__)
 
 
 class BingProvider(BaseProvider):
@@ -12,6 +15,14 @@ class BingProvider(BaseProvider):
         super().__init__("bing", api_key)
         self.base_url = "https://api.bing.microsoft.com/v7.0/search"
         self.air_gapped = os.getenv("AIR_GAPPED", "false").lower() == "true"
+        
+        # Warn if key missing in production
+        if not api_key and not self.air_gapped:
+            env = os.getenv("ENVIRONMENT", "development")
+            if env in ["production", "prod"]:
+                logger.error("BING_API_KEY not set in production - enrichment portal will return empty results")
+            else:
+                logger.warning("BING_API_KEY not set - Bing search enrichment disabled")
 
     async def search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Search using Bing Web Search API."""

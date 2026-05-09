@@ -10,6 +10,10 @@ services:
       POSTGRES_DB: face_recognition
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      # Tune max_connections for 10k RPS load testing / production scaling
+      # HPA can scale to 50 pods; each pod uses ~10-15 connections
+      # Set to 500-1000 depending on instance size
+      MAX_CONNECTIONS: ${PG_MAX_CONNECTIONS:-500}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init_pgvector.sql:/docker-entrypoint-initdb.d/01-pgvector.sql
@@ -21,11 +25,29 @@ services:
       start_period: 30s
     ports:
       - "5432:5432"
+    command: >
+      postgres
+      -c max_connections=${PG_MAX_CONNECTIONS:-500}
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=16MB
 
   redis-master:
     image: redis:7.2.3-alpine
     restart: unless-stopped
-    command: redis-server --appendonly yes --appendfilename "redis-master.aof" --dir /data --requirepass "${REDIS_PASSWORD:-redis_pass}" --masterauth "${REDIS_PASSWORD:-redis_pass}"
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfilename "redis-master.aof"
+      --dir /data
+      --requirepass "${REDIS_PASSWORD:-redis_pass}"
+      --masterauth "${REDIS_PASSWORD:-redis_pass}"
+      --appendfsync everysec
+      --no-appendfsync-on-rewrite no
+      --auto-aof-rewrite-percentage 100
+      --auto-aof-rewrite-min-size 64mb
+      --rdbcompression yes
+      --save 60 1
     volumes:
       - redis_master_data:/data
     ports:
@@ -55,25 +77,31 @@ services:
     ports:
       - "6380:6379"
 
-  backend:
-    build: ../backend
-    restart: unless-stopped
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: ${DB_PASSWORD:-password}
-      DB_NAME: face_recognition
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis-master:6379/0
-      JWT_SECRET: ${JWT_SECRET:-secret}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-your-32-byte-secret-key-here123456789012}
-      AWS_REGION: us-east-1
-      KMS_KEY_ID: alias/face-recognition-key
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_...}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      FRONTEND_URL: http://localhost:3000
-      ONNX_BUNDLE_PATH: /models/onnx_bundle
-      IN_DOCKER: 'true'
+   backend:
+     build: ../backend
+     restart: unless-stopped
+     environment:
+       DB_HOST: postgres
+       DB_PORT: 5432
+       DB_USER: postgres
+       DB_PASSWORD: ${DB_PASSWORD:-password}
+       DB_NAME: face_recognition
+       # Tuned connection pool for horizontal scaling
+       DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
+       DB_POOL_MIN_SIZE: ${DB_POOL_MIN_SIZE:-2}
+       DB_REPLICA_POOL_MAX: ${DB_REPLICA_POOL_MAX:-5}
+       DB_REPLICA_POOL_MIN: ${DB_REPLICA_POOL_MIN:-2}
+       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis-master:6379/0
+       JWT_SECRET: ${JWT_SECRET:-secret}
+       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-your-32-byte-secret-key-here123456789012}
+       AWS_REGION: us-east-1
+       KMS_KEY_ID: alias/face-recognition-key
+       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_...}
+       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+       BING_API_KEY: ${BING_API_KEY:-}
+       FRONTEND_URL: http://localhost:3000
+       ONNX_BUNDLE_PATH: /models/onnx_bundle
+       IN_DOCKER: 'true'
     ports:
       - "8000:8000"
     volumes:

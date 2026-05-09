@@ -1,18 +1,29 @@
 """Stripe SaaS Billing Service - Production Ready"""
 import os
+import logging
 import stripe
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
-import logging
 from fastapi import HTTPException
 from ..db.db_client import get_db
-from ..schemas import SubscriptionResponse, PaymentResponse
 
 logger = logging.getLogger(__name__)
 
-# Load Stripe keys from env/Vault
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_...")
-stripe.webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_test_...")
+# Load Stripe keys from env/Vault - must be configured for production
+_stripe_key = os.getenv("STRIPE_SECRET_KEY")
+if not _stripe_key:
+    logger.error("STRIPE_SECRET_KEY environment variable is not set. Billing will fail.")
+    env = os.getenv("ENVIRONMENT", "development")
+    if env in ["production", "prod"]:
+        raise RuntimeError("Missing STRIPE_SECRET_KEY - required for billing/subscriptions in production")
+    _stripe_key = "sk_test_placeholder"  # fallback for dev only
+
+stripe.api_key = _stripe_key
+
+_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+if not _webhook_secret:
+    logger.warning("STRIPE_WEBHOOK_SECRET not set - webhook signature verification disabled")
+stripe.webhook_secret = _webhook_secret or "whsec_test_placeholder"
 
 class StripeBillingService:
     def __init__(self):

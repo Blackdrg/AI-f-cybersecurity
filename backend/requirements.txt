@@ -24,6 +24,8 @@ pytest-asyncio==0.23.0
 pytest-benchmark==4.0.0
 pytest-mock
 pytest-cov
+# GraphQL API support
+strawberry-graphql[fastapi]==0.202.0
 # torchvision>=0.15.0,<0.20.0  # Conflicts removed; use requirements-gpu.txt
 # torchaudio>=2.0.0,<2.5.0  # Conflicts removed; use requirements-gpu.txt
 # insightface==0.7.3  # Requires MSVC on Windows/Python 3.11; use ONNX models (export offline on Linux/Python 3.10)

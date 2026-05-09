@@ -44,8 +44,11 @@
   loop:
     - { key: 'shared_buffers', value: '256MB' }
     - { key: 'effective_cache_size', value: '1GB' }
-    - { key: 'max_connections', value: '200' }
+    - { key: 'max_connections', value: '500' }
     - { key: 'work_mem', value: '16MB' }
+    # Tuning for 10k+ RPS horizontal scaling with HPA up to 50 pods
+    # 50 pods × DB_POOL_MAX_SIZE(10) = 500 connections + 50 buffer = 500 total
+    # Adjust upward (1000) for larger instance types
   notify: restart postgresql
 
 - name: Deploy database initialization script

@@ -37,14 +37,26 @@ spec:
             - redis-cli
             - --raw
             - ping
+        # Resource limits for predictable performance
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: 1000m
+            memory: 4Gi
   volumeClaimTemplates:
   - metadata:
       name: datadir
     spec:
-      accessModes: [ \"ReadWriteOnce\" ]
+      accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
           storage: 20Gi
+      # StorageClass with encryption at rest (e.g., gp3 with encryption, or encrypted CSI driver)
+      # In AWS EKS, gp3 volumes support encryption by default via KMS
+      # To explicitly request encrypted volume, add storageClassName: "encrypted-gp3" (if defined)
+      # See infra/terraform/main.tf for encrypted storage class
 ---
 apiVersion: v1
 kind: Service

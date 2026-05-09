@@ -9,39 +9,14 @@ from datetime import datetime, timedelta
 import time
 from ..models.bias_detector import BiasDetector
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 # Mock data for demo when backend DB doesn't have these tables
 def generate_demo_alerts():
-    ...
-    (rest unchanged)
+    """Generate demo alerts for when DB is unavailable."""
 
-async def insert_alert(org_id: str, alert_type: str, severity: str, message: str, confidence: float, source: str, event_id=None, rule_id=None, details=None) -> dict:
-    """Insert a new alert into the database."""
-    db = await get_db()
-    try:
-        alert_id = await db.pool.fetchval("""
-            INSERT INTO alerts (org_id, event_id, rule_id, type, severity, message, confidence, source, details)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            RETURNING alert_id
-        """, org_id, event_id, rule_id, alert_type, severity, message, confidence, source, details or {})
-        return {"id": str(alert_id), "org_id": org_id, "type": alert_type, "severity": severity,
-                "message": message, "confidence": confidence, "source": source, "status": "new",
-                "created_at": datetime.utcnow().isoformat()}
-    except Exception as e:
-        logging.getLogger(__name__).error(f"Failed to insert alert: {e}")
-        # Fallback to in-memory if DB fails
-        return {
-            'id': f"fallback_{int(datetime.utcnow().timestamp())}",
-            'type': alert_type,
-            'severity': severity,
-            'message': message,
-            'timestamp': datetime.utcnow().isoformat(),
-            'confidence': confidence,
-            'source': source,
-            'status': 'new',
-            'affected_entities': 0
-        }
     return [
         {
             'id': 1,
@@ -133,10 +108,11 @@ async def insert_alert(org_id: str, alert_type: str, severity: str, message: str
          }
     ]
 
-    # Alert type constants
-    ALERT_TYPES = ['DEEPFAKE_DETECTED', 'SPOOFING_ATTEMPT', 'ANOMALY_DETECTED', 
-                   'BIAS_THRESHOLD_EXCEEDED', 'CONFIDENCE_DROPOUT', 'PAYMENT_FRAUD',
-                   'MODEL_DRIFT', 'THREAT_INTEL_MATCH']
+
+# Alert type constants
+ALERT_TYPES = ['DEEPFAKE_DETECTED', 'SPOOFING_ATTEMPT', 'ANOMALY_DETECTED',
+               'BIAS_THRESHOLD_EXCEEDED', 'CONFIDENCE_DROPOUT', 'PAYMENT_FRAUD',
+               'MODEL_DRIFT', 'THREAT_INTEL_MATCH']
 
 def generate_demo_incidents():
     return [
@@ -399,60 +375,6 @@ async def check_confidence_dropout(db, org_id: str, now: datetime) -> Optional[d
         return alert
     return None
 
-
-async def check_confidence_dropout(db, org_id: str, now: datetime) -> Optional[dict]:
-    """Detect significant confidence score drop for an org and create alert."""
-    one_hour_ago = now - timedelta(hours=1)
-    two_hours_ago = now - timedelta(hours=2)
-    
-    try:
-        recent_rows = await db.pool.fetch("""
-            SELECT confidence_score FROM recognition_events
-            WHERE org_id = $1 AND timestamp >= $2 AND confidence_score IS NOT NULL
-        """, org_id, one_hour_ago)
-    except Exception:
-        return None
-    
-    if not recent_rows:
-        return None
-    
-    recent_avg = sum(r['confidence_score'] for r in recent_rows) / len(recent_rows)
-    
-    try:
-        baseline_rows = await db.pool.fetch("""
-            SELECT confidence_score FROM recognition_events
-            WHERE org_id = $1 AND timestamp >= $2 AND timestamp < $3 AND confidence_score IS NOT NULL
-        """, org_id, two_hours_ago, one_hour_ago)
-    except Exception:
-        baseline_rows = []
-    
-    DROP_THRESHOLD = 0.5
-    DROP_RATIO = 0.7  # 30% drop
-    
-    trigger = False
-    reason = ""
-    
-    if recent_avg < DROP_THRESHOLD:
-        trigger = True
-        reason = f"Recent avg confidence {recent_avg:.2f} below threshold {DROP_THRESHOLD}"
-    elif baseline_rows:
-        baseline_avg = sum(r['confidence_score'] for r in baseline_rows) / len(baseline_rows)
-        if baseline_avg > 0 and recent_avg < baseline_avg * DROP_RATIO:
-            trigger = True
-            reason = f"Recent avg {recent_avg:.2f} < {int(DROP_RATIO*100)}% of baseline {baseline_avg:.2f}"
-    
-    if trigger:
-        alert = await insert_alert(
-            org_id=org_id,
-            alert_type='CONFIDENCE_DROPOUT',
-            severity='medium',
-            message=reason,
-            confidence=round(recent_avg, 2),
-            source='QUALITY_MONITOR',
-            details={'recent_avg': recent_avg, 'baseline_avg': baseline_avg if baseline_rows else None, 'sample_size': len(recent_rows)}
-        )
-        return alert
-    return None
 
 @router.put("/{alert_id}/acknowledge")
 async def acknowledge_alert(alert_id: str, current_user=Depends(require_org_admin)):

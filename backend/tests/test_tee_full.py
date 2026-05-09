@@ -11,7 +11,7 @@ from cryptography.fernet import Fernet
 from app.security.encryption_utils import encrypt_embedding, get_encryption_key, decrypt_embedding
 from app.security.secrets_manager import SecretsManager
 from app.models.attestation import NitroAttestationVerifier
-from backend.enclave_mock import MockEnclaveService
+from tests.mock.enclave_mock import MockEnclaveService
 
 class TestTEEIntegration:
     """TEE security integration tests - Windows compatible."""

@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
@@ -5,6 +6,8 @@ from datetime import datetime
 import json
 import os
 from scipy.stats import ks_2samp
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -480,11 +483,8 @@ class EvaluationPipeline:
         }
     
     def queue_model_retraining(self, reason: str = "drift_detected") -> Dict:
-        ...
-        return result
-    
-    # Alias for backwards compatibility
-    trigger_retraining = queue_model_retraining
+        """Alias for trigger_retraining for backwards compatibility."""
+        return self.trigger_retraining(reason)
 
 
 class ModelVersionManager:

@@ -47,6 +47,9 @@ hallucination_detector = hallucination_detector
 
 from ..services.reliability import ai_model_circuit_breaker, db_circuit_breaker, CircuitBreakerOpenException
 
+# TEE configuration
+_enclave_enabled = os.getenv("ENCLAVE_ENABLED", "false").lower() == "true"
+
 
 def recvall(conn, n):
     """Helper to receive exactly n bytes."""
@@ -195,9 +198,16 @@ async def recognize_faces(
             enclave_response = await asyncio.to_thread(send_request_to_enclave, enclave_request)
             
             if not enclave_response.get("success", False):
-                logger.warning(f"Enclave request failed: {enclave_response.get('error')}")
-                # Fallback to local matching if enclave is unavailable
-                # In production, you might want to fail closed instead
+                error_msg = f"Enclave request failed: {enclave_response.get('error')}"
+                logger.error(error_msg)
+                if _enclave_enabled:
+                    # Strict mode: fail closed when TEE is required
+                    return StandardResponse(
+                        success=False,
+                        error="Secure enclave unavailable — recognition service temporarily unavailable"
+                    )
+                # Fallback to local matching if enclave is unavailable (dev/optional)
+                logger.warning("Falling back to non-TEE matching (less secure)")
                 db_matches = await db_circuit_breaker(lambda: db.recognize_faces(
                     query_emb, top_k=top_k, threshold=threshold,
                     camera_id=camera_id,

@@ -62,39 +62,69 @@ class DBClient:
         from ..offline.sync import get_offline_sync
         await get_offline_sync()
         
-        if ASYNCPG_AVAILABLE:
-            try:
-                # Retrieve DB credentials from Vault if configured, fallback to environment
-                db_user = os.getenv('DB_USER', 'postgres')
-                db_password = vault.get_secret('DB_PASSWORD')
-                if db_password is None:
-                    db_password = os.getenv('DB_PASSWORD', 'password')
-                db_name = os.getenv('DB_NAME', 'face_recognition')
-                db_host = os.getenv('DB_HOST', 'localhost')
-                db_port = int(os.getenv('DB_PORT', 5432))
-            
-                # Initialize primary connection pool
-                pool_max_size = int(os.getenv('DB_POOL_MAX_SIZE', '50'))
-                pool_min_size = int(os.getenv('DB_POOL_MIN_SIZE', '5'))
-                self.pool = await asyncpg.create_pool(
-                    user=db_user,
-                    password=db_password,
-                    database=db_name,
-                    host=db_host,
-                    port=db_port,
-                    min_size=pool_min_size,
-                    max_size=pool_max_size
-                )
-                await self._create_tables()
+        if not ASYNCPG_AVAILABLE:
+            logger.warning("asyncpg not available — using in-memory fallback")
+            self.pool = None
+            return
                 
-                # Initialize read replica pools if configured
-                await self._init_read_replicas(db_user, db_password, db_name)
-            except Exception as e:
-                import logging
-                logging.getLogger('__name__').warning(f"PostgreSQL connection failed: {e}. Using in-memory fallback.")
-                self.pool = None
-        else:
-            # Fallback: offline SQLite primary
+        try:
+            # Retrieve DB credentials
+            db_user = os.getenv('DB_USER', 'postgres')
+            db_password = vault.get_secret('DB_PASSWORD')
+            if db_password is None:
+                db_password = os.getenv('DB_PASSWORD', 'password')
+            db_name = os.getenv('DB_NAME', 'face_recognition')
+            db_host = os.getenv('DB_HOST', 'localhost')
+            db_port = int(os.getenv('DB_PORT', 5432))
+            
+            # --------------------------------------------------------------------
+            # Connection Pool Tuning for 10k+ RPS Horizontal Scaling
+            # --------------------------------------------------------------------
+            # For 50-pod HPA: 50 pods × pool_max_size connections each
+            # PostgreSQL max_connections should be set accordingly (e.g., 1000)
+            #
+            # env vars:
+            # - DB_POOL_MAX_SIZE: max connections per pod (default: 10)
+            # - DB_POOL_MIN_SIZE: min connections per pod (default: 2)
+            # - DB_POOL_MAX_QUERIES: recycle after N queries (default: 5000)
+            # - DB_POOL_MAX_INACTIVE_LIFETIME: recycle idle connections after N sec (default: 300)
+            # - DB_POOL_HEALTH_CHECK_INTERVAL: health check frequency (default: 30)
+            # - DB_CONNECTION_TIMEOUT: timeout for acquiring connection (default: 15)
+            # --------------------------------------------------------------------
+            
+            pool_max_size = int(os.getenv('DB_POOL_MAX_SIZE', '10'))
+            pool_min_size = int(os.getenv('DB_POOL_MIN_SIZE', '2'))
+            max_queries = int(os.getenv('DB_POOL_MAX_QUERIES', '5000'))
+            max_inactive_lifetime = float(os.getenv('DB_POOL_MAX_INACTIVE_LIFETIME', '300'))
+            health_check_interval = float(os.getenv('DB_POOL_HEALTH_CHECK_INTERVAL', '30'))
+            connection_timeout = float(os.getenv('DB_CONNECTION_TIMEOUT', '15'))
+            
+            logger.info(
+                f"Initializing DB pool: min={pool_min_size}, max={pool_max_size}, "
+                f"max_queries={max_queries}, max_idle={max_inactive_lifetime}s, "
+                f"health_check={health_check_interval}s, timeout={connection_timeout}s"
+            )
+            
+            self.pool = await asyncpg.create_pool(
+                user=db_user,
+                password=db_password,
+                database=db_name,
+                host=db_host,
+                port=db_port,
+                min_size=pool_min_size,
+                max_size=pool_max_size,
+                max_queries=max_queries,
+                max_inactive_connection_lifetime=max_inactive_lifetime,
+                health_check_interval=health_check_interval,
+                timeout=connection_timeout,
+            )
+            await self._create_tables()
+            
+            # Initialize read replica pools if configured
+            await self._init_read_replicas(db_user, db_password, db_name)
+            
+        except Exception as e:
+            logger.warning(f"PostgreSQL connection failed: {e}. Using in-memory fallback.")
             self.pool = None
     
     async def _init_read_replicas(self, db_user: str, db_password: str, db_name: str):
@@ -112,7 +142,11 @@ class DBClient:
                     replica_pool = await asyncpg.create_pool(
                         replica_url,
                         min_size=int(os.getenv('DB_REPLICA_POOL_MIN', '2')),
-                        max_size=int(os.getenv('DB_REPLICA_POOL_MAX', '10'))
+                        max_size=int(os.getenv('DB_REPLICA_POOL_MAX', '5')),
+                        health_check_interval=30.0,
+                        max_inactive_connection_lifetime=300.0,
+                        timeout=15.0,
+                        max_queries=5000,
                     )
                 else:
                     # host:port format
@@ -130,7 +164,11 @@ class DBClient:
                         host=replica_host,
                         port=replica_port,
                         min_size=int(os.getenv('DB_REPLICA_POOL_MIN', '2')),
-                        max_size=int(os.getenv('DB_REPLICA_POOL_MAX', '10'))
+                        max_size=int(os.getenv('DB_REPLICA_POOL_MAX', '5')),
+                        health_check_interval=30.0,
+                        max_inactive_connection_lifetime=300.0,
+                        timeout=15.0,
+                        max_queries=5000,
                     )
                 
                 self.read_replica_pools.append(replica_pool)
@@ -215,6 +253,18 @@ class DBClient:
                     received_at TIMESTAMP DEFAULT NOW(),
                     processed_at TIMESTAMP,
                     status TEXT DEFAULT 'pending'
+                )
+            """)
+            # External blockchain anchors table
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS blockchain_anchors (
+                    id SERIAL PRIMARY KEY,
+                    root_hash TEXT NOT NULL,
+                    tx_id TEXT,
+                    ledger TEXT NOT NULL,
+                    anchored_at TIMESTAMP NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    UNIQUE(root_hash, ledger)
                 )
             """)
 
@@ -1721,6 +1771,28 @@ class DBClient:
                         "actual_prev": prev['hash']
                     })
             return broken
+
+    # ============================================
+    # Blockchain Anchoring (External Hash Commitment)
+    # ============================================
+    async def get_latest_audit_hash(self) -> Optional[str]:
+        """Get the hash of the most recent audit log entry (chain tip)."""
+        if self.pool is None:
+            return None
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1")
+            return row['hash'] if row else None
+
+    async def record_anchor(self, root_hash: str, tx_id: str, ledger: str, anchored_at: datetime):
+        """Record an external blockchain anchor."""
+        if self.pool is None:
+            return
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO blockchain_anchors (root_hash, tx_id, ledger, anchored_at)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (root_hash, ledger) DO NOTHING
+            """, root_hash, tx_id, ledger, anchored_at)
 
     # ============================================
     # MFA

@@ -17,7 +17,7 @@ jest.mock('axios', () => {
     delete: jest.fn(),
   };
   const mockAxios = jest.fn(() => mockAPIInstance);
-  mockAxios.create = jest.fn(() => mockAPIInstance);
+  (mockAxios as any).create = jest.fn(() => mockAPIInstance);
   return mockAxios;
 });
 

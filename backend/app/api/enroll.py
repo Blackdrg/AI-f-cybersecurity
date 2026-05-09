@@ -33,6 +33,10 @@ voice_embedder = VoiceEmbedder()
 gait_analyzer = GaitAnalyzer()
 age_gender_estimator = AgeGenderEstimator()
 
+# TEE enclave configuration
+_enclave_enabled = os.getenv("ENCLAVE_ENABLED", "false").lower() == "true"
+_enclave_strict = os.getenv("ENCLAVE_STRICT", "true").lower() == "true"
+
 
 def recvall(conn, n):
     """Helper function to receive n bytes or return None if EOF is reached."""
@@ -263,8 +267,16 @@ async def enroll_person(
             }
             enclave_response = send_request_to_enclave(enclave_request)
             if not enclave_response.get("success", False):
-                logger.warning(f"Failed to store face embedding {i} in enclave: {enclave_response.get('error')}")
-                # Fallback to storing in database
+                error_msg = f"Failed to store face embedding {i} in enclave: {enclave_response.get('error')}"
+                logger.error(error_msg)
+                if _enclave_enabled:
+                    # Strict mode: fail the entire enrollment if TEE is required
+                    return StandardResponse(
+                        success=False,
+                        error=error_msg
+                    )
+                # Degraded fallback: store in database (less secure)
+                logger.warning(f"Falling back to non-TEE storage for face embedding {i}")
                 stored_embeddings.append(emb)
             else:
                 logger.info(f"Stored face embedding {i} in enclave: {enclave_response.get('result')}")
@@ -280,8 +292,14 @@ async def enroll_person(
             }
             enclave_response = send_request_to_enclave(enclave_request)
             if not enclave_response.get("success", False):
-                logger.warning(f"Failed to store voice embedding {i} in enclave: {enclave_response.get('error')}")
-                # Fallback to storing in database
+                error_msg = f"Failed to store voice embedding {i} in enclave: {enclave_response.get('error')}"
+                logger.error(error_msg)
+                if _enclave_enabled:
+                    return StandardResponse(
+                        success=False,
+                        error=error_msg
+                    )
+                logger.warning(f"Falling back to non-TEE storage for voice embedding {i}")
                 stored_embeddings.append(emb)
             else:
                 logger.info(f"Stored voice embedding {i} in enclave: {enclave_response.get('result')}")

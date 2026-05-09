@@ -10,7 +10,7 @@ other deep learning-based deepfake detector (e.g., DeepFaceTrace, Face X-ray).
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 import json
 import base64

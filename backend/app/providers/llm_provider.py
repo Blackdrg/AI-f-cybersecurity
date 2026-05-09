@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 import os
+import logging
 
 try:
     import openai
@@ -8,6 +9,8 @@ try:
 except ImportError:
     OPENAI_AVAILABLE = False
     openai = None
+
+logger = logging.getLogger(__name__)
 
 class LLMProvider(ABC):
     @abstractmethod
@@ -26,10 +29,21 @@ class OpenAIProvider(LLMProvider):
             raise ImportError("OpenAI Python package is not installed. Install with: pip install openai")
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.air_gapped = os.getenv("AIR_GAPPED", "false").lower() == "true"
-        if self.api_key and not self.air_gapped:
-            self.client = openai.OpenAI(api_key=self.api_key)
-        else:
+        
+        if self.air_gapped:
             self.client = None
+            logger = logging.getLogger(__name__)
+            logger.warning("Air-gapped mode: OpenAI API disabled")
+        elif not self.api_key:
+            self.client = None
+            logger = logging.getLogger(__name__)
+            env = os.getenv("ENVIRONMENT", "development")
+            if env in ["production", "prod"]:
+                logger.error("OPENAI_API_KEY not set in production - AI assistant features will fail")
+            else:
+                logger.warning("OPENAI_API_KEY not set - AI assistant features will be degraded")
+        else:
+            self.client = openai.OpenAI(api_key=self.api_key)
 
     async def chat_completion(self, messages: List[Dict[str, str]], model: str, max_tokens: int = 500, temperature: float = 0.7) -> str:
         if self.air_gapped or not self.client:

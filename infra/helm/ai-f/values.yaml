@@ -6,6 +6,17 @@ backend:
     tag: "latest"
     pullPolicy: Always
   gpu: true
+  # Tuned connection pool for 10k+ RPS scaling:
+  # HPA scales to 50 pods; conservative pool=10 connections per pod → 500 total
+  env:
+    - name: DB_POOL_MAX_SIZE
+      value: "10"
+    - name: DB_POOL_MIN_SIZE
+      value: "2"
+    - name: DB_REPLICA_POOL_MAX
+      value: "5"
+    - name: DB_REPLICA_POOL_MIN
+      value: "2"
   resources:
     limits:
       cpu: 4

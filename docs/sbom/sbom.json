@@ -1,0 +1,660 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "version": 1,
+  "serialNumber": "urn:uuid:ae33faa3b5e91b032f36db828b30c3cb",
+  "metadata": {
+    "timestamp": "2026-05-09T07:39:47.660198Z",
+    "tools": [
+      {
+        "vendor": "AI-f",
+        "name": "generate_sbom.py",
+        "version": "1.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "AI-f Enterprise Face Recognition Platform",
+      "version": "2.2.1"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "fastapi",
+      "version": "0.104.1",
+      "purl": "pkg:pypi/fastapi@0.104.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "uvicorn[standard]==0.24.0",
+      "version": "unknown",
+      "purl": "pkg:pypi/uvicorn[standard]==0.24.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pydantic",
+      "version": "2.5.0",
+      "purl": "pkg:pypi/pydantic@2.5.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "sqlalchemy",
+      "version": "2.0.23",
+      "purl": "pkg:pypi/sqlalchemy@2.0.23",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "psycopg2-binary",
+      "version": "2.9.11",
+      "purl": "pkg:pypi/psycopg2-binary@2.9.11",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pgvector",
+      "version": "0.2.4",
+      "purl": "pkg:pypi/pgvector@0.2.4",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "redis",
+      "version": "4.6.0",
+      "purl": "pkg:pypi/redis@4.6.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "opencv-python",
+      "version": "4.8.1.78",
+      "purl": "pkg:pypi/opencv-python@4.8.1.78",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "numpy",
+      "version": "1.26.4",
+      "purl": "pkg:pypi/numpy@1.26.4",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "scikit-learn",
+      "version": "1.5.1",
+      "purl": "pkg:pypi/scikit-learn@1.5.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "matplotlib",
+      "version": "3.8.2",
+      "purl": "pkg:pypi/matplotlib@3.8.2",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "cryptography",
+      "version": "41.0.7",
+      "purl": "pkg:pypi/cryptography@41.0.7",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "python-jose[cryptography]==3.3.0",
+      "version": "unknown",
+      "purl": "pkg:pypi/python-jose[cryptography]==3.3.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "passlib[bcrypt]==1.7.4",
+      "version": "unknown",
+      "purl": "pkg:pypi/passlib[bcrypt]==1.7.4",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "python-multipart",
+      "version": "0.0.6",
+      "purl": "pkg:pypi/python-multipart@0.0.6",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "tenseal",
+      "version": "0.3.16",
+      "purl": "pkg:pypi/tenseal@0.3.16",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "celery[redis]==5.3.4",
+      "version": "unknown",
+      "purl": "pkg:pypi/celery[redis]==5.3.4",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "locust",
+      "version": "2.17.0",
+      "purl": "pkg:pypi/locust@2.17.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "aiosqlite",
+      "version": "0.19.0",
+      "purl": "pkg:pypi/aiosqlite@0.19.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "onnxruntime-gpu",
+      "version": "1.18.0",
+      "purl": "pkg:pypi/onnxruntime-gpu@1.18.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "opencv-contrib-python",
+      "version": "4.8.1.78",
+      "purl": "pkg:pypi/opencv-contrib-python@4.8.1.78",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pytest",
+      "version": "8.4.2",
+      "purl": "pkg:pypi/pytest@8.4.2",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pytest-asyncio",
+      "version": "0.23.0",
+      "purl": "pkg:pypi/pytest-asyncio@0.23.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pytest-benchmark",
+      "version": "4.0.0",
+      "purl": "pkg:pypi/pytest-benchmark@4.0.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pytest-mock",
+      "version": "unknown",
+      "purl": "pkg:pypi/pytest-mock",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pytest-cov",
+      "version": "unknown",
+      "purl": "pkg:pypi/pytest-cov",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "strawberry-graphql[fastapi]==0.202.0",
+      "version": "unknown",
+      "purl": "pkg:pypi/strawberry-graphql[fastapi]==0.202.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "speechbrain",
+      "version": "0.5.16",
+      "purl": "pkg:pypi/speechbrain@0.5.16",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "librosa",
+      "version": "0.10.1",
+      "purl": "pkg:pypi/librosa@0.10.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "fer",
+      "version": "22.5.1",
+      "purl": "pkg:pypi/fer@22.5.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "asyncpg",
+      "version": "0.29.0",
+      "purl": "pkg:pypi/asyncpg@0.29.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "boto3",
+      "version": "1.34.0",
+      "purl": "pkg:pypi/boto3@1.34.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pynacl",
+      "version": "1.5.0",
+      "purl": "pkg:pypi/pynacl@1.5.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "fairlearn",
+      "version": "0.9.0",
+      "purl": "pkg:pypi/fairlearn@0.9.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "grpcio",
+      "version": "1.60.0",
+      "purl": "pkg:pypi/grpcio@1.60.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "grpcio-tools",
+      "version": "1.60.0",
+      "purl": "pkg:pypi/grpcio-tools@1.60.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "azure-identity",
+      "version": "1.15.0",
+      "purl": "pkg:pypi/azure-identity@1.15.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "aiohttp",
+      "version": "3.9.1",
+      "purl": "pkg:pypi/aiohttp@3.9.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "setuptools",
+      "version": "68.2.2",
+      "purl": "pkg:pypi/setuptools@68.2.2",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "httpx",
+      "version": "0.25.2",
+      "purl": "pkg:pypi/httpx@0.25.2",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "websockets",
+      "version": "12.0",
+      "purl": "pkg:pypi/websockets@12.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "aiofiles",
+      "version": "23.2.1",
+      "purl": "pkg:pypi/aiofiles@23.2.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "stripe",
+      "version": "7.4.0",
+      "purl": "pkg:pypi/stripe@7.4.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "slowapi",
+      "version": "0.1.9",
+      "purl": "pkg:pypi/slowapi@0.1.9",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "openai",
+      "version": "1.3.0",
+      "purl": "pkg:pypi/openai@1.3.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pyyaml",
+      "version": "6.0.1",
+      "purl": "pkg:pypi/pyyaml@6.0.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pycryptodome",
+      "version": "3.20.0",
+      "purl": "pkg:pypi/pycryptodome@3.20.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "python-pkcs11",
+      "version": "0.9.0",
+      "purl": "pkg:pypi/python-pkcs11@0.9.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "requests",
+      "version": "2.31.0",
+      "purl": "pkg:pypi/requests@2.31.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "ecdsa",
+      "version": "0.18.0",
+      "purl": "pkg:pypi/ecdsa@0.18.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "fakeredis",
+      "version": "unknown",
+      "purl": "pkg:pypi/fakeredis",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pytest-mock",
+      "version": "unknown",
+      "purl": "pkg:pypi/pytest-mock",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "pytest-cov",
+      "version": "unknown",
+      "purl": "pkg:pypi/pytest-cov",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "httpx",
+      "version": "unknown",
+      "purl": "pkg:pypi/httpx",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "schemathesis",
+      "version": "23.10.0",
+      "purl": "pkg:pypi/schemathesis@23.10.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "ipython",
+      "version": "8.10.0",
+      "purl": "pkg:pypi/ipython@8.10.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "faiss-cpu",
+      "version": "1.7.4",
+      "purl": "pkg:pypi/faiss-cpu@1.7.4",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "geoip2",
+      "version": "4.7.0",
+      "purl": "pkg:pypi/geoip2@4.7.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "python-dateutil",
+      "version": "2.8.0",
+      "purl": "pkg:pypi/python-dateutil@2.8.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@emotion/react",
+      "version": "^11.14.0",
+      "purl": "pkg:npm/@emotion/react@^11.14.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@emotion/styled",
+      "version": "^11.14.1",
+      "purl": "pkg:npm/@emotion/styled@^11.14.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@mui/icons-material",
+      "version": "^7.3.4",
+      "purl": "pkg:npm/@mui/icons-material@^7.3.4",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@mui/lab",
+      "version": "^7.0.0",
+      "purl": "pkg:npm/@mui/lab@^7.0.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@mui/material",
+      "version": "^7.3.4",
+      "purl": "pkg:npm/@mui/material@^7.3.4",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@mui/x-charts",
+      "version": "^7.0.0",
+      "purl": "pkg:npm/@mui/x-charts@^7.0.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@mui/x-data-grid",
+      "version": "^8.15.0",
+      "purl": "pkg:npm/@mui/x-data-grid@^8.15.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@stripe/react-stripe-js",
+      "version": "^2.4.0",
+      "purl": "pkg:npm/@stripe/react-stripe-js@^2.4.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@stripe/stripe-js",
+      "version": "^2.1.0",
+      "purl": "pkg:npm/@stripe/stripe-js@^2.1.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@testing-library/jest-dom",
+      "version": "^6.4.0",
+      "purl": "pkg:npm/@testing-library/jest-dom@^6.4.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@testing-library/react",
+      "version": "^15.0.0",
+      "purl": "pkg:npm/@testing-library/react@^15.0.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@types/jest",
+      "version": "^29.5.0",
+      "purl": "pkg:npm/@types/jest@^29.5.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@types/react",
+      "version": "^18.2.37",
+      "purl": "pkg:npm/@types/react@^18.2.37",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@types/react-dom",
+      "version": "^18.2.15",
+      "purl": "pkg:npm/@types/react-dom@^18.2.15",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "axios",
+      "version": "1.6.7",
+      "purl": "pkg:npm/axios@1.6.7",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "http-proxy-middleware",
+      "version": "^2.0.6",
+      "purl": "pkg:npm/http-proxy-middleware@^2.0.6",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "identity-obj-proxy",
+      "version": "^3.0.0",
+      "purl": "pkg:npm/identity-obj-proxy@^3.0.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "lucide-react",
+      "version": "^0.548.0",
+      "purl": "pkg:npm/lucide-react@^0.548.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "^18.2.0",
+      "purl": "pkg:npm/react@^18.2.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react-chatbot-kit",
+      "version": "^2.2.2",
+      "purl": "pkg:npm/react-chatbot-kit@^2.2.2",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react-dom",
+      "version": "^18.2.0",
+      "purl": "pkg:npm/react-dom@^18.2.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react-router-dom",
+      "version": "^6.30.3",
+      "purl": "pkg:npm/react-router-dom@^6.30.3",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react-scripts",
+      "version": "5.0.1",
+      "purl": "pkg:npm/react-scripts@5.0.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react-stripe-js",
+      "version": "^1.1.5",
+      "purl": "pkg:npm/react-stripe-js@^1.1.5",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "react-webcam",
+      "version": "^7.2.0",
+      "purl": "pkg:npm/react-webcam@^7.2.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "recharts",
+      "version": "^3.8.1",
+      "purl": "pkg:npm/recharts@^3.8.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "ts-jest",
+      "version": "^29.1.0",
+      "purl": "pkg:npm/ts-jest@^29.1.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "typescript",
+      "version": "^4.9.5",
+      "purl": "pkg:npm/typescript@^4.9.5",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@playwright/test",
+      "version": "^1.59.1",
+      "purl": "pkg:npm/@playwright/test@^1.59.1",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@types/node",
+      "version": "^25.6.0",
+      "purl": "pkg:npm/@types/node@^25.6.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "@types/uuid",
+      "version": "^10.0.0",
+      "purl": "pkg:npm/@types/uuid@^10.0.0",
+      "scope": "required"
+    },
+    {
+      "type": "library",
+      "name": "cypress",
+      "version": "^15.14.2",
+      "purl": "pkg:npm/cypress@^15.14.2",
+      "scope": "required"
+    }
+  ]
+}

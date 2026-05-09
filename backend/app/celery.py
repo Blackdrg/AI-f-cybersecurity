@@ -21,6 +21,7 @@ app = Celery(
         "app.tasks.maintenance_tasks",
         "app.tasks.federated_learning_tasks",
         "app.tasks.payment_tasks",
+        "app.tasks.anchoring_tasks",
     ]
 )
 
@@ -80,6 +81,24 @@ app.conf.update(
     beat_schedule_filename="celerybeat-schedule",
     beat_max_loop_interval=5,
 )
+
+# Add blockchain anchoring schedule if enabled
+_anchor_schedule = os.getenv("ANCHOR_SCHEDULE", "hourly").lower()
+if _anchor_schedule and _anchor_schedule != "disabled":
+    if _anchor_schedule in ("hourly", "*"):
+        _schedule = crontab(minute=0, hour="*")
+    elif _anchor_schedule == "daily":
+        _schedule = crontab(minute=0, hour=2)  # 2 AM daily
+    elif _anchor_schedule == "weekly":
+        _schedule = crontab(minute=0, hour=3, day_of_week=0)  # Sunday 3am
+    else:
+        # Default to hourly if unrecognized
+        _schedule = crontab(minute=0, hour="*")
+    beat_schedule["blockchain-anchoring"] = {
+        "task": "app.tasks.anchoring_tasks.anchor_audit_chain_to_blockchain",
+        "schedule": _schedule,
+    }
+    logger.info(f"Blockchain anchoring scheduled: {_anchor_schedule}")
 
 # Task default retry policy
 app.conf.task_default_retry_policy = {

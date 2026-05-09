@@ -38,13 +38,34 @@ class ThreatIntelProvider(BaseProvider):
         self.otx_key = os.getenv("OTX_API_KEY")
         self.misp_url = os.getenv("MISP_URL")
         self.misp_key = os.getenv("MISP_API_KEY")
-        self.vt_key = os.getenv("VIRUSTOTAL_API_KEY")
+        self.vt_key = os.getenv("VIRUS_TOTAL_API_KEY")
         self.abuseipdb_key = os.getenv("ABUSEIPDB_API_KEY")
         self.webhook_url = os.getenv("THREAT_INTEL_WEBHOOK_URL")
         self._cache: Dict[str, Dict[str, Any]] = {}
         self._cache_timestamps: Dict[str, datetime] = {}
+        
         # Air-gapped mode check
         self.air_gapped = os.getenv("AIR_GAPPED", "false").lower() == "true"
+        
+        # Demo mode: use synthetic data for UI demos/dev when keys missing
+        # Auto-enable in development if no keys configured
+        env = os.getenv("ENVIRONMENT", "development").lower()
+        explicit_demo = os.getenv("THREAT_INTEL_DEMO_MODE", "false").lower() == "true"
+        
+        # Auto-enable demo if in development and no API keys present
+        keys_configured = any([self.otx_key, self.misp_key, self.vt_key, self.abuseipdb_key])
+        self.demo_mode = explicit_demo or (env in ["development", "dev", "test"] and not keys_configured)
+        
+        if self.demo_mode:
+            logger.info(
+                "ThreatIntelProvider running in DEMO MODE — "
+                "synthetic data only. Set OTX_API_KEY/MISP_API_KEY for real feeds."
+            )
+        elif not keys_configured and env in ["production", "prod"]:
+            logger.warning(
+                "ThreatIntelProvider: No API keys configured (OTX/MISP/VT). "
+                "Feed will return empty. Set keys or set THREAT_INTEL_DEMO_MODE=true for demo data."
+            )
 
     def _is_cached(self, key: str) -> bool:
         """Check if cached entry is still valid."""
@@ -76,6 +97,8 @@ class ThreatIntelProvider(BaseProvider):
         """
         if self.air_gapped:
             return []  # Air-gapped mode disables external calls
+        if self.demo_mode:
+            return self._get_demo_search_results(query, limit)
         cached = self._get_cache(f"search:{query}")
         if cached:
             return cached
@@ -125,6 +148,13 @@ class ThreatIntelProvider(BaseProvider):
         cached = self._get_cache(f"ioc:{indicator}")
         if cached:
             return cached
+
+        # Demo mode stub
+        if self.demo_mode:
+            ioc_type = ioc_type or self._detect_ioc_type(indicator)
+            result = self._get_demo_ioc_result(indicator, ioc_type)
+            self._set_cache(f"ioc:{indicator}", result)
+            return result
 
         # Auto-detect IOC type
         if not ioc_type:
@@ -365,3 +395,60 @@ class ThreatIntelProvider(BaseProvider):
         for k in expired:
             self._cache.pop(k, None)
             self._cache_timestamps.pop(k, None)
+
+    # ------------------------------------------------------------------------
+    # Demo / Stub Data Mode
+    # ------------------------------------------------------------------------
+    def _get_demo_search_results(self, query: str, limit: int) -> List[Dict[str, Any]]:
+        """Generate synthetic threat intel results for demo/development."""
+        demo_items = [
+            {
+                "id": "demo_otx_1",
+                "provider": "otx",
+                "providerName": "AlienVault OTX (Demo)",
+                "title": f"Sample Threat Pulse related to '{query}'",
+                "snippet": f"This is a demonstration threat pulse for '{query}'. In production, real OTX data would appear here after configuring OTX_API_KEY.",
+                "url": "https://otx.alienvault.com/pulse/demo",
+                "severity": "medium",
+                "score": 65,
+                "tags": ["demo", "threat", "sample"],
+                "timestamp": datetime.utcnow().isoformat()
+            },
+            {
+                "id": "demo_misp_1",
+                "provider": "misp",
+                "providerName": "MISP (Demo)",
+                "title": f"Mock MISP Event: {query}",
+                "snippet": "Simulated MISP event for UI demonstration. No actual threat data.",
+                "url": "https://misp.example.com/event/12345",
+                "severity": "high",
+                "score": 85,
+                "tags": ["misp", "indicators", "demo"],
+                "timestamp": datetime.utcnow().isoformat()
+            },
+            {
+                "id": "demo_generic_1",
+                "provider": "generic",
+                "providerName": "Generic Threat Feed (Demo)",
+                "title": f"Suspicious activity: {query}",
+                "snippet": "This is placeholder threat intelligence. Configure real API keys for production data.",
+                "url": None,
+                "severity": "low",
+                "score": 30,
+                "tags": ["generic", "demo"],
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        ]
+        return demo_items[:limit]
+
+    def _get_demo_ioc_result(self, indicator: str, ioc_type: str) -> Dict[str, Any]:
+        """Generate synthetic IOC lookup result for demo."""
+        return {
+            "indicator": indicator,
+            "type": ioc_type,
+            "threat_score": 42,
+            "sources": ["demo"],
+            "last_seen": datetime.utcnow().isoformat(),
+            "tags": ["demo", "simulated"],
+            "malicious": False
+        }

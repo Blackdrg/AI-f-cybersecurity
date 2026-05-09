@@ -35,10 +35,13 @@ task_duration_seconds = Histogram('celery_task_duration_seconds', 'Task executio
 
 
 def verify_metrics_token(x_metrics_token: str = Header(None, alias="X-Metrics-Token")) -> bool:
-    """Simple token auth for /metrics endpoint."""
+    """Enforce token authentication for /metrics endpoint."""
     expected_token = os.getenv("METRICS_TOKEN")
-    # If no token configured, allow unauth
     if not expected_token:
+        env = os.getenv("ENVIRONMENT", "development")
+        if env in ["production", "prod"]:
+            raise HTTPException(status_code=503, detail="Metrics endpoint disabled - METRICS_TOKEN required in production")
+        logger.warning("Metrics endpoint accessible without token (development mode only)")
         return True
     if x_metrics_token != expected_token:
         raise HTTPException(status_code=403, detail="Invalid metrics token")

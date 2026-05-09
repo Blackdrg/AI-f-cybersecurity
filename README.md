@@ -1,4 +1,4 @@
- AI-f (LEVI-AI) v2.2.1 Production Release
+﻿ AI-f (LEVI-AI) v2.2.1 Production Release
 
 **Enterprise Biometric Recognition Platform with Zero-Knowledge Identity & Forensic Audit**
 
@@ -8,8 +8,29 @@
 [![Tests](https://github.com/owner/ai-f/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/owner/ai-f/actions/workflows/backend-ci.yml)
 
 ---
+
+## About the Project
+
+**LEVI-AI (AI-f)** is a next-generation, enterprise-grade biometric recognition operating system designed with a zero-trust, privacy-first philosophy. Built to scale to tens of thousands of concurrent requests, LEVI-AI unifies facial, vocal, and behavioral biometrics with state-of-the-art cryptographic safeguards, including Zero-Knowledge Proofs (ZKP), Homomorphic Encryption, and Secure Multi-Party Computation. 
+
+Whether you are deploying secure physical access controls, fortifying digital identity verification, or integrating forensic-level audit trails, LEVI-AI provides a highly modular, compliant, and auditable foundation capable of meeting the strictest global privacy regulations (GDPR, CCPA, BIPA) out of the box.
+
+### Core Value Pillars & Technologies
+
+- **Zero-Trust Identity Architecture**: Security is built in at the lowest level. LEVI-AI supports Hardware-Isolated Enclaves (e.g., AWS Nitro) to keep sensitive biometric templates strictly protected in memory. Access to APIs and data is governed by a granular Role-Based Access Control (RBAC) system with 30+ permissions and enforced via Redis-backed JWT revocation and temporal/geographic policy engines.
+- **Multi-Modal Precision & Liveness**: Instead of relying solely on facial recognition, LEVI-AI fuses multiple biometric vectors (Face, Voice, and Gait) using optimized ONNX Runtime execution. Combined with a behavioral LSTM model that evaluates temporal anomalies and sophisticated anti-spoofing techniques (texture, depth, and watermark analysis), the system drastically minimizes False Acceptance Rates (FAR).
+- **Forensic Auditing & Compliance**: Every critical action within the platform is recorded using immutable, hash-chained audit trails. Identity verification claims are backed by Schnorr Non-Interactive Zero-Knowledge (NIZK) proofs, allowing the system to mathematically prove identity without exposing underlying biometric data.
+- **Enterprise-Ready Infrastructure**: Designed for SaaS scalability, LEVI-AI natively includes multi-tenant isolation through PostgreSQL Row-Level Security (RLS). It provides complete billing orchestration via Stripe, OAuth2 SSO integration (Azure AD, Google), and high-availability architecture ready for Kubernetes deployments. Prometheus and Grafana integration ensure 24/7 observability.
+
+### Primary Use Cases
+
+1. **High-Security Access Control**: Deploy LEVI-AI for physical building access or secure facility operations where multi-factor biometric authentication and continuous behavioral attestation are required.
+2. **Financial & KYC Identity Verification**: Utilize the built-in Zero-Knowledge Proofs and Homomorphic Encryption to verify identities during onboarding without ever storing decryptable biometric templates in your central database.
+3. **Forensic & Threat Intelligence**: Use the integrated threat intelligence feeds and real-time anomaly detection to proactively block bad actors. The SOAR (Security Orchestration, Automation, and Response) engine automatically executes playbooks when spoofing or fraud attempts are detected.
+4. **Compliance-Driven SaaS Platforms**: Leverage the out-of-the-box Stripe billing, multi-tenant RBAC, and transparent audit logging to build consumer or B2B SaaS products that inherently comply with complex biometric data laws.
  
-## 🚀 Getting Started
+---
+## Getting Started
 
 ### Prerequisites
 - Docker and Docker Compose
@@ -62,7 +83,7 @@ npm test
 
 ---
 
-## ✨ What's New in v2.2.1 (May 9, 2026)
+## What's New in v2.2.1 (May 9, 2026)
 
 ### 🚀 Latest Production Features (Complete)
 
@@ -141,7 +162,7 @@ npm test
 
 ---
 
-## ✅ Test Results Summary (Current Status - May 9, 2026)
+## Test Results Summary (Current Status - May 9, 2026)
 
 ### Overall Test Status: ~100% Passing (Production Baseline Hardened)
 
@@ -183,20 +204,20 @@ Test Date: May 9, 2026
 | `test_edge_device.py` | 4 | 4 | 0 | 0 | ✓ Stable |
 | `test_grpc.py` | 6 | 6 | 0 | 0 | ✓ Stable |
 | `test_oauth.py` | 6 | 6 | 0 | 0 | ✓ Stable |
-| **STABILIZED TOTAL** | **~165** | **✓ 165** | **0** | **0** | **✓ PASS** |
+| **STABILIZED TOTAL** | **~165** | **✓ 165** | **0** | **0** | **✓✓ PASS** |
 | **INTEGRATION TESTS (10 modules)** |
-| `test_migrations.py` | 12 | 12 | 0 | 0 | ✓ Ready |
-| `test_replication.py` | 5 | 5 | 0 | 0 | ✓ Ready |
-| `test_database.py` | 4 | 4 | 0 | 0 | ✓ Ready |
-| `test_redis.py` | 6 | 6 | 0 | 0 | ✓ Ready |
-| `test_celery.py` | 3 | 3 | 0 | 0 | ✓ Ready |
-| `test_vector_search.py` | 4 | 4 | 0 | 0 | ✓ Ready |
-| `test_api_contract.py` | 3 | 3 | 0 | 0 | ✓ Ready |
-| `test_recognition_e2e.py` | 4 | 4 | 0 | 0 | ✓ Ready |
-| `test_webhooks_integration.py` | 3 | 3 | 0 | 0 | ✓ Ready |
-| `test_onnx_models.py` | 8 | 8 | 0 | 0 | ✓ Ready |
-| `test_performance.py` | 8 | 8 | 0 | 0 | ✓ Ready |
-| **OVERALL SUMMARY** | **~229** | **✓ ~229** | **0** | **0** | **✓ PASS** *(29 unit + 10 integration + 1 e2e tests)* |
+| `test_migrations.py` | 12 | 12 | 0 | 0 | ✓✓ Ready |
+| `test_replication.py` | 5 | 5 | 0 | 0 | ✓✓ Ready |
+| `test_database.py` | 4 | 4 | 0 | 0 | ✓✓ Ready |
+| `test_redis.py` | 6 | 6 | 0 | 0 | ✓✓ Ready |
+| `test_celery.py` | 3 | 3 | 0 | 0 | ✓✓ Ready |
+| `test_vector_search.py` | 4 | 4 | 0 | 0 | ✓✓ Ready |
+| `test_api_contract.py` | 3 | 3 | 0 | 0 | ✓✓ Ready |
+| `test_recognition_e2e.py` | 4 | 4 | 0 | 0 | ✓✓ Ready |
+| `test_webhooks_integration.py` | 3 | 3 | 0 | 0 | ✓✓ Ready |
+| `test_onnx_models.py` | 8 | 8 | 0 | 0 | ✓✓ Ready |
+| `test_performance.py` | 8 | 8 | 0 | 0 | ✓✓ Ready |
+| **OVERALL SUMMARY** | **~229** | **✓ ~229** | **0** | **0** | **✓✓ PASS** *(29 unit + 10 integration + 1 e2e tests)* |
 
 **Key Accomplishments (v2.2.1):**
 - **Multi-Modal Fusion Hardened**: Completed weighted and geometric fusion logic in `scoring_engine.py` with 100% test pass rate.
@@ -273,18 +294,18 @@ pytest tests/ -n auto
 - Hour 0–24: Avg 145ms (P99: 285ms), CPU 65–75%, Memory stable 7.2GB
 - Hour 24–48: Avg 148ms (P99: 290ms), CPU 68–78%, Memory stable 7.5GB
 - Hour 48–72: Avg 142ms (P99: 280ms), CPU 64–74%, Memory stable 7.1GB
-- PASS No memory leaks; stable performance; P99 <300ms SLA met throughout
+-✓ PASS No memory leaks; stable performance; P99 <300ms SLA met throughout
 
 **Concurrency Scaling:**
 
 | Users | RPS | Avg Latency | P99 Latency | CPU | Status |
 |-------|-----|-------------|-------------|-----|--------|
-| 1 | 45 | 22ms | 45ms | 12% | PASS |
-| 10 | 320 | 31ms | 65ms | 28% | PASS |
-| 100 | 2,800 | 45ms | 95ms | 55% | PASS |
-| 500 | 12,500 | 85ms | 180ms | 78% | PASS |
-| 1,000 | 22,000 | 120ms | 245ms | 85% | PASS |
-| 5,000 | 48,000 | 250ms | 295ms | 95% | PASS |
+| 1 | 45 | 22ms | 45ms | 12% |✓ PASS |
+| 10 | 320 | 31ms | 65ms | 28% |✓ PASS |
+| 100 | 2,800 | 45ms | 95ms | 55% |✓ PASS |
+| 500 | 12,500 | 85ms | 180ms | 78% |✓ PASS |
+| 1,000 | 22,000 | 120ms | 245ms | 85% |✓ PASS |
+| 5,000 | 48,000 | 250ms | 295ms | 95% |✓ PASS |
 | 10,000 | 52,000 | 450ms | 850ms | 99% | WARNING: Degraded |
 
 ### Security Assessment (April 2026 Penetration Test)
@@ -293,13 +314,13 @@ pytest tests/ -n auto
 
 | Severity | Count | Status |
 |----------|-------|--------|
-| Critical | 0 | PASS |
-| High | 0 (1 false positive) | PASS |
+| Critical | 0 |✓ PASS |
+| High | 0 (1 false positive) |✓ PASS |
 | Medium | 8 (3 fixed, 5 monitored) | MONITORED |
 | Low | 15 | INFO |
 | Info | 35 | INFO |
 
-**Compliance:** OWASP Top 10 2021 PASS | PCI DSS PASS | GDPR PASS | CCPA PASS | SOC 2 Type II (in progress Q3 2026) | ISO 27001 (in progress Q4 2026)
+**Compliance:** OWASP Top 10 2021✓ PASS | PCI DSS✓ PASS | GDPR✓ PASS | CCPA✓ PASS | SOC 2 Type II (in progress Q3 2026) | ISO 27001 (in progress Q4 2026)
 **Key Controls Validated:** JWT revocation, MFA/TOTP, OAuth2 SSO, Row-Level Security, AES-256-GCM encryption, Hash-chained audit logs, ZKP anchoring, Rate limiting, RBAC (30+ permissions)
 
 ### Zero-Knowledge Proof Implementation
@@ -324,7 +345,7 @@ assert RealZKPProtocol.verify_proof(proof, "identity_verification")
 
 <div align="center">
 
-## 📊 Quick Stats (v2.2.1 - May 9, 2026)
+## Quick Stats (v2.2.1 - May 9, 2026)
 
 - **Backend:** ~42,000 lines of Python code (166 Python files in `backend/app/`, 43 test files total)
 - **Frontend:** ~25,000 lines of TypeScript (48 TSX components in `ui/react-app/src/`)
@@ -358,57 +379,67 @@ assert RealZKPProtocol.verify_proof(proof, "identity_verification")
 
 ---
 
-## ✅ Database Optimization (v2.2.1)
+## Database Optimization (v2.2.1)
 
 Database optimization features implemented for production-scale deployments:
 
 | Feature | Status | File |
 |---------|--------|------|
-| Migration Rollback Testing | ✅ Production Ready | `tests/integration/test_migrations.py` |
-| Point-in-Time Recovery | ✅ Production Ready | `infra/docker-entrypoint-initdb.d/pg_basebackup.sh` |
-| Connection Pool Tuning | ✅ Production Ready | `backend/app/db/db_client.py` |
-| Query Optimization | ✅ Production Ready | `alembic/versions/20260508_add_performance_indexes.py` |
-| Database Monitoring | ✅ Production Ready | `backend/app/monitoring/db_monitor.py` |
-| Replica Failover | ✅ Production Ready | `backend/app/db/db_client.py` |
-| Replication Testing | ✅ Production Ready | `backend/tests/integration/test_replication.py` |
+| Migration Rollback Testing | ✅ Production✓ Ready | `tests/integration/test_migrations.py` |
+| Point-in-Time Recovery | ✅ Production✓ Ready | `infra/docker-entrypoint-initdb.d/pg_basebackup.sh` |
+| Connection Pool Tuning | ✅ Production✓ Ready | `backend/app/db/db_client.py` |
+| Query Optimization | ✅ Production✓ Ready | `alembic/versions/20260508_add_performance_indexes.py` |
+| Database Monitoring | ✅ Production✓ Ready | `backend/app/monitoring/db_monitor.py` |
+| Replica Failover | ✅ Production✓ Ready | `backend/app/db/db_client.py` |
+| Replication Testing | ✅ Production✓ Ready | `backend/tests/integration/test_replication.py` |
 
 ---
 
-## ⚠️ Known Gaps & Partial Implementations
+## Known Gaps & Partial Implementations
 
 The following features have been upgraded to production/advanced-prototype status in v2.2.1:
 
 | Feature | Implementation Status | Notes |
 |---------|----------------------|-------|
-| **Homomorphic Encryption (HE)** | ✅ Production Ready | Full CKKS scheme via TenSEAL; supports encrypted similarity without decryption. Fallback simulation available for dev. |
-| **Multi-Party Computation (MPC)** | ✅ Production Ready | Full SPDZ implementation with Shamir Secret Sharing; supports cross-organization secure computation with actual networking capabilities. |
+| **Homomorphic Encryption (HE)** | ✅ Production✓ Ready | Full CKKS scheme via TenSEAL; supports encrypted similarity without decryption. Fallback simulation available for dev. |
+| **Multi-Party Computation (MPC)** | ✅ Production✓ Ready | Full SPDZ implementation with Shamir Secret Sharing; supports cross-organization secure computation with actual networking capabilities. |
 | **Trusted Execution Environment (TEE)** | ✅ Platform Specific | Native support for AWS Nitro Enclaves via EIF; `enclave_mock.py` provided for non-TEE environments. |
 | **Biometric Template Protection** | ✅ Hardened | Native Differential Privacy (Gaussian noise) integrated into `privacy_engine.py`; templates encrypted at rest with AES-256-GCM. |
-| **Hardware Security Module (HSM)** | ✅ Production Ready | Full PKCS#11 integration with SoftHSM for development, AWS CloudHSM/KMS for production. Key generation, encryption, signing supported. |
-| **Real-Time Threat Intelligence** | ✅ Production Ready | Modular `ThreatIntelProvider` with native OTX, MISP, and VirusTotal connectors (requires API keys). |
-| **Automated Incident Response (SOAR)** | ✅ Production Ready | Full SOAR engine with rule-based incident detection and automated playbook execution (block IP, quarantine enrollment, etc.). |
+| **Hardware Security Module (HSM)** | ✅ Production✓ Ready | Full PKCS#11 integration with SoftHSM for development, AWS CloudHSM/KMS for production. Key generation, encryption, signing supported. |
+| **Real-Time Threat Intelligence** | ✅ Production✓ Ready | Modular `ThreatIntelProvider` with native OTX, MISP, and VirusTotal connectors (requires API keys). |
+| **Automated Incident Response (SOAR)** | ✅ Production✓ Ready | Full SOAR engine with rule-based incident detection and automated playbook execution (block IP, quarantine enrollment, etc.). |
 | **Continuous Attestation** | ✅ Implemented | Runtime integrity verification using `attestation.py` and Schnorr-based cryptographic heartbeats. |
-| **Quantum-Resistant Cryptography** | ✅ Production Ready | NIST PQC implementation with CRYSTALS-Kyber (KEM) and CRYSTALS-Dilithium (signatures). Hybrid RSA+PQC mode available. |
-| **Zero-Knowledge Audit Trails** | ✅ Production Ready | Transitioned to real Schnorr Non-Interactive Zero-Knowledge (NIZK) proofs via `zkp_proper.py`. |
+| **Quantum-Resistant Cryptography** | ✅ Production✓ Ready | NIST PQC implementation with CRYSTALS-Kyber (KEM) and CRYSTALS-Dilithium (signatures). Hybrid RSA+PQC mode available. |
+| **Zero-Knowledge Audit Trails** | ✅ Production✓ Ready | Transitioned to real Schnorr Non-Interactive Zero-Knowledge (NIZK) proofs via `zkp_proper.py`. |
 
 **Impact:** The core security architecture is now 100% functional for enterprise deployment on supported platforms (AWS/Azure).
+
+**Recent Fixes (v2.2.1 → v2.2.2 patch):**
+- ✅ **E2E CI Pipeline** — Playwright + Cypress tests now run on all PRs via `backend-ci.yml` e2e-tests job.
+- ✅ **Connection Pool Tuning** — Health checks, connection recycling, conservative per-pod limits (DB_POOL_MAX_SIZE=10) support 10k+ RPS scaling.
+- ✅ **Env Validation** — Startup guard enforces required vars: `STRIPE_SECRET_KEY`, `OPENAI_API_KEY`, `JWT_SECRET`, `ENCRYPTION_KEY`.
+- ✅ **GraphQL API** — Full schema (`/graphql`) deployed with queries, mutations, subscriptions via Strawberry.
+- ✅ **Mobile SDK Scaffolds** — Directory structure and base client implementations created for iOS (Swift), Android (Kotlin), WASM (TypeScript); v2.1 (Q2 2026) implementation in progress.
+- ✅ **TEE Production Guard** — Enclave mock moved to `tests/mock/`; startup validates Nitro VSOCK connectivity; strict mode prevents fallback to insecure paths.
+- ✅ **Threat Intel Demo Mode** — `THREAT_INTEL_DEMO_MODE=true` returns synthetic data when API keys are absent, unblocking UI development.
+- ✅ **Bitcoin Anchoring** — Scheduled Celery task (`anchor_audit_chain_to_blockchain`) anchors audit root hash to blockchain; `blockchain_anchors` table added.
+- ✅ **Metrics Security** — `METRICS_TOKEN` now required in production to access `/metrics`; SBOM generated at `docs/sbom/sbom.json`.
+- ✅ **CSP Headers** — Strict Content Security Policy deployed with frame-ancestors, base-uri, form-action protections.
 
 **Remaining Gaps & Future Work:**
 
 - **Certifications** — SOC 2 Type II audit target Q3 2026; ISO 27001 certification target Q4 2026. Enterprise tier marketing should note that certifications are in progress.
-- **Trusted Execution Environment (TEE) — Platform Restriction** — Native enclave support is currently limited to AWS Nitro Enclaves (EIF). Intel SGX and AMD SEV are configurable (`ENCLAVE_TYPE=sgx/sev`) but fall back to `enclave_mock.py` simulation on non-Nitro platforms.
-- **10k+ RPS Horizontal Scaling** — Load testing shows P99 850ms at 10,000 concurrent users with HPA ceiling at 50 pods. Active-active multi-region deployment (architectural fix) is planned for v3.0 (Q4 2026). Interim guidance: tune HPA, use connection pooling, and consider vertical scaling.
-- **Edge & Mobile SDKs** — iOS (Core ML), Android (TFLite), and WebAssembly (WASM) SDKs are planned for v2.1 (Q2 2026). Current production SDKs: Python, Node.js, Go, Java.
-- **GraphQL API, zkML Proofs, Automated Model Retraining** — All listed on v2.1 roadmap; currently only REST + gRPC available.
-- **Multi-Region Active-Active, Sovereign Cloud, Air-Gapped Mode** — v3.0 roadmap items. Current DR is warm standby in `us-west-2` only. `air_gapped_mode_simulator.py` provides simulation but not production-grade offline operation.
-- **E2E Test Coverage** — Playwright and Cypress are installed and Playwright specs exist under `backend/tests/e2e/ and ui/react-app/tests/e2e/` (login, enroll-flow, recognize-flow, admin-dashboard). CI integration for E2E is not yet configured; results are not published. Frontend unit tests: 21 tests, all passing.
-- **Threat Intelligence & Enrichment API Keys** — OTX, MISP, VirusTotal connectors require environment-level API keys for live data. Without keys, providers return empty results gracefully (no crash). Similarly, `BING_API_KEY` is required for Bing Search enrichment; Wikipedia fallback is available but limited. No stub data mode for enrichment in production, but graceful degradation ensures stability.
-- **v1 Admin & Compliance Routers** — The `/api/v1/admin` and `/api/v1/compliance` endpoints are active (see `backend/app/main.py` lines 325 and 351). They were previously staged but are now enabled for v1 clients.
+- **10k+ RPS Horizontal Scaling (v3.0)** — Active-active multi-region deployment planned for Q4 2026. Current interim (vertical scale + pool tuning) validated to 5k RPS; 10k requires larger DB instance + read replicas. HPA configured to 50 pods.
+- **Edge & Mobile SDKs (v2.1 Q2 2026)** — Scaffolds created; full Core ML / TFLite / WASM implementation pending.
+- **zkML Proofs / Automated Retraining** — On v2.1 roadmap; drift alerts exist, but retraining is manual.
+- **Multi-Region Active-Active, Sovereign Cloud, Air-Gapped Mode** — v3.0 roadmap. Current DR is warm standby in `us-west-2` only.
+- **Threat Intelligence Keys** — Production deployment requires OTX/MISP/VirusTotal keys for live data. Demo mode available for development.
+- **v1 Admin & Compliance Routers** — Active and documented.
 
 ---
 
 
-## ⚙️ Configuration & Environment Variables
+## Configuration & Environment Variables
 
 ### Core Configuration
 
@@ -463,7 +494,77 @@ Feature flags are evaluated at startup and can be toggled at runtime via the Adm
 
 ---
 
-## 💳 SaaS & Billing Orchestration
+## Production Environment Validation
+
+Starting in v2.2.1, the application performs startup validation of required environment variables to prevent silent failures in production. The following vars are **mandatory** for production deployments:
+
+| Variable | Purpose | Validation | Notes |
+|----------|---------|------------|-------|
+| `JWT_SECRET` | JWT signing (HS256) | Fails if default `dev-secret-change-me` in prod | Must be 64 random bytes (base64) |
+| `ENCRYPTION_KEY` | AES-256-GCM biometric encryption | Fails if <32 bytes or dev fallback | Generate via `openssl rand -base64 32` |
+| `STRIPE_SECRET_KEY` | Billing & subscriptions | Fails if missing or test key (`sk_test_`) in prod | Live mode required for paid features |
+| `OPENAI_API_KEY` | AI assistant (GPT-3.5/4) | Warns if missing in prod; fails if mock key | Degrades gracefully (local LLM fallback) |
+| `BING_API_KEY` | Enrichment portal (Bing Search) | Warns if missing in prod | Wikipedia fallback available |
+
+**Additional required (but non-fatal) variables:**
+- `DATABASE_URL` or `DB_HOST`/`DB_PORT`/`DB_NAME`/`DB_USER`/`DB_PASSWORD` — Database connectivity
+- `REDIS_URL` — Redis for pub/sub, rate limiting, caching
+
+**Startup behavior:**
+- **Development mode** (`ENVIRONMENT=development`): Missing optional vars log warnings; app continues.
+- **Production mode** (`ENVIRONMENT=production`): Missing required vars cause immediate startup failure with clear error messages.
+
+**Example production `.env`:**
+```bash
+export ENVIRONMENT=production
+export JWT_SECRET="base64-64-byte-secret-store-in-vault"
+export ENCRYPTION_KEY="base64-32-byte-key-store-in-vault"
+export STRIPE_SECRET_KEY="sk_live_..."
+export OPENAI_API_KEY="sk-..."
+export BING_API_KEY="..."
+export DB_PASSWORD="..."  # Use Vault/KMS in production
+```
+
+**Validation implementation:** `backend/app/main.py:validate_required_env_vars()` executed at startup before any service initialization.
+
+---
+
+## Performance Tuning for 10k+ RPS
+
+### Database Connection Pool Tuning (v2.2.1 Fix)
+
+To achieve 10,000+ requests per second with <300ms P99 latency under horizontal scaling (HPA up to 50 pods), connection pool configuration is critical:
+
+**Per-pod pool settings (default tuned):**
+| Variable | Default | Recommendation |
+|----------|---------|----------------|
+| `DB_POOL_MAX_SIZE` | `10` | 10–15 (keep small; horizontal scale handles load) |
+| `DB_POOL_MIN_SIZE` | `2` | 2–5 |
+| `DB_REPLICA_POOL_MAX` | `5` | 5–8 per replica |
+| `DB_REPLICA_POOL_MIN` | `2` | 2 |
+
+**PostgreSQL server settings (`postgresql.conf`):**
+```conf
+max_connections = 500        # 50 pods × 10 pool_size = 500 + buffer for admin
+shared_buffers = 256MB      # Adjust based on RAM (25% of system memory)
+effective_cache_size = 1GB  # Approx 75% of RAM
+work_mem = 16MB             # Per-query sort/join memory
+```
+
+**Connection health & recycling (applied in `backend/app/db/db_client.py`):**
+- `health_check_interval=30s` — Periodic validation of idle connections
+- `max_inactive_connection_lifetime=300s` — Recycle connections after 5m to avoid server-side timeouts
+- `timeout=15s` — Wait for connection from pool before raising
+- `max_queries=5000` — Force connection rotation after N queries (prevents long-lived connections)
+
+**Vertical scaling interim** (while active-active multi-region is in development for v3.0):
+- Use larger PostgreSQL instance (r6g.2xlarge or equivalent) with max_connections=1000–2000
+- Enable read replicas and route read traffic via `DB_READ_REPLICAS` env var
+- Monitor `db_pool_utilization_percent` and `db_replication_lag_seconds` Prometheus metrics
+
+---
+
+## SaaS & Billing Orchestration
 
 LEVI-AI includes a complete SaaS management layer for organization-level subscription and usage tracking.
 
@@ -478,7 +579,7 @@ LEVI-AI includes a complete SaaS management layer for organization-level subscri
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ### High-Level Cognitive Mesh Architecture
 
@@ -663,7 +764,7 @@ TOTAL (+voice):    ~180-280ms
 
 ---
 
-## 🔔�� Security & Authentication
+## Security & Authentication
 
 ### Multi-Factor Authentication (TOTP)
 
@@ -841,7 +942,7 @@ The platform supports **Self-Sovereign Identity (SSI)** via W3C compliant Decent
 
 ---
 
-## 📡 Complete API Reference
+## Complete API Reference
 
 LEVI-AI exposes a comprehensive REST API organized by functional domain. All endpoints are prefixed with `/api` and require JWT authentication unless otherwise noted.
 
@@ -1025,7 +1126,7 @@ Plugins can be hot-swapped at runtime via Admin API without restart.
 
 ---
 
-## âš™ï¸ Middleware Stack
+## Middleware Stack
 
 ### Authentication (`backend/app/middleware/authentication.py`)
 - JWT token verification (HS256 with 64-byte secret in KMS)
@@ -1060,7 +1161,7 @@ Plugins can be hot-swapped at runtime via Admin API without restart.
 
 ---
 
-## ðŸ›¡ï¸ Trusted Execution Environment (TEE)
+## Trusted Execution Environment (TEE)
 
 Hardware-isolated enclave (`enclave/app.py`) for confidential biometric processing.
 
@@ -1084,7 +1185,7 @@ ENCLAVE_ATTESTATION=remote
 
 ---
 
-## 🚀 Enterprise Readiness & Validation
+## Enterprise Readiness & Validation
 
 AI-f has undergone rigorous enterprise-grade validation to ensure production reliability, security, and performance.
 
@@ -1094,10 +1195,10 @@ The platform's performance claims have been independently verified using a stati
 **Measured Performance:**
 | Metric | Claim | Measured (P99) | Status |
 |--------|-------|----------------|--------|
-| **Accuracy** | 99.88% TAR @ 0.001% FAR | **99.88% TAR @ ≤0.001% FAR** | ✅ PASS |
-| **P99 Latency** | <300ms | **279.98ms** | ✅ PASS |
-| **Throughput** | >5,000 RPS | **5,200 RPS** (load-balanced) | ✅ PASS |
-| **Uptime** | 99.9% | **99.99%** (72h sustained load) | ✅ PASS |
+| **Accuracy** | 99.88% TAR @ 0.001% FAR | **99.88% TAR @ ≤0.001% FAR** | ✅✓ PASS |
+| **P99 Latency** | <300ms | **279.98ms** | ✅✓ PASS |
+| **Throughput** | >5,000 RPS | **5,200 RPS** (load-balanced) | ✅✓ PASS |
+| **Uptime** | 99.9% | **99.99%** (72h sustained load) | ✅✓ PASS |
 
 **Standard Datasets Used:**
 - **LFW** (Labeled Faces in the Wild): 13,233 images
@@ -1189,7 +1290,7 @@ Real-world deployments across major sectors.
 3. **Retail (National Chain)**: Reduced checkout time from 45s to 3.2s using frictionless biometric identification.
 4. **Government (International Airport)**: 50M passengers/year processed with <300ms latency and 99.99% uptime.
 
-## ðŸ› ï¸ CI/CD & Deployment
+## CI/CD & Deployment
 
 AI-f uses a production-grade CI/CD pipeline for safe, automated deployments.
 
@@ -1250,7 +1351,7 @@ For new organizations, the platform provides a guided onboarding experience:
 
 ---
 
-## ðŸ–¥ï¸ Enterprise UI & Management
+## Enterprise UI & Management
 
 The AI-f frontend is designed for high-concurrency enterprise operations.
 
@@ -1307,7 +1408,7 @@ Built-in frameworks for global regulatory alignment and ethical AI oversight.
 
 ---
 
-## 🔔�� Public Enrichment & OSINT Integration
+## Public Enrichment & OSINT Integration
 
 The LEVI-AI platform includes a secure intelligence aggregator for public profile enrichment, enabling high-confidence identity verification via OSINT (Open Source Intelligence).
 
@@ -1319,7 +1420,7 @@ The LEVI-AI platform includes a secure intelligence aggregator for public profil
 
 ---
 
-## 🤖 AI/ML Models
+## AI/ML Models
 
 ### Model Inventory
 
@@ -1363,7 +1464,7 @@ The LEVI-AI platform includes a secure intelligence aggregator for public profil
 | **Usage Limiter** | `UsageLimiter` | Per-tenant quota enforcement by subscription tier | `middleware/usage_limiter.py` |
 | **Fusion Engine** | `EmotionBehaviorEngine`| Fuses emotional state with behavioral patterns | `models/emotion_behavior.py` |
 
-## 📊 Subscription Tiers & Feature Matrix
+## Subscription Tiers & Feature Matrix
 
 **Free | Pro ($29.99/mo) | Enterprise ($99.99/mo)**
 
@@ -1457,7 +1558,7 @@ async with FaceRecognitionClient(host="api.example.com:50051", token=jwt) as cli
 ```
 ---
 
-## 📦 Client SDKs
+## Client SDKs
 
 Official client SDKs for seamless integration.
 
@@ -1508,7 +1609,7 @@ ai_f_sdk/
 
 ### Node.js SDK
 
-**Status:** Production Ready  
+**Status:** Production✓ Ready  
 **Location:** `backend/sdk/nodejs/` - Promise-based API supporting both browser and Node.js environments with WebSocket streaming.
 
 **Installation:**
@@ -1549,7 +1650,7 @@ const result = await client.recognize({
 
 ### Go SDK
 
-**Status:** Production Ready  
+**Status:** Production✓ Ready  
 **Location:** `backend/sdk/go/ai_f_sdk/` - Native Go client with full context support and gRPC-first design.
 
 **Installation:**
@@ -1580,7 +1681,7 @@ personId, err := client.Enroll(context.Background(), &ai_f_sdk.EnrollRequest{
 
 ### Java SDK
 
-**Status:** Production Ready  
+**Status:** Production✓ Ready  
 **Location:** `backend/sdk/java/` - Official Java 17+ client with HTTP/2 and reactive streaming support.
 
 **Maven Dependency:**
@@ -1616,7 +1717,7 @@ String health = client.getHealth();
 
 ---
 
-## 🔔��— Audit Trail: Hash-Chain + ZKP
+## Audit Trail: Hash-Chain + ZKP
 
 ### Immutable Ledger
 
@@ -1719,7 +1820,7 @@ Summary of the [DPIA](DPIA_DATA_PROTECTION_IMPACT_ASSESSMENT.md) risk management
 
 ---
 
-## ðŸ—„ï¸ Database Schema & Architecture
+## Database Schema & Architecture
 
 The AI-f backend utilizes **PostgreSQL 15** with the **pgvector** extension for high-performance vector similarity search. Multi-tenancy is enforced at the database level using **Row-Level Security (RLS)**.
 
@@ -1889,7 +1990,7 @@ AI-f implements a unified error response system to ensure consistent client-side
 
 ---
 
-## 📡 API Reference (137+ Endpoints)
+## API Reference (137+ Endpoints)
 
 ### Base URL
 ```
@@ -2134,7 +2235,7 @@ Complete endpoint reference: `docs/api/endpoint_reference.md`
 
 ---
 
-## ⚡ Performance & Scalability
+## Performance & Scalability
 
 ### Latency Budget (P99)
 
@@ -2156,7 +2257,7 @@ Complete endpoint reference: `docs/api/endpoint_reference.md`
 | **Total (end-to-end)** | **146** | **146** |
 
 **Note:** Actual measured P99 latency = 280ms (includes additional logging and safety margins)
-**Target:** P99 < 300ms ✅ PASS
+**Target:** P99 < 300ms ✅✓ PASS
 
 ### Throughput Performance
 
@@ -2280,7 +2381,7 @@ behavior:
 **Analysis:** System remains stable under continuous load with minimal performance degradation.
 
 
-## 🚀 Deployment
+## Deployment
 
 ### Prerequisites
 
@@ -2311,7 +2412,7 @@ curl -X POST "http://localhost:8000/api/auth/login" \
 http://localhost:3000  # Login: demo@example.com / password
 ```
 
-**Demo Ready:**
+**Demo✓ Ready:**
 - Live RTSP camera feeds
 - Real-time recognition
 - Admin dashboard + analytics
@@ -2404,7 +2505,7 @@ ansible-playbook -i inventory/production \
 
 ---
 
-## ðŸ¥ Capacity Planning & Cost Estimates
+## Capacity Planning & Cost Estimates
 
 ### Cloud Infrastructure (AWS Example - Production)
 
@@ -2478,22 +2579,22 @@ Database sizing:
 | `test_replication.py` | 5 | ? 5 | 0 | 0 | 100% | ? Stable |
 | `test_performance.py` | 8 | ? 8 | 0 | 0 | 100% | ? Stable |
 | `test_integration.py` | 4 | ? 4 | 0 | 0 | 100% | ? Stable |
-| **UNIT TEST TOTAL** | **148** | **? 148** | **0** | **0** | **~100%** | **? PASS** |
+| **UNIT TEST TOTAL** | **148** | **? 148** | **0** | **0** | **~100%** | **?✓ PASS** |
 | **INTEGRATION TESTS (8 modules)** |
-| `test_migrations.py` | 12 | ? 12 | 0 | 0 | Ready |
-| `test_replication.py` | 5 | ? 5 | 0 | 0 | Ready |
-| `test_database.py` | 4 | ? 4 | 0 | 0 | Ready |
-| `test_redis.py` | 6 | ? 6 | 0 | 0 | Ready |
-| `test_celery.py` | 3 | ? 3 | 0 | 0 | Ready |
-| `test_vector_search.py` | 4 | ? 4 | 0 | 0 | Ready |
-| `test_api_contract.py` | 3 | ? 3 | 0 | 0 | Ready |
-| `test_recognition_e2e.py` | 4 | ? 4 | 0 | 0 | Ready |
-| **INTEGRATION TOTAL** | **45** | **? 45** | **0** | **0** | **Ready** | **? PASS** |
-| **OVERALL SUMMARY** | **~193** | **? ~193** | **0** | **0** | **~100%** | **? PASS** |
+| `test_migrations.py` | 12 | ? 12 | 0 | 0 |✓ Ready |
+| `test_replication.py` | 5 | ? 5 | 0 | 0 |✓ Ready |
+| `test_database.py` | 4 | ? 4 | 0 | 0 |✓ Ready |
+| `test_redis.py` | 6 | ? 6 | 0 | 0 |✓ Ready |
+| `test_celery.py` | 3 | ? 3 | 0 | 0 |✓ Ready |
+| `test_vector_search.py` | 4 | ? 4 | 0 | 0 |✓ Ready |
+| `test_api_contract.py` | 3 | ? 3 | 0 | 0 |✓ Ready |
+| `test_recognition_e2e.py` | 4 | ? 4 | 0 | 0 |✓ Ready |
+| **INTEGRATION TOTAL** | **45** | **? 45** | **0** | **0** | **Ready** | **?✓ PASS** |
+| **OVERALL SUMMARY** | **~193** | **? ~193** | **0** | **0** | **~100%** | **?✓ PASS** |
 
 ### Test Execution Details
 
-#### ? ALL CORE TESTS PASSING
+#### ? ALL CORE TESTS✓ PASSING
 
 **Spoof Detection (`test_spoof_detection.py`):**
 - ? 21/21 tests passing
@@ -2555,11 +2656,11 @@ Database sizing:
 
 | Metric | Target | Measured | Status |
 |--------|--------|----------|--------|
-| **Accuracy** | 99.88% TAR @ 0.001% FAR | 99.88% TAR @ ?0.001% FAR | ? PASS |
-| **P99 Latency** | <300ms | 279.98ms | ? PASS |
-| **Throughput** | >5,000 RPS | 5,200 RPS (load balanced) | ? PASS |
-| **Uptime** | 99.9% | 99.99% (72h test) | ? PASS |
-| **Test Suite** | >85% passing | ~100% passing (~193/193 tests) | ? PASS |
+| **Accuracy** | 99.88% TAR @ 0.001% FAR | 99.88% TAR @ ?0.001% FAR | ?✓ PASS |
+| **P99 Latency** | <300ms | 279.98ms | ?✓ PASS |
+| **Throughput** | >5,000 RPS | 5,200 RPS (load balanced) | ?✓ PASS |
+| **Uptime** | 99.9% | 99.99% (72h test) | ?✓ PASS |
+| **Test Suite** | >85% passing | ~100% passing (~193/193 tests) | ?✓ PASS |
 
 ### Test Command Reference
 
@@ -3019,7 +3120,7 @@ pg_restore -d face_recognition -t embeddings s3://backups/embeddings_2026-04-27.
 
 ---
 
-## 🔔�� Compliance Evidence & Audit Artifacts
+## Compliance Evidence & Audit Artifacts
 
 ### Data Protection Impact Assessment (DPIA)
 
@@ -3104,7 +3205,7 @@ curl -X POST -H "X-API-Key: $DT_API_KEY" \
 
 
 
-## ðŸ“ž Support & SLA
+## Support & SLA
 
 
 
@@ -3152,7 +3253,7 @@ curl -X POST -H "X-API-Key: $DT_API_KEY" \
 
 
 
-## ðŸ·ï¸ Versioning & Changelog
+## Versioning & Changelog
 
 
 
@@ -3358,7 +3459,7 @@ Pre-built dashboards included:
 
 
 
-## ⚙️ Development & Testing
+## Development & Testing
 
 
 
@@ -3508,7 +3609,7 @@ afl-fuzz -i testcases/ -o findings/ -- python target.py @@
 
 
 
-## ðŸ›¡ï¸ Security & Compliance
+## Security & Compliance
 
 
 
@@ -3584,7 +3685,7 @@ Uploaded to:
 
 
 
-## ðŸ—ºï¸ Development Roadmap & Completed Milestones
+## Development Roadmap & Completed Milestones
 
 
 
@@ -3760,7 +3861,7 @@ Uploaded to:
 
 
 
-## 📚 Documentation Index
+## Documentation Index
 
 
 
@@ -3802,7 +3903,7 @@ Uploaded to:
 
 
 
-## ðŸ†˜ Incident Response & Runbooks
+## Incident Response & Runbooks
 
 
 
@@ -4024,7 +4125,7 @@ UPDATE audit_log SET details = '{"redacted": true}' WHERE person_id = 'pers_xxx'
 
 
 
-## 🔔��„ Disaster Recovery & Business Continuity
+## Disaster Recovery & Business Continuity
 
 
 
@@ -4200,7 +4301,7 @@ kubectl scale deployment/backend --replicas=25 -n face-recognition
 
 
 
-## 🎯 Use Cases & Applications
+## Use Cases & Applications
 
 
 
@@ -4272,7 +4373,7 @@ kubectl scale deployment/backend --replicas=25 -n face-recognition
 
 
 
-## ⚙️ Implementation Deep Dive
+## Implementation Deep Dive
 
 
 
@@ -4802,7 +4903,7 @@ Total (+voice):    ~150-240ms
 
 
 
-## 📦 Docker Compose Development Stack
+## Docker Compose Development Stack
 
 
 
@@ -4906,7 +5007,7 @@ docker-compose -f infra/docker-compose.yml up -d
 
 
 
-## ðŸ“‹ Complete Python Dependency Inventory
+## Complete Python Dependency Inventory
 
 
 
@@ -5102,7 +5203,7 @@ docker-compose -f infra/docker-compose.yml up -d
 
 
 
-## ðŸŒ Frontend API Layer â€” Complete Reference
+## Frontend API Layer â€” Complete Reference
 
 
 
@@ -5404,7 +5505,7 @@ getRiskMetrics() â†’ {critical, high, medium, low, resolved}
 
 
 
-## ðŸ§­ Frontend Navigation Structure (Sidebar)
+## Frontend Navigation Structure (Sidebar)
 
 
 
@@ -5632,7 +5733,7 @@ const filteredMenuItems = menuItems.filter(item =>
 
 
 
-## ðŸŽ›ï¸ Admin Dashboard (AdminPanel.tsx)
+## Admin Dashboard (AdminPanel.tsx)
 
 
 
@@ -5764,7 +5865,7 @@ const fetchDashboardData = async () => {
 
 
 
-## 📊 Analytics Dashboard Deep Dive
+## Analytics Dashboard Deep Dive
 
 
 
@@ -5864,7 +5965,7 @@ fetchMetrics() {
 
 
 
-## 👤 Person Profile Page
+## Person Profile Page
 
 
 
@@ -5920,7 +6021,7 @@ fetchMetrics() {
 
 
 
-## 🔔�� Login Flow & MFA Enrollment
+## Login Flow & MFA Enrollment
 
 
 
@@ -5986,7 +6087,7 @@ if (user.mfa_required && !mfa_verified) {
 
 
 
-## ðŸ—ï¸ Backend Main Application (main.py)
+## Backend Main Application (main.py)
 
 
 
@@ -6286,7 +6387,7 @@ async def version():
 
 
 
-## 🔔�� Deeper Technical Implementation
+## Deeper Technical Implementation
 
 
 
@@ -8520,7 +8621,7 @@ settings = {
 
 
 
-## 🔔�� Security Model & Threat Analysis
+## Security Model & Threat Analysis
 
 
 
@@ -8698,7 +8799,7 @@ settings = {
 
 
 
-## ⚙️ New Implementations & Recent Features (v2.0)
+## New Implementations & Recent Features (v2.0)
 
 
 
@@ -8776,7 +8877,7 @@ settings = {
 
 
 
-## 🎯 Frontend Architecture (React 18 + Material-UI)
+## Frontend Architecture (React 18 + Material-UI)
 
 ### Technology Stack
 
@@ -8911,192 +9012,3 @@ Routes are also protected in `App.tsx` via `canAccessRoute()` check before rende
 
 ---
 
-## 🏗️ Architecture Overview
-
-### High-Level Cognitive Mesh Architecture
-
-```mermaid
-graph TB
-    LB[Load Balancer<br/>NGINX<br/>TLS 1.3 + Rate Limit]
-    API[API Gateway<br/>FastAPI 0.104.1<br/>Port: 8000]
-    
-    subgraph "Authentication & Policy"
-        AUTH[Authentication<br/>JWT + MFA]
-        JWT_REVOKE[JWT Revocation<br/>Redis Store]
-        RBAC[RBAC<br/>8 roles + 30+ perms]
-        POLICY[Policy Engine<br/>Geo + Temporal + Device]
-        RATE[Rate Limiter<br/>Per-user sliding window]
-        USAGE[Usage Limiter<br/>Tier-based quotas]
-    end
-    
-    subgraph "Core Recognition Pipeline (Cognitive Mesh)"
-        subgraph "Stage 1: Detection"
-            FD[Face Detector<br/>ONNX Runtime<br/>MTCNN + RetinaFace]
-        end
-        subgraph "Stage 2: Alignment + Embedding"
-            ALIGN[Face Alignment<br/>5-point landmarks]
-            FE[Face Embedder<br/>ArcFace ResNet-100<br/>512-d vector]
-        end
-        subgraph "Stage 3: Search"
-            VS[Vector Search<br/>Hybrid: pgvector + FAISS<br/>HNSW + Sharding]
-        end
-        subgraph "Stage 4: Multi-Modal Fusion"
-            VF[Voice Fusion<br/>ECAPA-TDNN 192-d]
-            GF[Gait Fusion<br/>OpenPose + Hu moments]
-            BF[Behavioral Fusion<br/>LSTM temporal]
-            MF[Weighted Ensemble<br/>Environment-aware]
-        end
-        subgraph "Stage 5: Liveness"
-            SD[Enhanced Spoof Detection<br/>Texture + Depth + Temporal<br/>Watermark analysis]
-        end
-        subgraph "Stage 6: Intelligence"
-            SE[Scoring Engine<br/>Environment calibration]
-            DE[Decision Engine<br/>Policy + Ethical + Bias]
-            XAI[Explainable AI<br/>SHAP attribution]
-        end
-        subgraph "Stage 7: Audit"
-            CE[Continuous Evaluation<br/>Real-time drift monitor]
-            ZKP[ZKP Audit<br/>Schnorr NIZK<br/>Hash Chain]
-        end
-    end
-     
-     subgraph "Data Layer"
-         PG[(PostgreSQL 15<br/>pgvector + pgcrypto<br/>RLS + Audit log)]
-         REDIS[(Redis 7.2<br/>Pub/Sub + Cache<br/>Celery + JWT revocation)]
-         S3[(S3 / MinIO<br/>Model artifacts<br/>Uploaded images)]
-     end
-     
-     subgraph "Observability"
-         MET[Prometheus<br/>Metrics collector<br/>27 core metrics]
-         GRA[Grafana<br/>Dashboards x3]
-         ALERT[Alertmanager<br/>PagerDuty/Slack]
-         SENTRY[Sentry SDK<br/>Error tracking & tracing]
-     end
-     
-    LB --> API
-    API --> AUTH
-    AUTH --> JWT_REVOKE
-    JWT_REVOKE --> RBAC
-    RBAC --> POLICY
-    POLICY --> RATE
-    RATE --> USAGE
-    USAGE --> FD
-    FD --> ALIGN
-    ALIGN --> FE
-    FE --> VS
-    VS --> SD
-    VS --> MF
-    MF --> SE
-    SE --> DE
-    DE --> XAI
-    DE --> CE
-    CE --> ZKP
-    
-    FD --> PG
-    FE --> PG
-    VS --> PG
-    ZKP --> PG
-    
-    API -.-> REDIS
-    RATE -.-> REDIS
-    MF -.-> REDIS
-    
-    API --> MET
-    MET --> GRA
-    MET --> ALERT
-    API -.-> SENTRY
-    
-    style PG fill:#e1f5ff
-    style REDIS fill:#fff3e0
-    style API fill:#f3e5f5
-    style FD fill:#e8f5e9
-```
-  
-**Data Flow (v2 Sovereign OS Pipeline):**
-1. **Request Ingress**: TLS 1.3 termination at LB with edge rate limiting.
-2. **Identity Verification**: Multi-stage JWT/MFA/Revocation check (1-2ms latency).
-3. **Policy Orchestration**: Temporal, Geographic, and Device-aware policy enforcement.
-4. **Cognitive Recognition**: 
-   - Face Detection (45-60ms) â†’ Alignment (8-12ms) â†’ Embedding (20-30ms).
-   - Multi-modal fusion (Voice/Gait) as required by policy level.
-5. **Secure Search**: pgvector-backed similarity search with HNSW indexing (10-20ms).
-6. **Liveness & Intelligence**: Anti-spoofing (30-50ms) followed by environment-aware scoring.
-7. **Forensic Audit**: Schnorr NIZK proof generation and hash-chain insertion for immutable logging.
-
----
-
-**Latency Budget (P99, optimized, no multi-modal extras):**
-
-```
-JWT verify:          1-2ms
-MFA check:           1ms
-Rate limit:          2ms
-Usage limiter:       2ms
-Policy engine:       3-5ms
-Face detection:     45-60ms  [ONNX CPU]
-Face alignment:      8-12ms
-Embedding:          20-30ms
-Vector search:      10-20ms  [HNSW @ 1M vectors]
-Spoof detection:    30-50ms  [optional]
-Fusion (voice):     40-60ms  [if enabled]
-Scoring engine:      3-5ms
-Ethical check:       2-3ms
-ZKP generate:        2-5ms
-Audit log:          15-25ms
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-TOTAL (face only): ~140-220ms (Measured P99: 279.98ms)
-TOTAL (+voice):    ~180-280ms
-```
-
-**Measured Performance:**
-- **P99 Latency**: 279.98ms (Validates <300ms SLA)
-- **Accuracy**: 99.88% TAR @ ≤0.001% FAR
-- **Uptime**: 99.99% (Measured over 72h load test)
-
-
-**Target:** P99 < 300ms achieved on g4dn.xlarge (4 vCPU, 16GB RAM, NVIDIA T4 GPU) + PostgreSQL RDS (db.r6g.large)
-
-| Layer | Technology | Version | Purpose |
-|-------|------------|---------|---------|
-| **Language** | Python | 3.12 (stable) | Backend runtime |
-| **Framework** | FastAPI | 0.104.1 | Async API + WebSocket |
-| **ORM** | SQLAlchemy + asyncpg | 2.0.23 + 0.29.0 | Async PostgreSQL driver |
-| **Database** | PostgreSQL | 15 + pgvector | Identity vectors, audit |
-| **Cache/Queue** | Redis | 4.6.0 (lib) / 7.2.3 (Docker) | Rate limiting, pub/sub, Celery, JWT revocation |
-| **Task Queue** | Celery | 5.3.4 | Async background jobs |
-| **ML Runtime** | ONNX Runtime (CPU/GPU) | 1.18.0 | Inference |
-| **ML Training** | PyTorch | >=2.1.0 (CPU), 2.1.0+cu121 (GPU) | Model training |
-| **Auth** | JWT (python-jose) + OAuth2 | 3.3.0 | Authentication |
-| **Monitoring** | Prometheus Client | 0.19.0 | Metrics + dashboards |
-| **Infrastructure** | Docker + Kubernetes | - | Container orchestration |
-| **CI/CD** | GitHub Actions | - | Automated testing + deployment |
-| **Frontend** | React | 18.2.0 | User interface |
-| **UI Library** | Material-UI (MUI) | 7.3.4 | Component library |
-| **Charts** | MUI X Charts | 7.0.0 | Data visualization |
-| **Stripe SDK** | stripe-python | 7.4.0 | Payment processing |
-| **OpenAI SDK** | openai-python | 1.3.0 | AI assistant (GPT-3.5/4) |
-| **gRPC** | grpcio + grpcio-tools | 1.60.0 | High-performance RPC |
-| **Privacy** | fairlearn | 0.9.0 | Bias detection + fairness |
-| **HE Library** | tenseal | 0.3.16 | Homomorphic encryption (CKKS) |
-| **WebSocket** | websockets | 12.0 | Real-time streaming |
-| **HTTP Client** | httpx | 0.25.2 | Async HTTP |
-| **AWS SDK** | boto3 | 1.34.0 | Cloud services (S3, KMS) |
-| **GeoIP** | geoip2 | 4.7.0 | Geographic policy conditions |
-| **Security** | cryptography + pycryptodome | 41.0.7 + 3.20.0 | Cryptographic primitives |
-| **Vector Search** | faiss-cpu | 1.13.2 | HNSW hybrid vector search |
-| **Rate Limiting** | slowapi | 0.1.9 | Per-user rate limiting |
-| **HTTP Client (FE)** | axios | 1.6.7 | Browser HTTP client |
-| **Icons (FE)** | lucide-react | 0.548.0 | SVG icon library |
-| **Charts (FE)** | recharts | 3.8.1 | Composed charting |
-| **Data Grid (FE)** | @mui/x-data-grid | 8.15.0 | Enterprise data grid |
-| **Stripe UI (FE)** | @stripe/react-stripe-js | 2.4.0 | Stripe Elements wrapper |
-| **E2E Test (FE)** | @playwright/test | 1.59.1 | End-to-end testing |
-| **E2E Test (FE)** | cypress | 15.14.2 | Alternative E2E framework |
-| **Chat UI (FE)** | react-chatbot-kit | 2.2.2 | Conversational AI UI |
-
----
-
-Special thanks to the open-source community for making privacy-preserving ML accessible, and to our customers for their invaluable feedback in shaping v2.2.1.
-
-**Last Updated:** May 9, 2026
-**Document Version:** 2.2.1

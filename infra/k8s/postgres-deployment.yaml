@@ -13,33 +13,50 @@ spec:
       labels:
         app: postgres
     spec:
-      containers:
-      - name: postgres
-        image: pgvector/pgvector:pg15
-        env:
-        - name: POSTGRES_DB
-          value: face_recognition
-        - name: POSTGRES_USER
-          value: postgres
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: password
-        volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
-        - name: init-scripts
-          mountPath: /docker-entrypoint-initdb.d
-        resources:
-          requests:
-            cpu: 1
-            memory: 2Gi
-          limits:
-            cpu: 2
-            memory: 4Gi
-        ports:
-        - containerPort: 5432
+       containers:
+       - name: postgres
+         image: pgvector/pgvector:pg15
+         env:
+         - name: POSTGRES_DB
+           value: face_recognition
+         - name: POSTGRES_USER
+           value: postgres
+         - name: POSTGRES_PASSWORD
+           valueFrom:
+             secretKeyRef:
+               name: postgres-secret
+               key: password
+         # PostgreSQL tuning for 10k+ RPS with 50-pod HPA
+         # max_connections = 500-1000 depending on instance size
+         # Each pod uses ~10 connections → 50 pods = 500; add buffer for admin/health checks
+         command:
+         - postgres
+         - -c
+         - max_connections=500
+         - -c
+         - shared_buffers=256MB
+         - -c
+         - effective_cache_size=1GB
+         - -c
+         - work_mem=16MB
+         - -c
+         - maintenance_work_mem=128MB
+         - -c
+         - wal_buffers=16MB
+         volumeMounts:
+         - name: postgres-storage
+           mountPath: /var/lib/postgresql/data
+         - name: init-scripts
+           mountPath: /docker-entrypoint-initdb.d
+         resources:
+           requests:
+             cpu: 2
+             memory: 4Gi
+           limits:
+             cpu: 4
+             memory: 8Gi
+         ports:
+         - containerPort: 5432
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
