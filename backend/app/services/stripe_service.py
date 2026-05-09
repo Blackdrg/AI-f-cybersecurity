@@ -5,13 +5,18 @@ import stripe
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 from fastapi import HTTPException
+from pydantic import BaseModel
 from ..db.db_client import get_db
 
-logger = logging.getLogger(__name__)
+class SubscriptionResponse(BaseModel):
+    subscription_id: str
+    user_id: str
+    plan_id: str
+    status: str
+    stripe_session: str
+    created_at: str
 
-# Load Stripe keys from env/Vault - must be configured for production
-_stripe_key = os.getenv("STRIPE_SECRET_KEY")
-if not _stripe_key:
+logger = logging.getLogger(__name__)
     logger.error("STRIPE_SECRET_KEY environment variable is not set. Billing will fail.")
     env = os.getenv("ENVIRONMENT", "development")
     if env in ["production", "prod"]:

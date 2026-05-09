@@ -146,23 +146,105 @@ class ExternalAnchorService:
         - ETH_RPC_URL (Infura, Alchemy, or own node)
         - ETH_PRIVATE_KEY for signing
         - ANCHOR_CONTRACT_ADDRESS with anchor(bytes32) function
+        
+        The contract should have:
+        event Anchored(bytes32 indexed hash, uint256 timestamp, address indexed anchorer);
+        function anchor(bytes32 hash) external returns (bool)
         """
         try:
-            # Web3 integration would go here
-            # from web3 import Web3
-            # w3 = Web3(Web3.HTTPProvider(self.eth_rpc_url))
-            # contract = w3.eth.contract(address=self.eth_contract_address, abi=...)
-            # tx = contract.functions.anchor(root_hash).buildTransaction({...})
-            # signed = w3.eth.account.signTransaction(tx, self.eth_private_key)
-            # tx_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
+            # Check if web3 is available
+            try:
+                from web3 import Web3
+                from eth_account import Account
+                WEB3_AVAILABLE = True
+            except ImportError:
+                WEB3_AVAILABLE = False
             
-            logger.warning(
-                "Ethereum anchoring not yet implemented — requires Web3 and deployed contract. "
-                "Set ANCHOR_SERVICE_URL for third-party anchoring service."
-            )
+            if not WEB3_AVAILABLE:
+                logger.error("web3.py not installed; cannot anchor to Ethereum. Install: pip install web3")
+                return {"success": False, "error": "web3 dependency missing"}
+            
+            if not self.eth_rpc_url:
+                logger.error("ETH_RPC_URL not configured")
+                return {"success": False, "error": "Ethereum RPC URL not configured"}
+            
+            if not self.eth_private_key:
+                logger.error("ETH_PRIVATE_KEY not configured")
+                return {"success": False, "error": "Ethereum private key not configured"}
+            
+            if not self.eth_contract_address:
+                logger.error("ANCHOR_CONTRACT_ADDRESS not configured")
+                return {"success": False, "error": "Smart contract address not configured"}
+            
+            # Connect to Ethereum node
+            w3 = Web3(Web3.HTTPProvider(self.eth_rpc_url))
+            if not w3.is_connected():
+                return {"success": False, "error": "Failed to connect to Ethereum node"}
+            
+            # Build contract instance (minimal ABI for anchor(bytes32))
+            abi = [
+                {
+                    "anonymous": False,
+                    "inputs": [
+                        {"indexed": True, "name": "hash", "type": "bytes32"},
+                        {"indexed": False, "name": "timestamp", "type": "uint256"},
+                        {"indexed": True, "name": "anchorer", "type": "address"}
+                    ],
+                    "name": "Anchored",
+                    "type": "event"
+                },
+                {
+                    "inputs": [{"name": "hash", "type": "bytes32"}],
+                    "name": "anchor",
+                    "outputs": [{"name": "", "type": "bool"}],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }
+            ]
+            contract = w3.eth.contract(address=self.eth_contract_address, abi=abi)
+            
+            # Prepare transaction
+            account = Account.from_key(self.eth_private_key)
+            nonce = w3.eth.get_transaction_count(account.address)
+            
+            # Prepare transaction: call anchor(bytes32) on the contract
+            account = Account.from_key(self.eth_private_key)
+            nonce = w3.eth.get_transaction_count(account.address)
+            
+            # Convert root_hash (hex string) to bytes32
+            # Accept both 0x-prefixed hex or plain hex
+            if isinstance(root_hash, str):
+                if root_hash.startswith('0x'):
+                    hash_bytes = w3.to_bytes(hexstr=root_hash)
+                else:
+                    hash_bytes = bytes.fromhex(root_hash)
+            else:
+                hash_bytes = root_hash  # assume bytes
+            
+            # Build transaction
+            tx = contract.functions.anchor(hash_bytes).build_transaction({
+                'from': account.address,
+                'nonce': nonce,
+                'gas': 200000,
+                'gasPrice': w3.eth.gas_price,
+                'chainId': w3.eth.chain_id if hasattr(w3.eth, 'chain_id') else 1
+            })
+            
+            # Sign and send
+            signed_tx = account.sign_transaction(tx)
+            tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            
+            # Wait for receipt (optional)
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            
             return {
-                "success": False,
-                "error": "Ethereum anchoring not implemented — use ANCHOR_SERVICE_URL"
+                "success": True,
+                "anchor_id": tx_hash.hex(),
+                "timestamp": datetime.utcnow().isoformat(),
+                "ledger": "ethereum",
+                "tx_hash": tx_hash.hex(),
+                "block_number": receipt.blockNumber,
+                "gas_used": receipt.gasUsed
             }
         except Exception as e:
             logger.error(f"Ethereum anchoring error: {e}")

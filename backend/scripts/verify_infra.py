@@ -33,7 +33,7 @@ def check_env_vars():
         'AZURE_CLIENT_SECRET': 'Azure AD OAuth',
         'GOOGLE_CLIENT_ID': 'Google OAuth',
         'GOOGLE_CLIENT_SECRET': 'Google OAuth',
-        'BING_SEARCH_API_KEY': 'Bing search for OSINT',
+        'BING_API_KEY': 'Bing search for OSINT',
         'AWS_REGION': 'AWS KMS configuration',
         'AWS_KMS_KEY_ID': 'AWS KMS key for encryption',
     }

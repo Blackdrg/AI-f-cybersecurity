@@ -3,6 +3,7 @@ Celery Tasks for AI-f
 """
 from celery import shared_task, Task
 import logging
+from app.utils.log_sanitizer import sanitize_for_log
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ def process_recognition_batch(self, image_batch, camera_ids, threshold=0.7, top_
 @shared_task(bind=True, base=MonitoredTask, max_retries=3, default_retry_delay=120)
 def enroll_person_async(self, person_data, images, voice_files=None, gait_video=None):
     """Async enrollment with multi-modal data"""
-    logger.info(f"Enrolling person: {person_data.get('name')}")
+    logger.info(f"Enrolling person: {sanitize_for_log(person_data.get('name'))}")
     try:
         import asyncio, numpy as np, cv2
         from app.db.db_client import get_db

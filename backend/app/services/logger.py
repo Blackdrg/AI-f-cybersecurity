@@ -3,7 +3,32 @@ import json
 import time
 import uuid
 from typing import Optional, Any, Dict
-from pythonjsonlogger import jsonlogger
+
+try:
+    from pythonjsonlogger import jsonlogger
+    _HAS_JSON_LOGGER = True
+except ImportError:
+    _HAS_JSON_LOGGER = False
+
+
+class _FallbackJsonFormatter(logging.Formatter):
+    """Minimal JSON formatter used when pythonjsonlogger is not installed."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        log_obj = {
+            "asctime": self.formatTime(record),
+            "name": record.name,
+            "levelname": record.levelname,
+            "message": record.getMessage(),
+        }
+        # Append any extra fields passed via the `extra` dict
+        for key in ("request_id", "org_id", "latency_ms"):
+            if hasattr(record, key):
+                log_obj[key] = getattr(record, key)
+        if record.exc_info:
+            log_obj["exc_info"] = self.formatException(record.exc_info)
+        return json.dumps(log_obj)
+
 
 class EnterpriseLogger:
     """
@@ -17,9 +42,12 @@ class EnterpriseLogger:
         # Check if handler already exists
         if not self.logger.handlers:
             logHandler = logging.StreamHandler()
-            formatter = jsonlogger.JsonFormatter(
-                '%(asctime)s %(name)s %(levelname)s %(message)s %(request_id)s %(org_id)s %(latency_ms)s'
-            )
+            if _HAS_JSON_LOGGER:
+                formatter = jsonlogger.JsonFormatter(
+                    '%(asctime)s %(name)s %(levelname)s %(message)s %(request_id)s %(org_id)s %(latency_ms)s'
+                )
+            else:
+                formatter = _FallbackJsonFormatter()
             logHandler.setFormatter(formatter)
             self.logger.addHandler(logHandler)
 

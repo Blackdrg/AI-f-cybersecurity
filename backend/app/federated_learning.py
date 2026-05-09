@@ -6,6 +6,9 @@ import json
 import hashlib
 import asyncio
 import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 try:
@@ -381,7 +384,68 @@ class ClientOrchestrator:
 federated_server = FederatedServer()
 client_orchestrator = ClientOrchestrator(federated_server)
 
+# Global secure aggregator instance (used by tasks for differential privacy, secure aggregation)
+secure_aggregator = SecureAggregation()
 
-def create_federated_client(client_id: str) -> FederatedClient:
-    """Create a federated learning client."""
-    return FederatedClient(client_id)
+class ZKPVerifier:
+    """
+    Verifies zero-knowledge proofs attached to federated client updates.
+    
+    This implementation uses Schnorr proofs (RealZKPProtocol) to verify
+    that the client knows a secret key associated with their identity,
+    providing non-repudiation and authenticity of the update.
+    
+    Future: Extend to zk-SNARK proofs for correctness of gradient computation.
+    """
+    
+    def verify_update(self, update_proof: dict) -> bool:
+        """
+        Verify a client update's ZKP.
+        
+        Args:
+            update_proof: Dictionary containing proof fields.
+                Expected keys:
+                - "proof": { "commitment": int, "response": int, "public_key": int, "statement_hash": str }
+                - "statement": string (the data being proven)
+        
+        Returns:
+            True if proof valid, False otherwise.
+        """
+        if not update_proof:
+            return False
+        
+        try:
+            proof_data = update_proof.get('proof') if isinstance(update_proof, dict) else update_proof
+            if not proof_data:
+                logger.warning("ZKP verification: missing proof data")
+                return False
+            
+            # Must contain Schnorr proof components
+            required = ('commitment', 'response', 'public_key', 'statement_hash')
+            if not all(k in proof_data for k in required):
+                logger.warning(f"ZKP verification: invalid proof format, missing keys")
+                return False
+            
+            # Verify statement hash match
+            statement = update_proof.get('statement', '')
+            import hashlib
+            computed_hash = hashlib.sha256(statement.encode()).hexdigest()
+            if proof_data.get('statement_hash') != computed_hash:
+                logger.warning("ZKP verification: statement hash mismatch")
+                return False
+            
+            # Verify using RealZKPProtocol
+            from app.models.zkp_proper import RealZKPProtocol, SchnorrProof
+            proof = SchnorrProof(
+                commitment=proof_data['commitment'],
+                response=proof_data['response'],
+                public_key=proof_data['public_key'],
+                statement_hash=proof_data['statement_hash']
+            )
+            return RealZKPProtocol.verify_proof(proof, statement)
+        except Exception as e:
+            logger.error(f"ZKP verification error: {e}")
+            return False
+
+# Global verifier instance
+zkp_verifier = ZKPVerifier()

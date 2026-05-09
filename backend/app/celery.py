@@ -100,6 +100,20 @@ if _anchor_schedule and _anchor_schedule != "disabled":
     }
     logger.info(f"Blockchain anchoring scheduled: {_anchor_schedule}")
 
+# Add model retraining schedule if enabled
+_model_retrain_schedule = os.getenv("MODEL_RETRAIN_SCHEDULE", "0 2 * * 0")  # Default: weekly Sundays at 2am
+if _model_retrain_schedule and _model_retrain_schedule.lower() != "disabled":
+    try:
+        minute, hour, day, month, day_of_week = _model_retrain_schedule.split()
+        beat_schedule["automated-model-retraining"] = {
+            "task": "app.tasks.model_training_tasks.retrain_model_async",
+            "schedule": crontab(minute=minute, hour=hour, day_of_month=day, month_of_year=month, day_of_week=day_of_week),
+            "args": ("face_embedding", "/data/embeddings/latest", 10, 0.001),
+        }
+        logger.info(f"Model retraining scheduled: {_model_retrain_schedule}")
+    except Exception as e:
+        logger.warning(f"Invalid MODEL_RETRAIN_SCHEDULE '{_model_retrain_schedule}': {e}")
+
 # Task default retry policy
 app.conf.task_default_retry_policy = {
     "max_retries": 3,

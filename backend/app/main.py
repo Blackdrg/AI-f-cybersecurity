@@ -18,26 +18,19 @@ sentry_sdk.init(
     traces_sample_rate=1.0,
 )
 
-from .api import enroll, recognize, video_recognize, stream_recognize, admin, federated_learning
-from .api import users, plans, subscriptions, payments, usage, ai_assistant, support, public_enrich
-from .api import orgs, cameras, events, alerts, compliance, mfa, oauth
-from .api import plugins, mpc  # add mpc
-from .api import revocation
-from .api.v1 import admin as admin_v1
-from .api.v1 import compliance as compliance_v1
-from .grpc.server import serve_grpc
-from .security import setup_security
-from .metrics import setup_metrics
-from .db.db_client import init_db
-from . import celery as celery_module
-from .pubsub import pubsub_manager
-from .websocket_manager import connection_manager
+# Configure structured logging with sanitization to prevent log injection
+from app.utils.log_sanitizer import SanitizingFormatter
 
-# Configure structured logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# Apply sanitizing formatter to all existing handlers
+root_logger = logging.getLogger()
+for handler in root_logger.handlers:
+    handler.setFormatter(SanitizingFormatter())
+
 logger = logging.getLogger("face-recognition")
 
 # Import production systems
@@ -94,6 +87,8 @@ REQUIRED_ENV_VARS = {
     "STRIPE_SECRET_KEY": "Stripe billing and subscription provisioning (required for paid features)",
     "OPENAI_API_KEY": "OpenAI GPT assistant integration (required for AI assistant features)",
     "ENCRYPTION_KEY": "32-byte AES-256-GCM key for encrypting biometric templates at rest (required)",
+    "JWT_SECRET": "64-byte secret for JWT token signing (required for authentication)",
+    "BING_API_KEY": "Bing Search API key for enrichment portal (required for external enrichment)",
 }
 
 # Optional but important env vars that degrade features if missing
@@ -120,20 +115,30 @@ def validate_required_env_vars():
                 missing_required.append(f"{var} ({description})")
             else:
                 logger.warning(f"Env var {var} not set. {description}")
-        else:
-            # Check for placeholder/test defaults
-            if var == "STRIPE_SECRET_KEY" and value.startswith(("sk_test_", "sk_test_mock")):
-                if env in ["production", "prod"]:
-                    insecure.append(f"{var} uses test key; production key required")
-            elif var == "OPENAI_API_KEY" and value in ["sk-test-mock-openai", "", "sk-"]:
-                if env in ["production", "prod"]:
-                    insecure.append(f"{var} uses mock key; real API key required")
-            elif var == "ENCRYPTION_KEY":
-                if len(value) < 32:
-                    insecure.append(f"{var} must be ≥32 bytes; got {len(value)}")
-                if value in ["fallback-key-32bytes-for-dev!!!", "dev-encryption-key-change-me", "your-32-byte-secret-key-here123456789012"]:
-                    if env in ["production", "prod"]:
-                        insecure.append(f"{var} uses development fallback key")
+        # Check for placeholder/test defaults
+    if var == "STRIPE_SECRET_KEY" and value.startswith(("sk_test_", "sk_test_mock")):
+        if env in ["production", "prod"]:
+            insecure.append(f"{var} uses test key; production key required")
+    elif var == "OPENAI_API_KEY" and value in ["sk-test-mock-openai", "", "sk-", "sk-test"]:
+        if env in ["production", "prod"]:
+            insecure.append(f"{var} uses mock key; real API key required")
+    elif var == "ENCRYPTION_KEY":
+        if len(value) < 32:
+            insecure.append(f"{var} must be ≥32 bytes; got {len(value)}")
+        if value in ["fallback-key-32bytes-for-dev!!!", "dev-encryption-key-change-me", "your-32-byte-secret-key-here123456789012"]:
+            if env in ["production", "prod"]:
+                insecure.append(f"{var} uses development fallback key")
+    elif var == "JWT_SECRET":
+        # Should be at least 64 characters for HS512
+        if len(value) < 64:
+            insecure.append(f"{var} must be ≥64 bytes (for HS512); got {len(value)}")
+        if value in ["dev-secret-change-me", "your-super-secret-key-change-it"]:
+            if env in ["production", "prod"]:
+                insecure.append(f"{var} uses default development secret")
+    elif var == "BING_API_KEY":
+        if value.startswith("test-") or value == "":
+            if env in ["production", "prod"]:
+                insecure.append(f"{var} uses test key; production Bing Search API key required")
 
     # Check feature-critical vars (warn in prod, but don't fail startup)
     for var, description in FEATURE_ENV_VARS.items():
@@ -398,10 +403,15 @@ async def startup_event():
         # ========================================================================
         _env = os.getenv("ENVIRONMENT", "development").lower()
         if _env in ["production", "prod"]:
-            # Check Homomorphic Encryption simulation mode
+            # Check Homomorphic Encryption is enabled
+            he_enabled = os.getenv("HE_ENABLED", "false").lower() == "true"
+            if not he_enabled:
+                logger.critical("FATAL: HE_ENABLED=false in production. Homomorphic Encryption is required for encrypted search.")
+                raise RuntimeError("HE_ENABLED must be true in production")
+            
+            # Check TenSEAL availability
             try:
                 from .models.homomorphic_encryption import HomomorphicEncryptionEngine
-                # Don't instantiate full engine if not needed; just warn if TenSEAL missing
                 import importlib
                 tenseal_spec = importlib.util.find_spec("tenseal")
                 if tenseal_spec is None:
