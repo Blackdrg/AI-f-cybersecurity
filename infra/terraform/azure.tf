@@ -93,11 +93,10 @@ resource "azurerm_postgresql_flexible_server" "main" {
 }
 
 resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
-  name                = "AllowAzure"
-  resource_group_name = azurerm_resource_group.main.name
-  server_name         = azurerm_postgresql_flexible_server.main.name
-  start_ip_address    = "0.0.0.0"
-  end_ip_address      = "0.0.0.0"
+  name      = "AllowAzure"
+  server_id = azurerm_postgresql_flexible_server.main.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
 }
 
 # Redis Cache
@@ -108,7 +107,7 @@ resource "azurerm_redis_cache" "main" {
   capacity            = 1
   family              = "C"
   sku_name            = "Standard"
-  enable_non_ssl_port = false
+  non_ssl_port_enabled = false
   
   redis_configuration {
     maxmemory_policy = "allkeys-lru"
@@ -202,7 +201,7 @@ resource "azurerm_storage_account" "models" {
 
 resource "azurerm_storage_container" "models" {
   name                  = "models"
-  storage_account_name  = azurerm_storage_account.models.name
+  storage_account_id    = azurerm_storage_account.models.id
   container_access_type = "private"
 }
 
@@ -238,6 +237,10 @@ resource "azurerm_application_gateway" "main" {
     key_vault_secret_id = azurerm_key_vault_certificate.ssl.id
   }
   
+  backend_address_pool {
+    name = "backend-pool"
+  }
+
   backend_http_settings {
     name                  = "backend"
     cookie_based_affinity = "Disabled"
@@ -252,6 +255,19 @@ resource "azurerm_application_gateway" "main" {
     frontend_port_name             = "https"
     protocol                       = "Https"
     ssl_certificate_name           = "ssl-cert"
+  }
+
+  url_path_map {
+    name                               = "pathmap"
+    default_backend_address_pool_name  = "backend-pool"
+    default_backend_http_settings_name = "backend"
+
+    path_rule {
+      name                       = "all"
+      paths                      = ["/*"]
+      backend_address_pool_name  = "backend-pool"
+      backend_http_settings_name = "backend"
+    }
   }
   
   request_routing_rule {
@@ -282,6 +298,7 @@ resource "azurerm_key_vault_certificate" "ssl" {
     }
     
     key_properties {
+      exportable = true
       key_size   = 2048
       key_type   = "RSA"
       reuse_key  = true

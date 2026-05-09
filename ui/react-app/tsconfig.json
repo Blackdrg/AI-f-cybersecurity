@@ -16,6 +16,6 @@
     "ignoreDeprecations": "5.0"
   },
   "include": [
-    "public/src"
+    "src"
   ]
 }

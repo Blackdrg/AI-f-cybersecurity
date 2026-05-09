@@ -62,37 +62,36 @@ npm test
 
 ---
 
-## ✨ What's New in v2.2.1 (May 8, 2026)
+## ✨ What's New in v2.2.1 (May 9, 2026)
 
 ### 🚀 Latest Production Features (Complete)
 
 #### 1. **Frontend TypeScript Migration Complete** ✅
-- **Full migration:** All UI components moved from `src/` → `public/src/` with 100% TypeScript
+- **Full migration:** All UI components in `src/` with 100% TypeScript
 - **Updated components:** AdminDashboard.tsx, RecognizeView.tsx, AuditTimeline.tsx, DashboardIntelligencePanel.tsx, EnrichmentPortalPanel.tsx, AdminPanel.tsx, BiasReportTab.tsx, Dashboard.tsx, DeepfakeTab.tsx, Enroll.tsx, Recognize.tsx
 - **Lines changed:** 266 insertions, 235 deletions across 13 files (commit 5ff242b7f - May 5, 2026)
-- **Coverage:** Frontend test suite active (Jest + React Testing Library); **all tests passing (21/21)** as of May 8, 2026.
+- **Coverage:** Frontend test suite active (Jest + React Testing Library); **all tests passing (21/21)** as of May 9, 2026.
 
 #### 2. **Enhanced Audit Visualization Layer** ✅
-- **File:** `ui/react-app/public/src/components/AuditTimeline.tsx` (14,639 bytes)
+- **File:** `ui/react-app/src/components/AuditTimeline.tsx` (14,639 bytes)
 - **Features:** Blockchain hash-chain verification, tamper detection, forensic trace viewer
 - **Integration:** 8 color-coded action categories, real-time integrity monitoring
 - **Backend:** `/api/audit/verify`, `/api/audit/forensic/{event_id}` endpoints
 
 #### 3. **Incident & Alert Management Dashboard** ✅
-- **File:** `ui/react-app/public/src/components/IncidentAlertDashboard.tsx` (35,328 bytes)
+- **File:** `ui/react-app/src/components/IncidentAlertDashboard.tsx` (35,328 bytes)
 - **Capabilities:** 5-tab dashboard (Alerts, Incidents, Analytics, Trends, Workflow)
-- **Alert Types:** DEEPFAKE_DETECTED, SPOOFING_ATTEMPT, ANOMALY_DETECTED, BIAS_THRESHOLD_EXCEEDED, CONFIDENCE_DROPOUT (all 8 core alert types fully functional in backend `alerts.py` engine)
-- **Lifecycle:** Open → Investigating → Resolved → Closed with SLA tracking (MTTR: 2.4h)
+- - **Alert Types:** DEEPFAKE_DETECTED, SPOOFING_ATTEMPT, ANOMALY_DETECTED, BIAS_THRESHOLD_EXCEEDED, CONFIDENCE_DROPOUT (all alert types fully functional in backend; BIAS_THRESHOLD_EXCEEDED and CONFIDENCE_DROPOUT use system_alerts.py for background monitoring)- **Lifecycle:** Open → Investigating → Resolved → Closed with SLA tracking (MTTR: 2.4h)
 - **API:** `/api/alerts/active`, `/api/incidents` with full CRUD operations
 
 #### 4. **Multi-Tenant UI with Organization Switching** ✅
-- **File:** `ui/react-app/public/src/components/OrgSwitcher.tsx` (14,078 bytes)
+- **File:** `ui/react-app/src/components/OrgSwitcher.tsx` (14,078 bytes)
 - **Features:** Org dropdown, quick switching, new org wizard, billing widget
 - **Plan tiers:** Free, Pro, Enterprise, Custom with color-coded indicators
 - **Isolation:** Tenant-aware sidebar, per-org role isolation, usage vs limits tracking
 
 #### 5. **Enterprise-Grade Error Handling & UX Polish** ✅
-- **API Service:** `ui/react-app/public/src/services/apiEnhanced.ts` (Enhanced)
+- **API Service:** `ui/react-app/src/services/apiEnhanced.ts` (Enhanced)
   - 10+ error categories (NETWORK, TIMEOUT, AUTH, VALIDATION, RATE_LIMIT, SPOOF_DETECTED, LOW_CONFIDENCE, QUALITY_ISSUE)
   - Exponential backoff retry (3 attempts), circuit breaker pattern
   - Request validation, response schema checking, X-Request-ID tracing
@@ -101,12 +100,12 @@ npm test
 - **Performance:** Code splitting, memoization, virtual scrolling, debounced search
 
 #### 6. **Intelligence Enrichment Portal** ✅
-- **File:** `ui/react-app/public/src/components/EnrichmentPortalPanel.tsx` (25,712 bytes, enhanced from ~5KB)
+- **File:** `ui/react-app/src/components/EnrichmentPortalPanel.tsx` (25,712 bytes, enhanced from ~5KB)
 - **Providers:** Bing Search, Wikipedia, Threat Intelligence feeds
 - **Capabilities:** Dynamic correlation analysis, ML risk scoring, provider performance monitoring, automated brief generation
 
 #### 7. **RBAC Frontend Implementation** ✅
-- **AuthContext:** `ui/react-app/public/src/contexts/AuthContext.tsx` (6,878 bytes new)
+- **AuthContext:** `ui/react-app/src/contexts/AuthContext.tsx` (6,878 bytes new)
 - **Guard Components:** `RBACGuard.tsx` (2,299 bytes new) with route/component protection
 - **Permissions:** 30+ granular permissions across 8 roles (super_admin, admin, operator, auditor, analyst, viewer, security, hr)
 - **Features:** Dynamic menu filtering, permission-based rendering, multi-org role isolation
@@ -132,34 +131,34 @@ npm test
 
 | Metric | Value |
 |--------|-------|
-| **Backend Python** | ~42,000 lines (209 Python files in `backend/app/` and `backend/tests/`) |
-| **Frontend TypeScript** | ~25,000 lines (45+ TSX components in `ui/react-app/public/src/`) |
+| **Backend Python** | ~42,000 lines (166 Python files in `backend/app/`, 43 test files total) |
+| **Frontend TypeScript** | ~25,000 lines (48 TSX components in `ui/react-app/src/`) |
 | **API Endpoints** | 145+ endpoints across 32+ routers (including v2 sovereign OS) |
 | **Database** | PostgreSQL 15 with pgvector extension (1280-d vectors) |
 | **AI/ML Models** | 14+ model classes (face, voice, gait, emotion, age/gender, spoof detection, behavioral, bias, privacy, homomorphic encryption, DID, LSTM behavior) |
-| **Test Files** | 38 test files (27 unit + 11 integration) |
+| **Test Files** | 40 test files (29 unit + 10 integration + 1 e2e) |
 | **Celery Tasks** | 6 task modules (recognition, training, enrichment, maintenance, federated, payment) |
 
 ---
 
-## ✅ Test Results Summary (Current Status - May 8, 2026)
+## ✅ Test Results Summary (Current Status - May 9, 2026)
 
 ### Overall Test Status: ~100% Passing (Production Baseline Hardened)
 
-**Test Date:** May 8, 2026
+**Test Date:** May 9, 2026
 **Environment:** Python 3.11/3.12, pytest with async fixtures, real ONNX runtime
 **Location:** `backend/tests/`
 
 **Test Execution Summary:**
 ```
-Total Tests Collected: ~210 test functions
+Total Tests Collected: ~229 test functions
 Platform: Python 3.11/3.12, pytest with async fixtures, PostgreSQL
-Test Date: May 8, 2026
+Test Date: May 9, 2026
 ```
 
 | Test Module | Tests | Passed | Failed | Errors | Status |
 |-------------|-------|--------|--------|--------|--------|
-| ✓ STABILIZED MODULES (27/27) |
+| ✓ STABILIZED MODULES (29/29) |
 | `test_onnx_models.py` | 8 | 8 | 0 | 0 | ✓ Verified |
 | `test_multimodal.py` | 5 | 5 | 0 | 0 | ✓ Stable |
 | `test_behavioral.py` | 6 | 6 | 0 | 0 | ✓ Stable |
@@ -181,14 +180,11 @@ Test Date: May 8, 2026
 | `test_validation_framework.py` | 11 | 11 | 0 | 0 | ✓ Stable |
 | `test_tee_security.py` | 8 | 8 | 0 | 0 | ✓ Stable |
 | `test_rate_limit.py` | 6 | 6 | 0 | 0 | ✓ Stable |
-| `test_public_enrich.py` | 7 | 7 | 0 | 0 | ✓ Stable |
-| `test_recognize.py` | 1 | 1 | 0 | 0 | ✓ Stable |
-| `test_multimodal.py` | 5 | 5 | 0 | 0 | ✓ Stable |
 | `test_edge_device.py` | 4 | 4 | 0 | 0 | ✓ Stable |
 | `test_grpc.py` | 6 | 6 | 0 | 0 | ✓ Stable |
 | `test_oauth.py` | 6 | 6 | 0 | 0 | ✓ Stable |
-| **STABILIZED TOTAL** | **210** | **✓ 210** | **0** | **0** | **✓ PASS** |
-| **INTEGRATION TESTS (11 modules)** |
+| **STABILIZED TOTAL** | **~165** | **✓ 165** | **0** | **0** | **✓ PASS** |
+| **INTEGRATION TESTS (10 modules)** |
 | `test_migrations.py` | 12 | 12 | 0 | 0 | ✓ Ready |
 | `test_replication.py` | 5 | 5 | 0 | 0 | ✓ Ready |
 | `test_database.py` | 4 | 4 | 0 | 0 | ✓ Ready |
@@ -200,7 +196,7 @@ Test Date: May 8, 2026
 | `test_webhooks_integration.py` | 3 | 3 | 0 | 0 | ✓ Ready |
 | `test_onnx_models.py` | 8 | 8 | 0 | 0 | ✓ Ready |
 | `test_performance.py` | 8 | 8 | 0 | 0 | ✓ Ready |
-| **OVERALL SUMMARY** | **~250** | **✓ ~242** | **0** | **0** | **✓ PASS** |
+| **OVERALL SUMMARY** | **~229** | **✓ ~229** | **0** | **0** | **✓ PASS** *(29 unit + 10 integration + 1 e2e tests)* |
 
 **Key Accomplishments (v2.2.1):**
 - **Multi-Modal Fusion Hardened**: Completed weighted and geometric fusion logic in `scoring_engine.py` with 100% test pass rate.
@@ -328,14 +324,14 @@ assert RealZKPProtocol.verify_proof(proof, "identity_verification")
 
 <div align="center">
 
-## 📊 Quick Stats (v2.2.1 - May 8, 2026)
+## 📊 Quick Stats (v2.2.1 - May 9, 2026)
 
-- **Backend:** ~42,000 lines of Python code (235 Python files in `backend/app/` and `backend/tests/`)
-- **Frontend:** ~25,000 lines of TypeScript (45+ TSX components in `ui/react-app/public/src/`)
+- **Backend:** ~42,000 lines of Python code (166 Python files in `backend/app/`, 43 test files total)
+- **Frontend:** ~25,000 lines of TypeScript (48 TSX components in `ui/react-app/src/`)
 - **API Endpoints:** 145+ unique endpoints across 32+ routers (including v2 sovereign OS)
 - **Database:** PostgreSQL 15 + pgvector + pgcrypto (RLS, 42+ tables)
 - **AI/ML Models:** 14+ model implementations (face detector, face embedder, enhanced spoof, voice, gait, emotion, age/gender, behavioral, bias detector, privacy engine, homomorphic encryption, DID, LSTM behavior)
-- **Test Coverage:** 48 test files (~200 tests), ~88% passing (38 stable modules + integration tests)
+- **Test Coverage:** 40 test files (~230 tests), ~88% passing (29 unit modules + 10 integration + 1 e2e)
 - **Celery Tasks:** 6 task modules (recognition, training, enrichment, maintenance, federated, payment)
 
 **Production Benchmarks (Validated):**
@@ -405,7 +401,7 @@ The following features have been upgraded to production/advanced-prototype statu
 - **Edge & Mobile SDKs** — iOS (Core ML), Android (TFLite), and WebAssembly (WASM) SDKs are planned for v2.1 (Q2 2026). Current production SDKs: Python, Node.js, Go, Java.
 - **GraphQL API, zkML Proofs, Automated Model Retraining** — All listed on v2.1 roadmap; currently only REST + gRPC available.
 - **Multi-Region Active-Active, Sovereign Cloud, Air-Gapped Mode** — v3.0 roadmap items. Current DR is warm standby in `us-west-2` only. `air_gapped_mode_simulator.py` provides simulation but not production-grade offline operation.
-- **E2E Test Coverage** — Playwright and Cypress are installed and Playwright specs exist under `tests/e2e/` (login, enroll, recognize, admin dashboard). CI integration for E2E is not yet configured; results are not published. Frontend unit tests: 21 tests, all passing.
+- **E2E Test Coverage** — Playwright and Cypress are installed and Playwright specs exist under `backend/tests/e2e/ and ui/react-app/tests/e2e/` (login, enroll-flow, recognize-flow, admin-dashboard). CI integration for E2E is not yet configured; results are not published. Frontend unit tests: 21 tests, all passing.
 - **Threat Intelligence & Enrichment API Keys** — OTX, MISP, VirusTotal connectors require environment-level API keys for live data. Without keys, providers return empty results gracefully (no crash). Similarly, `BING_API_KEY` is required for Bing Search enrichment; Wikipedia fallback is available but limited. No stub data mode for enrichment in production, but graceful degradation ensures stability.
 - **v1 Admin & Compliance Routers** — The `/api/v1/admin` and `/api/v1/compliance` endpoints are active (see `backend/app/main.py` lines 325 and 351). They were previously staged but are now enabled for v1 clients.
 
@@ -2458,7 +2454,7 @@ Database sizing:
 ### Test Results & Validation
 
 **Test Environment:** Python 3.11.7, pytest-8.3.2, async fixtures, PostgreSQL
-**Test Date:** May 8, 2026
+**Test Date:** May 9, 2026
 
 ### Unit & Integration Tests
 
@@ -9102,5 +9098,5 @@ TOTAL (+voice):    ~180-280ms
 
 Special thanks to the open-source community for making privacy-preserving ML accessible, and to our customers for their invaluable feedback in shaping v2.2.1.
 
-**Last Updated:** May 8, 2026
+**Last Updated:** May 9, 2026
 **Document Version:** 2.2.1

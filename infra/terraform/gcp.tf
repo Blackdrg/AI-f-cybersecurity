@@ -49,9 +49,7 @@ resource "google_sql_database_instance" "postgres" {
   settings {
     tier              = "db-custom-2-4096"
     activation_policy = "ALWAYS"
-    disk_encryption_configuration {
-      enabled = true
-    }
+
     ip_configuration {
       ipv4_enabled    = false
       private_network = google_compute_network.main.id
@@ -62,6 +60,8 @@ resource "google_sql_database_instance" "postgres" {
       point_in_time_recovery_enabled = true
     }
   }
+
+
   
   deletion_protection = true
 }
