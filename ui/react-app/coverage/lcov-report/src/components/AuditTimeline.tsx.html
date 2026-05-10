@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/105</span>
+                <span class='fraction'>0/96</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/92</span>
+                <span class='fraction'>0/84</span>
             </div>
         
             
@@ -556,21 +556,21 @@
 <a name='L491'></a><a href='#L491'>491</a>
 <a name='L492'></a><a href='#L492'>492</a>
 <a name='L493'></a><a href='#L493'>493</a>
-<a name='L494'></a><a href='#L494'>494</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L494'></a><a href='#L494'>494</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1049,21 +1049,21 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useEffect, useMemo, useCallback } from 'react';</span>
-<span class="cstat-no" title="statement not covered" >import { Box, Typography, Paper, Card, CardContent,</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Box, Typography, Paper, Card, CardContent,
   Chip, Button, TextField, MenuItem,  Collapse, List, ListItem,
   ListItemText, ListItemIcon, LinearProgress,
   CircularProgress } from '@mui/material';
-<span class="cstat-no" title="statement not covered" >import { Grid } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import { TimelineDot } from '@mui/lab';</span>
-<span class="cstat-no" title="statement not covered" >import {</span>
+import { Grid } from '@mui/material';
+import { TimelineDot } from '@mui/lab';
+import {
   History, Security, Block, CheckCircle,
   Error, Warning, Info, Link, VerifiedUser,
   Key, Fingerprint, Description, Download,
   ExpandMore, ExpandLess, Search, Refresh
 } from '@mui/icons-material';
-<span class="cstat-no" title="statement not covered" >import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';</span>
-<span class="cstat-no" title="statement not covered" >import API from '../services/api';</span>
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import API from '../services/api';
 &nbsp;
 interface AuditLog {
   id?: string | number;
@@ -1094,7 +1094,7 @@ interface AuditTimelineProps {
 type ActionType = 'login' | 'enroll' | 'recognize' | 'revoke' | 'override' | 'escalate' | 'policy_change' | 'config_update';
 type SeverityType = 'critical' | 'high' | 'medium' | 'low' | 'info';
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >AuditTimeline = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span>{</span> orgId, filters = <span class="branch-0 cbranch-no" title="branch not covered" >{},</span> onFilterChange }: AuditTimelineProps) =&gt; {</span>
+export const AuditTimeline = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >({</span> orgId, filters = <span class="branch-0 cbranch-no" title="branch not covered" >{},</span> onFilterChange }: AuditTimelineProps) =&gt; {</span>
   const [auditLogs, setAuditLogs] = <span class="cstat-no" title="statement not covered" >useState&lt;AuditLog[]&gt;([]);</span>
   const [loading, setLoading] = <span class="cstat-no" title="statement not covered" >useState(false);</span>
   const [expandedLog, setExpandedLog] = <span class="cstat-no" title="statement not covered" >useState&lt;number | null&gt;(null);</span>
@@ -1103,7 +1103,7 @@ export const <span class="cstat-no" title="statement not covered" >AuditTimeline
   const [filterSeverity, setFilterSeverity] = <span class="cstat-no" title="statement not covered" >useState('all');</span>
   const [filterAction, setFilterAction] = <span class="cstat-no" title="statement not covered" >useState('all');</span>
 &nbsp;
-  const fetchAuditLogs = <span class="cstat-no" title="statement not covered" >useCallback(<span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const fetchAuditLogs = <span class="cstat-no" title="statement not covered" >useCallback(<span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const res = <span class="cstat-no" title="statement not covered" >await API.get('/api/logs', {</span>
@@ -1123,11 +1123,11 @@ export const <span class="cstat-no" title="statement not covered" >AuditTimeline
     }
   }, [filterAction]);
 &nbsp;
-  const fetchChainVerification = <span class="cstat-no" title="statement not covered" >useCallback(<span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const fetchChainVerification = <span class="cstat-no" title="statement not covered" >useCallback(<span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const res = <span class="cstat-no" title="statement not covered" >await API.get('/api/analytics');</span>
 <span class="cstat-no" title="statement not covered" >      if (res.data) {</span>
-<span class="cstat-no" title="statement not covered" >        setVerificationStatus(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
+<span class="cstat-no" title="statement not covered" >        setVerificationStatus(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
           ...prev,
           chainData: res.data.device_stats || []
         }));
@@ -1167,7 +1167,7 @@ export const <span class="cstat-no" title="statement not covered" >AuditTimeline
     config_update: 'Config Update'
   };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    fetchAuditLogs();</span>
 <span class="cstat-no" title="statement not covered" >    fetchChainVerification();</span>
 &nbsp;
@@ -1178,10 +1178,10 @@ export const <span class="cstat-no" title="statement not covered" >AuditTimeline
     let socket: WebSocket | null = <span class="cstat-no" title="statement not covered" >null;</span>
     let reconnectTimeout: ReturnType&lt;typeof setTimeout&gt; | null = <span class="cstat-no" title="statement not covered" >null;</span>
 &nbsp;
-    const connect = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const connect = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      socket = new WebSocket(wsUrl);</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      socket.onopen = <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      socket.onopen = <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        console.log('[WebSocket] Connected to Audit Stream');</span>
       };
 &nbsp;
@@ -1189,20 +1189,20 @@ export const <span class="cstat-no" title="statement not covered" >AuditTimeline
 <span class="cstat-no" title="statement not covered" >        try {</span>
           const data = <span class="cstat-no" title="statement not covered" >JSON.parse(event.data);</span>
 <span class="cstat-no" title="statement not covered" >          if (data.type === 'audit_log') {</span>
-<span class="cstat-no" title="statement not covered" >            setAuditLogs(<span class="fstat-no" title="function not covered" >prev </span>=&gt; <span class="cstat-no" title="statement not covered" >[data.log, ...prev].slice(0, 500) as AuditLog[])</span>;</span>
-<span class="cstat-no" title="statement not covered" >            setVerificationStatus(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
+<span class="cstat-no" title="statement not covered" >            setAuditLogs(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; <span class="cstat-no" title="statement not covered" >[data.log, ...prev].slice(0, 500) as AuditLog[])</span>;</span>
+<span class="cstat-no" title="statement not covered" >            setVerificationStatus(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
               ...prev,
               totalLogs: (prev.totalLogs || 0) + 1
             }));
           } else <span class="cstat-no" title="statement not covered" >if (data.type === 'integrity_alert') {</span>
-<span class="cstat-no" title="statement not covered" >            setVerificationStatus(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, hashChainValid: false })</span>);</span>
+<span class="cstat-no" title="statement not covered" >            setVerificationStatus(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, hashChainValid: false })</span>);</span>
           }
         } catch (err: any) {
 <span class="cstat-no" title="statement not covered" >          console.error('[WebSocket] Failed to parse message', err);</span>
         }
       };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      socket.onclose = <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      socket.onclose = <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        console.log('[WebSocket] Disconnected. Reconnecting...');</span>
 <span class="cstat-no" title="statement not covered" >        reconnectTimeout = setTimeout(connect, 3000);</span>
       };
@@ -1215,7 +1215,7 @@ export const <span class="cstat-no" title="statement not covered" >AuditTimeline
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    connect();</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    return <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      if (socket) <span class="cstat-no" title="statement not covered" >socket.close();</span></span>
 <span class="cstat-no" title="statement not covered" >      if (reconnectTimeout) <span class="cstat-no" title="statement not covered" >clearTimeout(reconnectTimeout);</span></span>
     };
@@ -1251,16 +1251,16 @@ export const <span class="cstat-no" title="statement not covered" >AuditTimeline
     ));
   };
 &nbsp;
-  const filteredLogs = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return auditLogs.filter(<span class="fstat-no" title="function not covered" >log </span>=&gt; {</span>
+  const filteredLogs = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    return auditLogs.filter(<span class="fstat-no" title="function not covered" >lo</span>g =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      if (filterSeverity !== 'all' &amp;&amp; log.severity !== filterSeverity) <span class="cstat-no" title="statement not covered" >return false;</span></span>
 <span class="cstat-no" title="statement not covered" >      if (filterAction !== 'all' &amp;&amp; log.action !== filterAction) <span class="cstat-no" title="statement not covered" >return false;</span></span>
 <span class="cstat-no" title="statement not covered" >      return true;</span>
     });
   }, [auditLogs, filterSeverity, filterAction]);
 &nbsp;
-  const timelineData = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return filteredLogs.slice(0, 50).map(<span class="fstat-no" title="function not covered" >log </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
+  const timelineData = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    return filteredLogs.slice(0, 50).map(<span class="fstat-no" title="function not covered" >lo</span>g =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
       time: new Date(log.timestamp).toLocaleTimeString(),
       action: log.action,
       details: log.details,
@@ -1446,7 +1446,7 @@ export const <span class="cstat-no" title="statement not covered" >AuditTimeline
 <span class="cstat-no" title="statement not covered" >            &lt;React.Fragment key={log.id || index}&gt;</span>
 &lt;ListItem
                  component="button"
-                 onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setExpandedLog(expandedLog === index ? null : index)}</span>
+                 onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setExpandedLog(expandedLog === index ? null : index)}</span>
                 sx={{
                   borderBottom: '1px solid',
                   borderColor: 'divider',
@@ -1542,14 +1542,14 @@ export const <span class="cstat-no" title="statement not covered" >AuditTimeline
   );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default AuditTimeline;</span></pre></td></tr></table></pre>
+export default AuditTimeline;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

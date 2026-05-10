@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/103</span>
+                <span class='fraction'>0/97</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/103</span>
+                <span class='fraction'>0/97</span>
             </div>
         
             
@@ -667,14 +667,11 @@
 <a name='L602'></a><a href='#L602'>602</a>
 <a name='L603'></a><a href='#L603'>603</a>
 <a name='L604'></a><a href='#L604'>604</a>
-<a name='L605'></a><a href='#L605'>605</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L605'></a><a href='#L605'>605</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -687,7 +684,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1271,14 +1271,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useEffect } from 'react';</span>
-<span class="cstat-no" title="statement not covered" >import { Box, Typography, Card, CardContent, Alert, Button,</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState, useEffect } from 'react';
+import { Box, Typography, Card, CardContent, Alert, Button,
   LinearProgress, Chip, List, ListItem, ListItemText,
   ListItemIcon, Divider, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField,  Paper, IconButton, Tooltip,
   CircularProgress, Stack } from '@mui/material';
-<span class="cstat-no" title="statement not covered" >import { Grid } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import {</span>
+import { Grid } from '@mui/material';
+import {
   Error as ErrorIcon,
   Warning,
   Refresh,
@@ -1291,7 +1291,7 @@
   CompareArrows,
   Description
 } from '@mui/icons-material';
-<span class="cstat-no" title="statement not covered" >import API from '../services/api';</span>
+import API from '../services/api';
 &nbsp;
 // MUI Alert severity type (MUI only supports these 4 values)
 type AlertSeverity = 'error' | 'warning' | 'info' | 'success';
@@ -1431,13 +1431,13 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
   const [resolutionDialogOpen, setResolutionDialogOpen] = <span class="cstat-no" title="statement not covered" >useState&lt;boolean&gt;(false);</span>
   const [resolutionNote, setResolutionNote] = <span class="cstat-no" title="statement not covered" >useState&lt;string&gt;('');</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (recognitionResult?.faces?.[0]) {</span>
 <span class="cstat-no" title="statement not covered" >      analyzeError(recognitionResult.faces[0]);</span>
     }
   }, [recognitionResult]);
 &nbsp;
-  const analyzeError = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(face: {</span>
+  const analyzeError = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (face: {</span>
     spoof_score?: number;
     score?: number;
     reconstruction_confidence?: number;
@@ -1592,7 +1592,7 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
     }
   };
 &nbsp;
-  const handleRecoveryAction = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(action: SuggestedAction) =&gt; {</span>
+  const handleRecoveryAction = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (action: SuggestedAction) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setRecoveryDialogOpen(false);</span>
     
 <span class="cstat-no" title="statement not covered" >    try {</span>
@@ -1630,7 +1630,7 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
     }
   };
 &nbsp;
-  const handleEscalation = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const handleEscalation = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await API.post('/api/escalations/create', {</span>
         recognition_id: recognitionResult?.request_id,
@@ -1650,7 +1650,7 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
     }
   };
 &nbsp;
-  const resolveError = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const resolveError = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setResolutionDialogOpen(false);</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await API.post('/api/errors/resolve', {</span>
@@ -1751,7 +1751,7 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
                       size="small"
                       variant="outlined"
                       startIcon={action.icon}
-                      onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; {
+                      onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; {
 <span class="cstat-no" title="statement not covered" >                        setSelectedError(action);</span>
 <span class="cstat-no" title="statement not covered" >                        setRecoveryDialogOpen(true);</span>
                       }}
@@ -1775,7 +1775,7 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
               variant="contained"
               startIcon={&lt;Refresh /&gt;}
               size="small"
-              onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; {
+              onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; {
 <span class="cstat-no" title="statement not covered" >                setSelectedError(RECOVERY_ACTIONS.RETRY_ORIGINAL);</span>
 <span class="cstat-no" title="statement not covered" >                setRecoveryDialogOpen(true);</span>
               }}
@@ -1786,7 +1786,7 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
               variant="outlined"
               startIcon={&lt;Settings /&gt;}
               size="small"
-              onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; {
+              onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; {
 <span class="cstat-no" title="statement not covered" >                setSelectedError(RECOVERY_ACTIONS.MANUAL_THRESHOLD_ADJUST);</span>
 <span class="cstat-no" title="statement not covered" >                setRecoveryDialogOpen(true);</span>
               }}
@@ -1806,7 +1806,7 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
               variant="outlined"
               startIcon={&lt;Description /&gt;}
               size="small"
-              onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setResolutionDialogOpen(true)}</span>
+              onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setResolutionDialogOpen(true)}</span>
             &gt;
               Mark Resolved
             &lt;/Button&gt;
@@ -1815,7 +1815,7 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
       &lt;/Card&gt;
 &nbsp;
       {/* Recovery Action Dialog */}
-      &lt;Dialog open={recoveryDialogOpen} onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setRecoveryDialogOpen(false)}</span> maxWidth="sm" fullWidth&gt;
+      &lt;Dialog open={recoveryDialogOpen} onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setRecoveryDialogOpen(false)}</span> maxWidth="sm" fullWidth&gt;
         &lt;DialogTitle&gt;Recovery Action&lt;/DialogTitle&gt;
         &lt;DialogContent&gt;
           {selectedError &amp;&amp; (
@@ -1835,10 +1835,10 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
           )}
         &lt;/DialogContent&gt;
         &lt;DialogActions&gt;
-          &lt;Button onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setRecoveryDialogOpen(false)}</span>&gt;Cancel&lt;/Button&gt;
+          &lt;Button onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setRecoveryDialogOpen(false)}</span>&gt;Cancel&lt;/Button&gt;
           &lt;Button
             variant="contained"
-            onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handleRecoveryAction(selectedError as SuggestedAction)}</span>
+            onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleRecoveryAction(selectedError as SuggestedAction)}</span>
             startIcon={&lt;PlayArrow /&gt;}
           &gt;
             Execute
@@ -1847,7 +1847,7 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
       &lt;/Dialog&gt;
 &nbsp;
       {/* Resolution Dialog */}
-      &lt;Dialog open={resolutionDialogOpen} onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setResolutionDialogOpen(false)}</span> maxWidth="sm" fullWidth&gt;
+      &lt;Dialog open={resolutionDialogOpen} onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setResolutionDialogOpen(false)}</span> maxWidth="sm" fullWidth&gt;
         &lt;DialogTitle&gt;Mark as Resolved&lt;/DialogTitle&gt;
         &lt;DialogContent&gt;
           &lt;Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}&gt;
@@ -1865,7 +1865,7 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
           /&gt;
         &lt;/DialogContent&gt;
         &lt;DialogActions&gt;
-          &lt;Button onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setResolutionDialogOpen(false)}</span>&gt;Cancel&lt;/Button&gt;
+          &lt;Button onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setResolutionDialogOpen(false)}</span>&gt;Cancel&lt;/Button&gt;
           &lt;Button variant="contained" onClick={resolveError} disabled={!resolutionNote.trim()}&gt;
             Confirm Resolution
           &lt;/Button&gt;
@@ -1875,14 +1875,14 @@ const RecognitionErrorRecovery: React.FC&lt;RecognitionErrorRecoveryProps&gt; = 
   );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default RecognitionErrorRecovery;</span></pre></td></tr></table></pre>
+export default RecognitionErrorRecovery;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

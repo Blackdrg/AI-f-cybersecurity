@@ -12,6 +12,7 @@ import uuid
 import json
 import hashlib
 from datetime import datetime, timedelta
+from ..offline.sync import get_offline_sync
 from ..security.secrets_vault import vault
 try:
     from cryptography.fernet import Fernet

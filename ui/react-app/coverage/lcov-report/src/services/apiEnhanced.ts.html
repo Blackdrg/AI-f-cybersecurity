@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/128</span>
+                <span class='fraction'>0/124</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/123</span>
+                <span class='fraction'>0/119</span>
             </div>
         
             
@@ -454,8 +454,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -473,6 +472,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -502,7 +502,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -823,7 +823,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Enhanced API Service for AI-f Enterprise
  * 
  * Features:
@@ -834,8 +834,8 @@
  * - Enterprise-grade error messages
  */
 &nbsp;
-<span class="cstat-no" title="statement not covered" >import axios from 'axios';</span>
-<span class="cstat-no" title="statement not covered" >import { v4 as uuidv4 } from 'uuid';</span>
+import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 &nbsp;
 // Validation Schemas
 interface RecognitionResponseSchema {
@@ -869,7 +869,7 @@ const ResponseSchemas = <span class="cstat-no" title="statement not covered" >{<
 };
 &nbsp;
 // Error Categories for Enterprise UX
-export const <span class="cstat-no" title="statement not covered" >ErrorTypes = {</span>
+export const ErrorTypes = <span class="cstat-no" title="statement not covered" >{</span>
   NETWORK: 'NETWORK_ERROR',
   TIMEOUT: 'REQUEST_TIMEOUT',
   AUTH: 'AUTHENTICATION_ERROR',
@@ -882,13 +882,13 @@ export const <span class="cstat-no" title="statement not covered" >ErrorTypes = 
   QUALITY_ISSUE: 'QUALITY_ISSUE'
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export class A</span>PIError extends Error {
+export class APIError extends Error {
   public type: string;
   public details: Record&lt;string, any&gt;;
   public timestamp: string;
   public id: string;
 &nbsp;
-<span class="fstat-no" title="function not covered" >  constructor(t</span>ype: string, message: string, details: Record&lt;string, any&gt; = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
+<span class="fstat-no" title="function not covered" >  co</span>nstructor(type: string, message: string, details: Record&lt;string, any&gt; = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
 <span class="cstat-no" title="statement not covered" >    super(message);</span>
 <span class="cstat-no" title="statement not covered" >    this.name = 'APIError';</span>
 <span class="cstat-no" title="statement not covered" >    this.type = type;</span>
@@ -897,7 +897,7 @@ export const <span class="cstat-no" title="statement not covered" >ErrorTypes = 
 <span class="cstat-no" title="statement not covered" >    this.id = uuidv4();</span>
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  toUserMessage(</span>): string {
+<span class="fstat-no" title="function not covered" >  to</span>UserMessage(): string {
     const messages: Record&lt;string, string&gt; = <span class="cstat-no" title="statement not covered" >{</span>
       [ErrorTypes.NETWORK]: 'Network connection unavailable. Please check your internet connection.',
       [ErrorTypes.TIMEOUT]: 'Request timed out. The service may be under high load.',
@@ -913,7 +913,7 @@ export const <span class="cstat-no" title="statement not covered" >ErrorTypes = 
 <span class="cstat-no" title="statement not covered" >    return messages[this.type] || 'An unexpected error occurred. Please try again.';</span>
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  toLogEntry(</span>) {
+<span class="fstat-no" title="function not covered" >  to</span>LogEntry() {
 <span class="cstat-no" title="statement not covered" >    return {</span>
       id: this.id,
       type: this.type,
@@ -995,7 +995,7 @@ const createAPI = <span class="cstat-no" title="statement not covered" ><span cl
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      return response;</span>
     },
-<span class="fstat-no" title="function not covered" >    async </span>(error) =&gt; {
+<span class="fstat-no" title="function not covered" >    as</span>ync (error) =&gt; {
       const originalRequest = <span class="cstat-no" title="statement not covered" >error.config;</span>
 &nbsp;
       // Handle different error types
@@ -1034,7 +1034,7 @@ const createAPI = <span class="cstat-no" title="statement not covered" ><span cl
 <span class="cstat-no" title="statement not covered" >          originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;</span>
           const delay = <span class="cstat-no" title="statement not covered" >Math.pow(2, originalRequest._retryCount) * (originalRequest.retryDelay || 1000);</span>
           
-<span class="cstat-no" title="statement not covered" >          await new Promise(<span class="fstat-no" title="function not covered" >resolve </span>=&gt; <span class="cstat-no" title="statement not covered" >setTimeout(resolve, delay))</span>;</span>
+<span class="cstat-no" title="statement not covered" >          await new Promise(<span class="fstat-no" title="function not covered" >re</span>solve =&gt; <span class="cstat-no" title="statement not covered" >setTimeout(resolve, delay))</span>;</span>
 <span class="cstat-no" title="statement not covered" >          return api(originalRequest);</span>
         }
         
@@ -1151,7 +1151,7 @@ const EnhancedAPI = <span class="cstat-no" title="statement not covered" >{</spa
   APIError,
   
   // Wrapper with error handling for React components
-  call: <span class="fstat-no" title="function not covered" >async </span>&lt;T&gt;(fn: () =&gt; Promise&lt;any&gt;): Promise&lt;{ data: T | null; error: APIError | null }&gt; =&gt; {
+  call: <span class="fstat-no" title="function not covered" >as</span>ync &lt;T&gt;(fn: () =&gt; Promise&lt;any&gt;): Promise&lt;{ data: T | null; error: APIError | null }&gt; =&gt; {
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const response = <span class="cstat-no" title="statement not covered" >await fn();</span>
 <span class="cstat-no" title="statement not covered" >      return { data: response.data, error: null };</span>
@@ -1169,15 +1169,15 @@ const EnhancedAPI = <span class="cstat-no" title="statement not covered" >{</spa
 &nbsp;
   // Enterprise API Endpoints
   mfa: {
-    enroll: <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >API.post('/api/mfa/enroll'),</span>
+    enroll: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >API.post('/api/mfa/enroll'),</span>
     verify: <span class="fstat-no" title="function not covered" >(c</span>ode: string) =&gt; <span class="cstat-no" title="statement not covered" >API.post('/api/mfa/verify', { code }),</span>
     verifyLogin: <span class="fstat-no" title="function not covered" >(c</span>ode: string) =&gt; <span class="cstat-no" title="statement not covered" >API.post('/api/mfa/verify-totp', { code }),</span>
-    status: <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/mfa/status'),</span>
+    status: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/mfa/status'),</span>
     disable: <span class="fstat-no" title="function not covered" >(p</span>assword: string) =&gt; <span class="cstat-no" title="statement not covered" >API.post('/api/mfa/disable', { password })</span>
   },
 &nbsp;
   alerts: {
-    getActive: <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/orgs/alerts/active'),</span>
+    getActive: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/orgs/alerts/active'),</span>
     acknowledge: <span class="fstat-no" title="function not covered" >(i</span>d: string) =&gt; <span class="cstat-no" title="statement not covered" >API.put(`/api/orgs/alerts/${id}/acknowledge`),</span>
     getHistory: <span class="fstat-no" title="function not covered" >(p</span>arams: Record&lt;string, any&gt;) =&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/orgs/alerts/history', { params })</span>
   },
@@ -1192,25 +1192,25 @@ const EnhancedAPI = <span class="cstat-no" title="statement not covered" >{</spa
   audit: {
     getLogs: <span class="fstat-no" title="function not covered" >(p</span>arams: Record&lt;string, any&gt;) =&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/logs', { params }),</span>
     getForensicTrace: <span class="fstat-no" title="function not covered" >(e</span>ventId: string) =&gt; <span class="cstat-no" title="statement not covered" >API.get(`/api/audit/forensic/${eventId}`),</span>
-    verifyChain: <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/audit/verify')</span>
+    verifyChain: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/audit/verify')</span>
   },
 &nbsp;
   compliance: {
-    getDPIA: <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/compliance/dpia'),</span>
-    getGapAssessment: <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/compliance/soc2-gap'),</span>
+    getDPIA: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/compliance/dpia'),</span>
+    getGapAssessment: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >API.get('/api/compliance/soc2-gap'),</span>
     triggerSAR: <span class="fstat-no" title="function not covered" >(p</span>ersonId: string) =&gt; <span class="cstat-no" title="statement not covered" >API.post('/api/compliance/sar', { person_id: personId }),</span>
     getSARStatus: <span class="fstat-no" title="function not covered" >(r</span>equestId: string) =&gt; <span class="cstat-no" title="statement not covered" >API.get(`/api/compliance/sar/${requestId}`)</span>
   }
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default EnhancedAPI;</span></pre></td></tr></table></pre>
+export default EnhancedAPI;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/183</span>
+                <span class='fraction'>0/178</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/165</span>
+                <span class='fraction'>0/160</span>
             </div>
         
             
@@ -857,7 +857,7 @@
 <a name='L792'></a><a href='#L792'>792</a>
 <a name='L793'></a><a href='#L793'>793</a>
 <a name='L794'></a><a href='#L794'>794</a>
-<a name='L795'></a><a href='#L795'>795</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L795'></a><a href='#L795'>795</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -949,21 +949,21 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1650,8 +1650,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useEffect } from 'react';</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState, useEffect } from 'react';
 &nbsp;
 // Data interfaces
 interface EnrichmentResult {
@@ -1743,20 +1743,20 @@ interface EnrichmentPortalPanelProps {
   onAlertAction?: (action: string, data: unknown) =&gt; void;
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >import { Box, Typography, Paper,  Card, CardContent,</span>
+import { Box, Typography, Paper,  Card, CardContent,
   TextField, Button, Chip, List, ListItem, ListItemText,
   ListItemIcon, Avatar, CircularProgress, Alert, IconButton,
   Tabs, Tab, Divider, Tooltip, Badge, Collapse, CardHeader,
   Table, TableBody, TableCell, TableHead, TableRow, Stack } from '@mui/material';
 import { Grid } from '@mui/material';
-<span class="cstat-no" title="statement not covered" >import {</span>
+import {
   Search, Web, Description, Link as LinkIcon,
   Public, Book, Article, OpenInNew,
   Info, Timeline, AccountTree, NetworkCheck,
   Star, History, Download, Share, Refresh,
   Category, Language, Today, Person
 } from '@mui/icons-material';
-<span class="cstat-no" title="statement not covered" >import API from '../services/api';</span>
+import API from '../services/api';
 &nbsp;
 const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >({</span></span>
   personId,
@@ -1779,13 +1779,13 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
   const [enrichmentSummary, setEnrichmentSummary] = <span class="cstat-no" title="statement not covered" >useState&lt;EnrichmentSummary | null&gt;(null);</span>
   const [correlationGraph, setCorrelationGraph] = <span class="cstat-no" title="statement not covered" >useState&lt;CorrelationGraph | null&gt;(null);</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    fetchEnrichmentHistory();</span>
     const interval = <span class="cstat-no" title="statement not covered" >setInterval(fetchEnrichmentHistory, 60000);</span>
-<span class="cstat-no" title="statement not covered" >    return <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >clearInterval(interval);</span></span>
+<span class="cstat-no" title="statement not covered" >    return <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >clearInterval(interval);</span></span>
   }, [personId]);
 &nbsp;
-  const fetchEnrichmentHistory = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const fetchEnrichmentHistory = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (!personId) <span class="cstat-no" title="statement not covered" >return;</span></span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const res = <span class="cstat-no" title="statement not covered" >await API.get&lt;{ results: HistoryItem[] }&gt;(`/api/enrichments?person_id=${personId}`);</span>
@@ -1795,7 +1795,7 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
     }
   };
 &nbsp;
-  const performSearch = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const performSearch = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (!searchQuery.trim() &amp;&amp; !personId) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    setIsSearching(true);</span>
@@ -1831,13 +1831,13 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
   };
 &nbsp;
   const updateProviderRequests = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(p</span>roviderId: string) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    setProviders(<span class="fstat-no" title="function not covered" >prev </span>=&gt; <span class="cstat-no" title="statement not covered" >prev.map(<span class="fstat-no" title="function not covered" >p </span>=&gt;</span></span>
+<span class="cstat-no" title="statement not covered" >    setProviders(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; <span class="cstat-no" title="statement not covered" >prev.map(<span class="fstat-no" title="function not covered" >p </span>=&gt;</span></span>
 <span class="cstat-no" title="statement not covered" >      p.id === providerId ? { ...p, requests: p.requests + 1 } : p</span>
     ));
   };
 &nbsp;
-  const mockBingSearch = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(query: string): Promise&lt;EnrichmentResult[]&gt; =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    await new Promise(<span class="fstat-no" title="function not covered" >resolve </span>=&gt; <span class="cstat-no" title="statement not covered" >setTimeout(resolve, 500))</span>;</span>
+  const mockBingSearch = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (query: string): Promise&lt;EnrichmentResult[]&gt; =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    await new Promise(<span class="fstat-no" title="function not covered" >re</span>solve =&gt; <span class="cstat-no" title="statement not covered" >setTimeout(resolve, 500))</span>;</span>
 &nbsp;
     const topics = <span class="cstat-no" title="statement not covered" >query.toLowerCase().includes('security') || query.toLowerCase().includes('threat')</span>
       ? ['cybersecurity', 'intelligence', 'monitoring']
@@ -1888,8 +1888,8 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
     ];
   };
 &nbsp;
-  const mockWikipediaSearch = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(query: string): Promise&lt;EnrichmentResult[]&gt; =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    await new Promise(<span class="fstat-no" title="function not covered" >resolve </span>=&gt; <span class="cstat-no" title="statement not covered" >setTimeout(resolve, 400))</span>;</span>
+  const mockWikipediaSearch = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (query: string): Promise&lt;EnrichmentResult[]&gt; =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    await new Promise(<span class="fstat-no" title="function not covered" >re</span>solve =&gt; <span class="cstat-no" title="statement not covered" >setTimeout(resolve, 400))</span>;</span>
 &nbsp;
     const subjects = <span class="cstat-no" title="statement not covered" >[</span>
       { title: 'Biometric Recognition Systems', category: 'Technology' },
@@ -1949,7 +1949,7 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
     ];
   };
 &nbsp;
-  const logEnrichmentQuery = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(query: string, results: EnrichmentResult[]) =&gt; {</span>
+  const logEnrichmentQuery = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (query: string, results: EnrichmentResult[]) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await API.post('/api/enrichments/log', {</span>
         query,
@@ -1967,7 +1967,7 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
   };
 &nbsp;
   const handleExpand = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(i</span>d: string) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    setExpandStates(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, [id]: !prev[id] })</span>);</span>
+<span class="cstat-no" title="statement not covered" >    setExpandStates(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, [id]: !prev[id] })</span>);</span>
   };
 &nbsp;
   const getCategoryColor = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(c</span>ategory: string): string =&gt; {</span>
@@ -2004,14 +2004,14 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
 <span class="cstat-no" title="statement not covered" >    return '#9ca3af';</span>
   };
 &nbsp;
-  const renderProviderStats = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; (</span>
+  const renderProviderStats = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Card sx={{ mb: 3 }}&gt;</span>
       &lt;CardContent&gt;
         &lt;Typography variant="subtitle2" gutterBottom&gt;
           Active Providers
         &lt;/Typography&gt;
         &lt;Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}&gt;
-          {providers.map(<span class="fstat-no" title="function not covered" >provider </span>=&gt; (
+          {providers.map(<span class="fstat-no" title="function not covered" >pr</span>ovider =&gt; (
 <span class="cstat-no" title="statement not covered" >            &lt;Chip</span>
               key={provider.id}
               icon={
@@ -2036,7 +2036,7 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
     &lt;/Card&gt;
   );
 &nbsp;
-  const renderSearchBar = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; (</span>
+  const renderSearchBar = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Card sx={{ mb: 3 }}&gt;</span>
       &lt;CardContent&gt;
         &lt;Typography variant="subtitle2" gutterBottom&gt;
@@ -2191,7 +2191,7 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
                 &lt;/Button&gt;
                 &lt;IconButton
                   size="small"
-                  onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handleExpand(result.id)}</span>
+                  onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleExpand(result.id)}</span>
                 &gt;
                   &lt;Info color={isExpanded ? "primary" : "action"} /&gt;
                 &lt;/IconButton&gt;
@@ -2203,7 +2203,7 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
     );
   };
 &nbsp;
-  const renderEnrichmentResults = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; (</span>
+  const renderEnrichmentResults = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Card sx={{ mb: 3 }}&gt;</span>
       &lt;CardHeader
         title={
@@ -2233,7 +2233,7 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
     &lt;/Card&gt;
   );
 &nbsp;
-  const renderEnrichmentHistory = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; (</span>
+  const renderEnrichmentHistory = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Card&gt;</span>
       &lt;CardContent&gt;
         &lt;Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}&gt;
@@ -2285,9 +2285,9 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
   const generateCorrelationAnalysis = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(r</span>esults: EnrichmentResult[]): CorrelationGraph =&gt; {</span>
     const entityMap = <span class="cstat-no" title="statement not covered" >new Map&lt;string, { occurrences: number; sources: string[]; riskScore: number }&gt;();</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    results.forEach(<span class="fstat-no" title="function not covered" >result </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    results.forEach(<span class="fstat-no" title="function not covered" >re</span>sult =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      if (result.entities) {</span>
-<span class="cstat-no" title="statement not covered" >        result.entities.forEach(<span class="fstat-no" title="function not covered" >entity </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        result.entities.forEach(<span class="fstat-no" title="function not covered" >en</span>tity =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >          if (!entityMap.has(entity)) {</span>
 <span class="cstat-no" title="statement not covered" >            entityMap.set(entity, { occurrences: 0, sources: [], riskScore: 0 });</span>
           }
@@ -2354,7 +2354,7 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
 &nbsp;
     const commonTags: Record&lt;string, number&gt; = <span class="cstat-no" title="statement not covered" >{};</span>
 <span class="cstat-no" title="statement not covered" >    results.forEach(<span class="fstat-no" title="function not covered" >r </span>=&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      (r.tags || []).forEach(<span class="fstat-no" title="function not covered" >tag </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      (r.tags || []).forEach(<span class="fstat-no" title="function not covered" >ta</span>g =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        commonTags[tag] = (commonTags[tag] || 0) + 1;</span>
       });
     });
@@ -2444,7 +2444,7 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
   );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default EnrichmentPortalPanel;</span>
+export default EnrichmentPortalPanel;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -2452,7 +2452,7 @@ const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covere
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/169</span>
+                <span class='fraction'>0/163</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/160</span>
+                <span class='fraction'>0/154</span>
             </div>
         
             
@@ -377,11 +377,8 @@
 <a name='L312'></a><a href='#L312'>312</a>
 <a name='L313'></a><a href='#L313'>313</a>
 <a name='L314'></a><a href='#L314'>314</a>
-<a name='L315'></a><a href='#L315'>315</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L315'></a><a href='#L315'>315</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -389,6 +386,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -689,13 +689,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useRef, useEffect } from 'react';</span>
-<span class="cstat-no" title="statement not covered" >import axios from 'axios';</span>
-<span class="cstat-no" title="statement not covered" >import { Button, Typography,  Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab, Paper, Divider } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import { Grid } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, BarChart, PieChart } from '@mui/icons-material';</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+import { Button, Typography,  Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab, Paper, Divider } from '@mui/material';
+import { Grid } from '@mui/material';
+import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, BarChart, PieChart } from '@mui/icons-material';
 &nbsp;
 import type { Face as FaceType, RecognitionResult } from '../types';
 &nbsp;
@@ -717,7 +717,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
     const wsRef = <span class="cstat-no" title="statement not covered" >useRef&lt;WebSocket | null&gt;(null);</span>
     const intervalRef = <span class="cstat-no" title="statement not covered" >useRef&lt;NodeJS.Timeout | null&gt;(null);</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (result) {</span>
 <span class="cstat-no" title="statement not covered" >            setResults(result);</span>
         }
@@ -750,7 +750,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
             }
         });
 &nbsp;
-        const summary = <span class="cstat-no" title="statement not covered" >Object.keys(emotionCounts).map(<span class="fstat-no" title="function not covered" >emotion </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
+        const summary = <span class="cstat-no" title="statement not covered" >Object.keys(emotionCounts).map(<span class="fstat-no" title="function not covered" >em</span>otion =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
             emotion,
             count: emotionCounts[emotion],
             percentage: (emotionCounts[emotion] / totalFaces) * 100,
@@ -762,7 +762,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
 <span class="cstat-no" title="statement not covered" >        return summary;</span>
     };
 &nbsp;
-    const handleSubmit = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(e: React.FormEvent) =&gt; {</span>
+    const handleSubmit = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (e: React.FormEvent) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        e.preventDefault();</span>
 <span class="cstat-no" title="statement not covered" >        if (!image) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
@@ -786,7 +786,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const startWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const startWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
             const stream = <span class="cstat-no" title="statement not covered" >await navigator.mediaDevices.getUserMedia({ video: true });</span>
 <span class="cstat-no" title="statement not covered" >            if (videoRef.current) <span class="cstat-no" title="statement not covered" >videoRef.current!.srcObject = stream;</span></span>
@@ -799,7 +799,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
             const wsProtocol = <span class="cstat-no" title="statement not covered" >baseURL.startsWith('https') ? 'wss' : 'ws';</span>
             const host = <span class="cstat-no" title="statement not covered" >baseURL.replace(/^https?:\/\//, '');</span>
 <span class="cstat-no" title="statement not covered" >            wsRef.current = new WebSocket(`${wsProtocol}://${host}/api/recognize_stream`);</span>
-<span class="cstat-no" title="statement not covered" >            wsRef.current.onopen = <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >            wsRef.current.onopen = <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >                console.log('WebSocket connected');</span>
             };
 <span class="cstat-no" title="statement not covered" >            wsRef.current.onmessage = <span class="fstat-no" title="function not covered" >(e</span>vent: MessageEvent) =&gt; {</span>
@@ -820,7 +820,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
         }
     };
 &nbsp;
-    const stopWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const stopWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (videoRef.current &amp;&amp; videoRef.current.srcObject) {</span>
             const stream = <span class="cstat-no" title="statement not covered" >videoRef.current.srcObject as MediaStream;</span>
             const tracks = <span class="cstat-no" title="statement not covered" >stream.getTracks();</span>
@@ -841,7 +841,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
 <span class="cstat-no" title="statement not covered" >        setSeverity('info');</span>
     };
 &nbsp;
-    const captureFrame = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const captureFrame = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (!videoRef.current || !canvasRef.current || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
         const canvas = <span class="cstat-no" title="statement not covered" >canvasRef.current;</span>
@@ -855,8 +855,8 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
 <span class="cstat-no" title="statement not covered" >        canvas.toBlob(<span class="fstat-no" title="function not covered" >(b</span>lob: Blob | null) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            if (!blob) <span class="cstat-no" title="statement not covered" >return;</span></span>
             const reader = <span class="cstat-no" title="statement not covered" >new FileReader();</span>
-<span class="cstat-no" title="statement not covered" >            reader.onload = <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
-                const base64Data = (<span class="cstat-no" title="statement not covered" >reader.result as string).split(',')[1]!;</span>
+<span class="cstat-no" title="statement not covered" >            reader.onload = <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+                const base64Data = <span class="cstat-no" title="statement not covered" >(reader.result as string).split(',')[1]!;</span>
 <span class="cstat-no" title="statement not covered" >                wsRef.current!.send(JSON.stringify({</span>
                     type: 'frame',
                     data: base64Data
@@ -866,7 +866,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
         }, 'image/jpeg', 0.8);
     };
 &nbsp;
-    const drawOverlays = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const drawOverlays = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
         const overlayCanvas = <span class="cstat-no" title="statement not covered" >overlayCanvasRef.current;</span>
 <span class="cstat-no" title="statement not covered" >        if (!overlayCanvas || !streamResults || !streamResults.faces || !videoRef.current) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
@@ -918,13 +918,13 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
         });
     };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        return <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        return <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            stopWebcam();</span>
         };
     }, []);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (streamResults) {</span>
 <span class="cstat-no" title="statement not covered" >            setTimeout(drawOverlays, 100);</span>
         }
@@ -982,7 +982,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
 &nbsp;
                 {message &amp;&amp; (
                     &lt;Grid size={{ xs: 12 }}&gt;
-                        &lt;Alert severity={severity} onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setMessage('')}</span>&gt;
+                        &lt;Alert severity={severity} onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setMessage('')}</span>&gt;
                             {message}
                         &lt;/Alert&gt;
                     &lt;/Grid&gt;
@@ -1003,7 +1003,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
     );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default RecognizeView;</span>
+export default RecognizeView;
 &nbsp;
 &nbsp;</pre></td></tr></table></pre>
 
@@ -1012,7 +1012,7 @@ const RecognizeView: React.FC&lt;RecognizeViewProps&gt; = <span class="cstat-no"
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

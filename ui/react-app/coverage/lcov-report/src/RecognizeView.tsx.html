@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/227</span>
+                <span class='fraction'>0/221</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/215</span>
+                <span class='fraction'>0/209</span>
             </div>
         
             
@@ -848,14 +848,14 @@
 <a name='L783'></a><a href='#L783'>783</a>
 <a name='L784'></a><a href='#L784'>784</a>
 <a name='L785'></a><a href='#L785'>785</a>
-<a name='L786'></a><a href='#L786'>786</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L786'></a><a href='#L786'>786</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1632,12 +1632,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useRef, useEffect } from 'react';</span>
-<span class="cstat-no" title="statement not covered" >import axios from 'axios';</span>
-<span class="cstat-no" title="statement not covered" >import { Button, Typography,  Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab, Paper, Divider, styled } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import { Grid } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, BarChart, PieChart } from '@mui/icons-material';</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+import { Button, Typography,  Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab, Paper, Divider, styled } from '@mui/material';
+import { Grid } from '@mui/material';
+import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, BarChart, PieChart } from '@mui/icons-material';
 &nbsp;
 import { RecognitionResult } from './types';
 &nbsp;
@@ -1667,7 +1667,7 @@ const HiddenCanvas = <span class="cstat-no" title="statement not covered" >style
     display: 'none'
 });
 &nbsp;
-const RecognizeView = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+const RecognizeView = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
     const [image, setImage] = <span class="cstat-no" title="statement not covered" >useState&lt;File | null&gt;(null);</span>
     const [loading, setLoading] = <span class="cstat-no" title="statement not covered" >useState(false);</span>
     const [message, setMessage] = <span class="cstat-no" title="statement not covered" >useState('');</span>
@@ -1774,7 +1774,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
         }
     };
 &nbsp;
-    const drawOverlays = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const drawOverlays = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
         const overlayCanvas = <span class="cstat-no" title="statement not covered" >overlayCanvasRef.current;</span>
 <span class="cstat-no" title="statement not covered" >        if (!overlayCanvas || !streamResults || !streamResults.faces) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
@@ -1859,7 +1859,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
         const emotionScores: Record&lt;string, number&gt; = <span class="cstat-no" title="statement not covered" >{};</span>
         let totalFaces = <span class="cstat-no" title="statement not covered" >faces.length;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        faces.forEach(<span class="fstat-no" title="function not covered" >face </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        faces.forEach(<span class="fstat-no" title="function not covered" >fa</span>ce =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            if (face.emotion) {</span>
                 const dominant = <span class="cstat-no" title="statement not covered" >face.emotion.dominant_emotion;</span>
 <span class="cstat-no" title="statement not covered" >                emotionCounts[dominant] = (emotionCounts[dominant] || 0) + 1;</span>
@@ -1867,7 +1867,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
             }
         });
 &nbsp;
-        const summary = <span class="cstat-no" title="statement not covered" >Object.keys(emotionCounts).map(<span class="fstat-no" title="function not covered" >emotion </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
+        const summary = <span class="cstat-no" title="statement not covered" >Object.keys(emotionCounts).map(<span class="fstat-no" title="function not covered" >em</span>otion =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
             emotion,
             count: emotionCounts[emotion],
             percentage: (emotionCounts[emotion] / totalFaces) * 100,
@@ -1880,7 +1880,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >        return summary;</span>
     };
 &nbsp;
-    const handleSubmit = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(e: React.FormEvent) =&gt; {</span>
+    const handleSubmit = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (e: React.FormEvent) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        e.preventDefault();</span>
 <span class="cstat-no" title="statement not covered" >        if (!image) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
@@ -1904,7 +1904,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const startWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const startWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
             const stream = <span class="cstat-no" title="statement not covered" >await navigator.mediaDevices.getUserMedia({ video: true });</span>
 <span class="cstat-no" title="statement not covered" >            if (videoRef.current) {</span>
@@ -1919,7 +1919,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
             const wsProtocol = <span class="cstat-no" title="statement not covered" >baseURL.startsWith('https') ? 'wss' : 'ws';</span>
             const host = <span class="cstat-no" title="statement not covered" >baseURL.replace(/^https?:\/\//, '');</span>
 <span class="cstat-no" title="statement not covered" >            wsRef.current = new WebSocket(`${wsProtocol}://${host}/api/recognize_stream`);</span>
-<span class="cstat-no" title="statement not covered" >            wsRef.current.onopen = <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >            wsRef.current.onopen = <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >                console.log('WebSocket connected');</span>
             };
 <span class="cstat-no" title="statement not covered" >            wsRef.current!.onmessage = <span class="fstat-no" title="function not covered" >(e</span>vent: MessageEvent) =&gt; {</span>
@@ -1943,7 +1943,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
         }
     };
 &nbsp;
-    const stopWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const stopWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (videoRef.current &amp;&amp; videoRef.current.srcObject) {</span>
             const stream = <span class="cstat-no" title="statement not covered" >videoRef.current.srcObject as MediaStream;</span>
 <span class="cstat-no" title="statement not covered" >            if (stream &amp;&amp; stream.getTracks) {</span>
@@ -1974,7 +1974,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >        setSeverity('info');</span>
     };
 &nbsp;
-    const captureFrame = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const captureFrame = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (!videoRef.current || !canvasRef.current || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
         const canvas = <span class="cstat-no" title="statement not covered" >canvasRef.current;</span>
@@ -1988,8 +1988,8 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >        canvas.toBlob(<span class="fstat-no" title="function not covered" >(b</span>lob) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            if (!blob) <span class="cstat-no" title="statement not covered" >return;</span></span>
             const reader = <span class="cstat-no" title="statement not covered" >new FileReader();</span>
-<span class="cstat-no" title="statement not covered" >            reader.onload = <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
-                const base64Data = (<span class="cstat-no" title="statement not covered" >reader.result as string).split(',')[1]!;</span>
+<span class="cstat-no" title="statement not covered" >            reader.onload = <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+                const base64Data = <span class="cstat-no" title="statement not covered" >(reader.result as string).split(',')[1]!;</span>
 <span class="cstat-no" title="statement not covered" >                wsRef.current!.send(JSON.stringify({</span>
                     type: 'frame',
                     data: base64Data
@@ -1999,8 +1999,8 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
         }, 'image/jpeg', 0.8);
     };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        return <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        return <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            stopWebcam();</span>
         };
     }, []);
@@ -2024,7 +2024,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
                 maxWidth: 1200,
                 mx: 'auto',
                 transition: 'all 0.5s ease',
-                background: (<span class="fstat-no" title="function not covered" >() =</span>&gt; {
+                background: (<span class="fstat-no" title="function not covered" >()</span> =&gt; {
                     const currentFaces = <span class="cstat-no" title="statement not covered" >webcamActive ? streamResults?.faces || [] : results?.faces || [];</span>
                     const emotionSummary = <span class="cstat-no" title="statement not covered" >calculateEmotionSummary(currentFaces);</span>
 <span class="cstat-no" title="statement not covered" >                    if (emotionSummary &amp;&amp; emotionSummary.length &gt; 0) {</span>
@@ -2042,7 +2042,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
                     textAlign: 'center',
                     fontWeight: 600,
                     transition: 'all 0.3s ease',
-                    color: (<span class="fstat-no" title="function not covered" >() =</span>&gt; {
+                    color: (<span class="fstat-no" title="function not covered" >()</span> =&gt; {
                         const currentFaces = <span class="cstat-no" title="statement not covered" >webcamActive ? streamResults?.faces || [] : results?.faces || [];</span>
                         const emotionSummary = <span class="cstat-no" title="statement not covered" >calculateEmotionSummary(currentFaces);</span>
 <span class="cstat-no" title="statement not covered" >                        if (emotionSummary &amp;&amp; emotionSummary.length &gt; 0) {</span>
@@ -2192,7 +2192,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
                                 &lt;/Typography&gt;
 &nbsp;
                                 {/* Emotion Summary Dashboard */}
-                                {(<span class="fstat-no" title="function not covered" >() =</span>&gt; {
+                                {(<span class="fstat-no" title="function not covered" >()</span> =&gt; {
                                     const currentFaces = <span class="cstat-no" title="statement not covered" >webcamActive ? streamResults?.faces || [] : results?.faces || [];</span>
                                     const emotionSummary = <span class="cstat-no" title="statement not covered" >calculateEmotionSummary(currentFaces);</span>
 <span class="cstat-no" title="statement not covered" >                                    if (emotionSummary &amp;&amp; emotionSummary.length &gt; 0) {</span>
@@ -2417,7 +2417,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
     );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default RecognizeView;</span>
+export default RecognizeView;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -2425,7 +2425,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../prettify.js"></script>
         <script>

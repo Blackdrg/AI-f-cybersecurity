@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/173</span>
+                <span class='fraction'>0/166</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/168</span>
+                <span class='fraction'>0/161</span>
             </div>
         
             
@@ -1013,15 +1013,15 @@
 <a name='L948'></a><a href='#L948'>948</a>
 <a name='L949'></a><a href='#L949'>949</a>
 <a name='L950'></a><a href='#L950'>950</a>
-<a name='L951'></a><a href='#L951'>951</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L951'></a><a href='#L951'>951</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1962,17 +1962,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, ChangeEvent } from 'react';</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState, ChangeEvent } from 'react';
 import type { Person as PersonType, Metrics, Log, Consent, Webhook, Plugin } from './types';
-<span class="cstat-no" title="statement not covered" >import axios from 'axios';</span>
-<span class="cstat-no" title="statement not covered" >import { Box, Typography, Card, CardContent,  TextField, Button, Divider, Avatar, Chip, CircularProgress, Alert, List, ListItem, ListItemText, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import { Grid } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import { LineChart, LineElement, ChartsXAxis, ChartsYAxis, ChartsGrid, ChartsTooltip, ChartsLegend } from '@mui/x-charts';</span>
-<span class="cstat-no" title="statement not covered" >import { Dashboard, Person, Search, Delete, Analytics, TrendingUp, AccessTime, People, History, PlayArrow, VerifiedUser, Build, Storage, Assessment, Lock } from '@mui/icons-material';</span>
+import axios from 'axios';
+import { Box, Typography, Card, CardContent,  TextField, Button, Divider, Avatar, Chip, CircularProgress, Alert, List, ListItem, ListItemText, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';
+import { Grid } from '@mui/material';
+import { LineChart, LineElement, ChartsXAxis, ChartsYAxis, ChartsGrid, ChartsTooltip, ChartsLegend } from '@mui/x-charts';
+import { Dashboard, Person, Search, Delete, Analytics, TrendingUp, AccessTime, People, History, PlayArrow, VerifiedUser, Build, Storage, Assessment, Lock } from '@mui/icons-material';
 &nbsp;
 interface Props { }
-const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
     const [personId, setPersonId] = <span class="cstat-no" title="statement not covered" >useState('');</span>
     const [person, setPerson] = <span class="cstat-no" title="statement not covered" >useState&lt;PersonType | null&gt;(null);</span>
     const [metrics, setMetrics] = <span class="cstat-no" title="statement not covered" >useState&lt;Metrics | null&gt;(null);</span>
@@ -1990,7 +1990,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
     const [plugins, setPlugins] = <span class="cstat-no" title="statement not covered" >useState&lt;Plugin[]&gt;([]);</span>
     const [analytics, setAnalytics] = <span class="cstat-no" title="statement not covered" >useState&lt;any | null&gt;(null);</span>
 &nbsp;
-    const fetchPerson = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const fetchPerson = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (!personId) <span class="cstat-no" title="statement not covered" >return;</span></span>
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >        setMessage('');</span>
@@ -2007,7 +2007,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const deletePerson = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const deletePerson = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (!personId) <span class="cstat-no" title="statement not covered" >return;</span></span>
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >        setMessage('');</span>
@@ -2024,7 +2024,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const fetchMetrics = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const fetchMetrics = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >        setMessage('');</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
@@ -2040,7 +2040,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const fetchLogs = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const fetchLogs = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >        setMessage('');</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
@@ -2065,7 +2065,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
 <span class="cstat-no" title="statement not covered" >        alert(`Playback for log: ${log.action} at ${log.timestamp}`);</span>
     };
 &nbsp;
-    const fetchConsentVault = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const fetchConsentVault = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >        setMessage('');</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
@@ -2081,7 +2081,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const fetchBiasReport = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const fetchBiasReport = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >        setMessage('');</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
@@ -2097,7 +2097,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const rebuildIndex = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const rebuildIndex = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >        setMessage('');</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
@@ -2113,7 +2113,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const fetchWebhooks = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const fetchWebhooks = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >        setMessage('');</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
@@ -2129,7 +2129,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const fetchPlugins = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const fetchPlugins = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >        setMessage('');</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
@@ -2145,7 +2145,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const fetchAnalytics = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const fetchAnalytics = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >        setMessage('');</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
@@ -2875,7 +2875,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
                                                         &lt;Button
                                                             variant="outlined"
                                                             size="small"
-                                                            onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handlePlayback(log)}</span>
+                                                            onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handlePlayback(log)}</span>
                                                             startIcon={&lt;PlayArrow /&gt;}
                                                         &gt;
                                                             Play
@@ -2912,7 +2912,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
     );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default AdminDashboard;</span>
+export default AdminDashboard;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -2920,7 +2920,7 @@ const AdminDashboard: React.FC&lt;Props&gt; = <span class="cstat-no" title="stat
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../prettify.js"></script>
         <script>

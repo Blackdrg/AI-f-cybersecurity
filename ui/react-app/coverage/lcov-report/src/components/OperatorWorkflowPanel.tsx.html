@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/80</span>
+                <span class='fraction'>0/75</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/75</span>
+                <span class='fraction'>0/70</span>
             </div>
         
             
@@ -428,14 +428,14 @@
 <a name='L363'></a><a href='#L363'>363</a>
 <a name='L364'></a><a href='#L364'>364</a>
 <a name='L365'></a><a href='#L365'>365</a>
-<a name='L366'></a><a href='#L366'>366</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L366'></a><a href='#L366'>366</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -793,14 +793,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useEffect } from 'react';</span>
-<span class="cstat-no" title="statement not covered" >import { Box, Typography,  Paper,</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState, useEffect } from 'react';
+import { Box, Typography,  Paper,
   Button, Chip, Alert, Dialog, DialogTitle,
   DialogContent, DialogActions, List, ListItem,
   ListItemText, ListItemIcon, TextField,
   Stepper, Step, StepLabel, StepContent } from '@mui/material';
-<span class="cstat-no" title="statement not covered" >import { Grid } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import {</span>
+import { Grid } from '@mui/material';
+import {
   Refresh, Replay, HelpOutline, CheckCircle,
   Error, Warning, Psychology, Timeline,
   Settings, History, Visibility, BugReport
@@ -853,13 +853,13 @@ const OperatorWorkflowPanel: React.FC&lt;OperatorWorkflowPanelProps&gt; = <span 
   const [recommendedActions, setRecommendedActions] = <span class="cstat-no" title="statement not covered" >useState&lt;Action[]&gt;([]);</span>
   const [suggestedThreshold, setSuggestedThreshold] = <span class="cstat-no" title="statement not covered" >useState&lt;number | null&gt;(null);</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (recognitionResult) {</span>
 <span class="cstat-no" title="statement not covered" >      analyzeWorkflowRecommendations();</span>
     }
   }, [recognitionResult]);
 &nbsp;
-  const analyzeWorkflowRecommendations = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+  const analyzeWorkflowRecommendations = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (!recognitionResult?.faces?.[0]) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
     const face = <span class="cstat-no" title="statement not covered" >recognitionResult.faces[0];</span>
@@ -920,31 +920,31 @@ const OperatorWorkflowPanel: React.FC&lt;OperatorWorkflowPanelProps&gt; = <span 
 <span class="cstat-no" title="statement not covered" >    setDecisionHistory(history);</span>
   };
 &nbsp;
-  const handleRetry = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(withAdjustments = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> =&gt; {</span>
+  const handleRetry = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (withAdjustments = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setWorkflowState('retrying');</span>
-<span class="cstat-no" title="statement not covered" >    setRetryCount(<span class="fstat-no" title="function not covered" >prev </span>=&gt; <span class="cstat-no" title="statement not covered" >prev + 1)</span>;</span>
+<span class="cstat-no" title="statement not covered" >    setRetryCount(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; <span class="cstat-no" title="statement not covered" >prev + 1)</span>;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      if (onRetry) {</span>
 <span class="cstat-no" title="statement not covered" >        await onRetry(withAdjustments);</span>
       }
-<span class="cstat-no" title="statement not covered" >      setActiveStep(<span class="fstat-no" title="function not covered" >prev </span>=&gt; <span class="cstat-no" title="statement not covered" >prev + 1)</span>;</span>
+<span class="cstat-no" title="statement not covered" >      setActiveStep(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; <span class="cstat-no" title="statement not covered" >prev + 1)</span>;</span>
 <span class="cstat-no" title="statement not covered" >      setWorkflowState('success');</span>
     } catch (error: any) {
 <span class="cstat-no" title="statement not covered" >      setWorkflowState('error');</span>
     }
   };
 &nbsp;
-  const handleOverride = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const handleOverride = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setIsOverrideDialogOpen(true);</span>
   };
 &nbsp;
-  const confirmOverride = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const confirmOverride = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      if (onOverride) {</span>
 <span class="cstat-no" title="statement not covered" >        await onOverride({ reason: overrideReason, operatorId: 'current-user' });</span>
       }
-<span class="cstat-no" title="statement not covered" >      setDecisionHistory(<span class="fstat-no" title="function not covered" >prev </span>=&gt; <span class="cstat-no" title="statement not covered" >[...prev, {</span></span>
+<span class="cstat-no" title="statement not covered" >      setDecisionHistory(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; <span class="cstat-no" title="statement not covered" >[...prev, {</span></span>
         action: 'operator_override',
         timestamp: new Date().toISOString(),
         reason: overrideReason
@@ -956,12 +956,12 @@ const OperatorWorkflowPanel: React.FC&lt;OperatorWorkflowPanelProps&gt; = <span 
     }
   };
 &nbsp;
-  const handleEscalate = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const handleEscalate = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      if (onEscalate) {</span>
 <span class="cstat-no" title="statement not covered" >        await onEscalate({ level: 'supervisor', context: decisionHistory });</span>
       }
-<span class="cstat-no" title="statement not covered" >      setDecisionHistory(<span class="fstat-no" title="function not covered" >prev </span>=&gt; <span class="cstat-no" title="statement not covered" >[...prev, {</span></span>
+<span class="cstat-no" title="statement not covered" >      setDecisionHistory(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; <span class="cstat-no" title="statement not covered" >[...prev, {</span></span>
         action: 'escalated',
         timestamp: new Date().toISOString(),
         target: 'supervisor'
@@ -1029,7 +1029,7 @@ const OperatorWorkflowPanel: React.FC&lt;OperatorWorkflowPanelProps&gt; = <span 
                   bgcolor: action.priority === 'critical' ? 'error.dark' : 'background.paper',
                   '&amp;:hover': { opacity: 0.8 }
                 }}
-                onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handleRetry({ type: action.type })}</span>
+                onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleRetry({ type: action.type })}</span>
               &gt;
                 &lt;Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}&gt;
                   &lt;Box sx={{ color: `${getPriorityColor(action.priority)}.main` }}&gt;
@@ -1079,7 +1079,7 @@ const OperatorWorkflowPanel: React.FC&lt;OperatorWorkflowPanelProps&gt; = <span 
         &lt;Button
           variant="contained"
           startIcon={&lt;Replay /&gt;}
-          onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handleRetry()}</span>
+          onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleRetry()}</span>
           disabled={workflowState === 'retrying'}
           fullWidth
         &gt;
@@ -1090,7 +1090,7 @@ const OperatorWorkflowPanel: React.FC&lt;OperatorWorkflowPanelProps&gt; = <span 
           &lt;Button
             variant="outlined"
             startIcon={&lt;Settings /&gt;}
-            onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setSuggestedThreshold(0.5)}</span>
+            onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setSuggestedThreshold(0.5)}</span>
             size="small"
             sx={{ flex: 1 }}
           &gt;
@@ -1119,7 +1119,7 @@ const OperatorWorkflowPanel: React.FC&lt;OperatorWorkflowPanelProps&gt; = <span 
       &lt;/Box&gt;
 &nbsp;
       {/* Override Dialog */}
-      &lt;Dialog open={isOverrideDialogOpen} onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setIsOverrideDialogOpen(false)}</span>&gt;
+      &lt;Dialog open={isOverrideDialogOpen} onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setIsOverrideDialogOpen(false)}</span>&gt;
         &lt;DialogTitle&gt;Operator Override&lt;/DialogTitle&gt;
         &lt;DialogContent&gt;
           &lt;Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}&gt;
@@ -1136,7 +1136,7 @@ const OperatorWorkflowPanel: React.FC&lt;OperatorWorkflowPanelProps&gt; = <span 
           /&gt;
         &lt;/DialogContent&gt;
         &lt;DialogActions&gt;
-          &lt;Button onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setIsOverrideDialogOpen(false)}</span>&gt;Cancel&lt;/Button&gt;
+          &lt;Button onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setIsOverrideDialogOpen(false)}</span>&gt;Cancel&lt;/Button&gt;
           &lt;Button onClick={confirmOverride} variant="contained" color="warning"&gt;
             Confirm Override
           &lt;/Button&gt;
@@ -1148,7 +1148,7 @@ const OperatorWorkflowPanel: React.FC&lt;OperatorWorkflowPanelProps&gt; = <span 
         &lt;Alert severity="info" sx={{ mt: 2 }}&gt;
           &lt;Typography variant="body2"&gt;
             Suggested threshold adjustment: {suggestedThreshold}
-            &lt;Button size="small" onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setSuggestedThreshold(null)}</span> sx={{ ml: 1 }}&gt;
+            &lt;Button size="small" onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setSuggestedThreshold(null)}</span> sx={{ ml: 1 }}&gt;
               Dismiss
             &lt;/Button&gt;
           &lt;/Typography&gt;
@@ -1158,14 +1158,14 @@ const OperatorWorkflowPanel: React.FC&lt;OperatorWorkflowPanelProps&gt; = <span 
   );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default OperatorWorkflowPanel;</span></pre></td></tr></table></pre>
+export default OperatorWorkflowPanel;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

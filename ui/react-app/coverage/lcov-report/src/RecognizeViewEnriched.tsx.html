@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/220</span>
+                <span class='fraction'>0/212</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/210</span>
+                <span class='fraction'>0/202</span>
             </div>
         
             
@@ -757,15 +757,15 @@
 <a name='L692'></a><a href='#L692'>692</a>
 <a name='L693'></a><a href='#L693'>693</a>
 <a name='L694'></a><a href='#L694'>694</a>
-<a name='L695'></a><a href='#L695'>695</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L695'></a><a href='#L695'>695</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1450,17 +1450,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';</span>
-<span class="cstat-no" title="statement not covered" >import axios from 'axios';</span>
-<span class="cstat-no" title="statement not covered" >import { Button, Typography,  Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import { Grid } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, Public, Visibility, VisibilityOff, Opacity } from '@mui/icons-material';</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
+import axios from 'axios';
+import { Button, Typography,  Card, CardContent, Box, Alert, CircularProgress, IconButton, Chip, Avatar, LinearProgress, Fab } from '@mui/material';
+import { Grid } from '@mui/material';
+import { CameraAlt, Search, Face, CheckCircle, Error, Person, SentimentVerySatisfied, SentimentDissatisfied, SentimentNeutral, MoodBad, Favorite, Videocam, VideocamOff, Public, Visibility, VisibilityOff, Opacity } from '@mui/icons-material';
 import { AlertColor } from '@mui/material';
-<span class="cstat-no" title="statement not covered" >import ConsentModal from './ConsentModal';</span>
-<span class="cstat-no" title="statement not covered" >import EnrichResultsPage from './EnrichResultsPage';</span>
+import ConsentModal from './ConsentModal';
+import EnrichResultsPage from './EnrichResultsPage';
 &nbsp;
-const RecognizeView = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+const RecognizeView = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
     const [image, setImage] = <span class="cstat-no" title="statement not covered" >useState&lt;File | null&gt;(null);</span>
     const [results, setResults] = <span class="cstat-no" title="statement not covered" >useState&lt;any | null&gt;(null);</span>
     const [loading, setLoading] = <span class="cstat-no" title="statement not covered" >useState(false);</span>
@@ -1523,7 +1523,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
         }
     };
 &nbsp;
-    const drawOverlays = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const drawOverlays = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
         const overlayCanvas = <span class="cstat-no" title="statement not covered" >overlayCanvasRef.current;</span>
 <span class="cstat-no" title="statement not covered" >        if (!overlayCanvas || !streamResults || !streamResults.faces || !overlaysVisible) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
@@ -1597,7 +1597,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
         }
     };
 &nbsp;
-    const handleSubmit = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(e: FormEvent) =&gt; {</span>
+    const handleSubmit = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (e: FormEvent) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        e.preventDefault();</span>
 <span class="cstat-no" title="statement not covered" >        if (!image) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
@@ -1627,7 +1627,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
     };
 &nbsp;
-    const startWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+    const startWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
             const stream = <span class="cstat-no" title="statement not covered" >await navigator.mediaDevices.getUserMedia({ video: true });</span>
 <span class="cstat-no" title="statement not covered" >            if (videoRef.current) {</span>
@@ -1642,7 +1642,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
             const wsProtocol = <span class="cstat-no" title="statement not covered" >baseURL.startsWith('https') ? 'wss' : 'ws';</span>
             const host = <span class="cstat-no" title="statement not covered" >baseURL.replace(/^https?:\/\//, '');</span>
 <span class="cstat-no" title="statement not covered" >            wsRef.current = new WebSocket(`${wsProtocol}://${host}/api/recognize_stream`);</span>
-<span class="cstat-no" title="statement not covered" >            wsRef.current.onopen = <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >            wsRef.current.onopen = <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >                console.log('WebSocket connected');</span>
             };
 <span class="cstat-no" title="statement not covered" >            wsRef.current.onmessage = <span class="fstat-no" title="function not covered" >(e</span>vent) =&gt; {</span>
@@ -1666,11 +1666,11 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
         }
     };
 &nbsp;
-    const stopWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const stopWebcam = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (videoRef.current &amp;&amp; videoRef.current.srcObject) {</span>
             const stream = <span class="cstat-no" title="statement not covered" >videoRef.current.srcObject as MediaStream;</span>
             const tracks = <span class="cstat-no" title="statement not covered" >stream.getTracks();</span>
-<span class="cstat-no" title="statement not covered" >            tracks.forEach(<span class="fstat-no" title="function not covered" >track </span>=&gt; <span class="cstat-no" title="statement not covered" >track.stop())</span>;</span>
+<span class="cstat-no" title="statement not covered" >            tracks.forEach(<span class="fstat-no" title="function not covered" >tr</span>ack =&gt; <span class="cstat-no" title="statement not covered" >track.stop())</span>;</span>
 <span class="cstat-no" title="statement not covered" >            videoRef.current.srcObject = null;</span>
         }
 <span class="cstat-no" title="statement not covered" >        setWebcamActive(false);</span>
@@ -1695,7 +1695,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >        setSeverity('info');</span>
     };
 &nbsp;
-    const captureFrame = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const captureFrame = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (!videoRef.current || !canvasRef.current || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
         const canvas = <span class="cstat-no" title="statement not covered" >canvasRef.current;</span>
@@ -1710,7 +1710,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >        canvas.toBlob(<span class="fstat-no" title="function not covered" >(b</span>lob) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            if (!blob) <span class="cstat-no" title="statement not covered" >return;</span></span>
             const reader = <span class="cstat-no" title="statement not covered" >new FileReader();</span>
-<span class="cstat-no" title="statement not covered" >            reader.onload = <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >            reader.onload = <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >                if (typeof reader.result === 'string') {</span>
                     const base64Data = <span class="cstat-no" title="statement not covered" >reader.result.split(',')[1];</span>
 <span class="cstat-no" title="statement not covered" >                    wsRef.current?.send(JSON.stringify({</span>
@@ -1733,7 +1733,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
 <span class="cstat-no" title="statement not covered" >        performEnrichment(token);</span>
     };
 &nbsp;
-    const performEnrichment = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(token: string) =&gt; {</span>
+    const performEnrichment = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (token: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (!enrichingPerson) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
@@ -1761,14 +1761,14 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
         }
     };
 &nbsp;
-    const handleBackFromEnrich = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const handleBackFromEnrich = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        setEnrichResultsPage(null);</span>
 <span class="cstat-no" title="statement not covered" >        setConsentToken(null);</span>
 <span class="cstat-no" title="statement not covered" >        setEnrichingPerson(null);</span>
     };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        return <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        return <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            stopWebcam();</span>
         };
     }, []);
@@ -1844,7 +1844,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
                                     }}&gt;
                                         &lt;IconButton
                                             size="small"
-                                            onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setOverlaysVisible(!overlaysVisible)}</span>
+                                            onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setOverlaysVisible(!overlaysVisible)}</span>
                                             sx={{ color: 'white' }}
                                         &gt;
                                             {overlaysVisible ? &lt;Visibility /&gt; : &lt;VisibilityOff /&gt;}
@@ -2071,7 +2071,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
                                                                 variant="outlined"
                                                                 size="small"
                                                                 startIcon={&lt;Public /&gt;}
-                                                                onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handleEnrichPublicProfile({</span>
+                                                                onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleEnrichPublicProfile({</span>
                                                                     person_id: face.matches[0].person_id,
                                                                     name: face.matches[0].name
                                                                 })}
@@ -2135,7 +2135,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
             {/* Consent Modal */}
             &lt;ConsentModal
                 open={consentModalOpen}
-                onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setConsentModalOpen(false)}</span>
+                onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setConsentModalOpen(false)}</span>
                 personId={enrichingPerson?.person_id}
                 identifiers={{ name: enrichingPerson?.name || 'Unknown' }}
                 onConsentGranted={handleConsentGranted}
@@ -2144,7 +2144,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
     );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default RecognizeView;</span>
+export default RecognizeView;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -2152,7 +2152,7 @@ const RecognizeView = <span class="cstat-no" title="statement not covered" ><spa
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../prettify.js"></script>
         <script>

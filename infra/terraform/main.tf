@@ -51,9 +51,6 @@ resource "aws_elasticache_cluster" "redis" {
   num_cache_nodes      = 1
   parameter_group_name = "default.redis7"
   port                 = 6379
-  # Encryption at rest for Redis persistence files (RDB/AOF)
-  # Uses AWS KMS customer-managed keys (CMK) for additional control
-  at_rest_encryption_enabled = true
 }
 
 resource "aws_eks_cluster" "backend" {

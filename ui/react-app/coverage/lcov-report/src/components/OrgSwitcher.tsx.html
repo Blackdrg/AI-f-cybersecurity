@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/84</span>
+                <span class='fraction'>0/75</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/77</span>
+                <span class='fraction'>0/70</span>
             </div>
         
             
@@ -478,21 +478,21 @@
 <a name='L413'></a><a href='#L413'>413</a>
 <a name='L414'></a><a href='#L414'>414</a>
 <a name='L415'></a><a href='#L415'>415</a>
-<a name='L416'></a><a href='#L416'>416</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L416'></a><a href='#L416'>416</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -893,21 +893,21 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useEffect } from 'react';</span>
-<span class="cstat-no" title="statement not covered" >import { Box, Button, Menu, MenuItem, List, ListItem, ListItemText, ListItemButton,</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState, useEffect } from 'react';
+import { Box, Button, Menu, MenuItem, List, ListItem, ListItemText, ListItemButton,
   ListItemIcon, Typography, Chip, Avatar, Divider, Paper,
   IconButton, Tooltip, Card, CardContent,  TextField,
   Dialog, DialogTitle, DialogContent, DialogActions,
   FormControl, InputLabel, Select, LinearProgress } from '@mui/material';
-<span class="cstat-no" title="statement not covered" >import { Grid } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import {</span>
+import { Grid } from '@mui/material';
+import {
   AccountTree, Add, Settings, AccountCircle,
   Business, Payment, Security, Key, People,
   ChevronRight, ExpandMore, ExpandLess, CheckCircle,
   Error as ErrorIcon, Warning, Info, Store
 } from '@mui/icons-material';
-<span class="cstat-no" title="statement not covered" >import { useAuth, Organization as OrgType } from '../contexts/AuthContext';</span>
-<span class="cstat-no" title="statement not covered" >import API from '../services/api';</span>
+import { useAuth, Organization as OrgType } from '../contexts/AuthContext';
+import API from '../services/api';
 &nbsp;
 interface Subscription {
   plan_name: string;
@@ -923,7 +923,7 @@ interface BillingUsage {
   [orgId: string]: Subscription;
 }
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >OrgSwitcher = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span>) =</span>&gt; {</span>
+export const OrgSwitcher = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
   const { organization, organizations, switchOrganization, user, hasPermission } = <span class="cstat-no" title="statement not covered" >useAuth();</span>
   const [anchorEl, setAnchorEl] = <span class="cstat-no" title="statement not covered" >useState&lt;null | HTMLElement&gt;(null);</span>
   const [createOrgOpen, setCreateOrgOpen] = <span class="cstat-no" title="statement not covered" >useState&lt;boolean&gt;(false);</span>
@@ -931,18 +931,18 @@ export const <span class="cstat-no" title="statement not covered" >OrgSwitcher =
   const [newOrgEmail, setNewOrgEmail] = <span class="cstat-no" title="statement not covered" >useState&lt;string&gt;('');</span>
   const [orgBilling, setOrgBilling] = <span class="cstat-no" title="statement not covered" >useState&lt;BillingUsage&gt;({});</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
     // Fetch billing info for current org
 <span class="cstat-no" title="statement not covered" >    if (organization?.org_id) {</span>
 <span class="cstat-no" title="statement not covered" >      fetchBillingInfo(organization.org_id);</span>
     }
   }, [organization]);
 &nbsp;
-  const fetchBillingInfo = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(orgId: string) =&gt; {</span>
+  const fetchBillingInfo = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (orgId: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const res = <span class="cstat-no" title="statement not covered" >await API.get(`/api/subscriptions/org/${orgId}`).catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >null)</span>;</span>
+      const res = <span class="cstat-no" title="statement not covered" >await API.get(`/api/subscriptions/org/${orgId}`).catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >null)</span>;</span>
 <span class="cstat-no" title="statement not covered" >      if (res?.data) {</span>
-<span class="cstat-no" title="statement not covered" >        setOrgBilling(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, [orgId]: res.data })</span>);</span>
+<span class="cstat-no" title="statement not covered" >        setOrgBilling(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, [orgId]: res.data })</span>);</span>
       }
     } catch (err: any) {
 <span class="cstat-no" title="statement not covered" >      console.warn('Failed to fetch billing info');</span>
@@ -954,7 +954,7 @@ export const <span class="cstat-no" title="statement not covered" >OrgSwitcher =
 <span class="cstat-no" title="statement not covered" >    setAnchorEl(null);</span>
   };
 &nbsp;
-  const handleCreateOrg = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const handleCreateOrg = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const res = <span class="cstat-no" title="statement not covered" >await API.post('/api/organizations', {</span>
         name: newOrgName,
@@ -1025,7 +1025,7 @@ export const <span class="cstat-no" title="statement not covered" >OrgSwitcher =
       &lt;Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
-        onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setAnchorEl(null)}</span>
+        onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setAnchorEl(null)}</span>
         PaperProps={{
           sx: {
             width: 320,
@@ -1049,7 +1049,7 @@ export const <span class="cstat-no" title="statement not covered" >OrgSwitcher =
 <span class="cstat-no" title="statement not covered" >            &lt;React.Fragment key={org.org_id}&gt;</span>
               &lt;ListItemButton
                 selected={organization?.org_id === org.org_id}
-                onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handleOrgSwitch(org)}</span>
+                onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleOrgSwitch(org)}</span>
                 sx={{
                   borderRadius: 1,
                   mx: 1,
@@ -1103,7 +1103,7 @@ export const <span class="cstat-no" title="statement not covered" >OrgSwitcher =
             fullWidth
             variant="outlined"
             startIcon={&lt;Add /&gt;}
-            onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; {
+            onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; {
 <span class="cstat-no" title="statement not covered" >              setAnchorEl(null);</span>
 <span class="cstat-no" title="statement not covered" >              setCreateOrgOpen(true);</span>
             }}
@@ -1122,7 +1122,7 @@ export const <span class="cstat-no" title="statement not covered" >OrgSwitcher =
       &lt;/Menu&gt;
 &nbsp;
       {/* Create Organization Dialog */}
-      &lt;Dialog open={createOrgOpen} onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setCreateOrgOpen(false)}</span>&gt;
+      &lt;Dialog open={createOrgOpen} onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setCreateOrgOpen(false)}</span>&gt;
         &lt;DialogTitle&gt;Create New Organization&lt;/DialogTitle&gt;
         &lt;DialogContent&gt;
           &lt;Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}&gt;
@@ -1151,7 +1151,7 @@ export const <span class="cstat-no" title="statement not covered" >OrgSwitcher =
           &lt;/Box&gt;
         &lt;/DialogContent&gt;
         &lt;DialogActions&gt;
-          &lt;Button onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setCreateOrgOpen(false)}</span>&gt;Cancel&lt;/Button&gt;
+          &lt;Button onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setCreateOrgOpen(false)}</span>&gt;Cancel&lt;/Button&gt;
           &lt;Button onClick={handleCreateOrg} variant="contained" disabled={!newOrgName || !newOrgEmail}&gt;
             Create
           &lt;/Button&gt;
@@ -1161,19 +1161,19 @@ export const <span class="cstat-no" title="statement not covered" >OrgSwitcher =
   );
 };
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >BillingWidget = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span>{</span> orgId }: { orgId: string }) =&gt; {</span>
+export const BillingWidget = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >({</span> orgId }: { orgId: string }) =&gt; {</span>
   const [billingInfo, setBillingInfo] = <span class="cstat-no" title="statement not covered" >useState&lt;Subscription | null&gt;(null);</span>
   const [billingDialogOpen, setBillingDialogOpen] = <span class="cstat-no" title="statement not covered" >useState&lt;boolean&gt;(false);</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (orgId) {</span>
 <span class="cstat-no" title="statement not covered" >      fetchBillingInfo();</span>
     }
   }, [orgId]);
 &nbsp;
-  const fetchBillingInfo = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const fetchBillingInfo = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const res = <span class="cstat-no" title="statement not covered" >await API.get(`/api/subscriptions/org/${orgId}`).catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >null)</span>;</span>
+      const res = <span class="cstat-no" title="statement not covered" >await API.get(`/api/subscriptions/org/${orgId}`).catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >null)</span>;</span>
 <span class="cstat-no" title="statement not covered" >      if (res?.data) {</span>
         // Ensure the data has default values for optional properties
         const data: Subscription = <span class="cstat-no" title="statement not covered" >{</span>
@@ -1217,7 +1217,7 @@ export const <span class="cstat-no" title="statement not covered" >BillingWidget
       &lt;Card sx={{ p: 2 }}&gt;
         &lt;Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}&gt;
           &lt;Typography variant="subtitle2"&gt;Usage&lt;/Typography&gt;
-          &lt;IconButton size="small" onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setBillingDialogOpen(true)}</span>&gt;
+          &lt;IconButton size="small" onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setBillingDialogOpen(true)}</span>&gt;
             &lt;Settings fontSize="small" /&gt;
           &lt;/IconButton&gt;
         &lt;/Box&gt;
@@ -1247,7 +1247,7 @@ export const <span class="cstat-no" title="statement not covered" >BillingWidget
         &lt;/Box&gt;
       &lt;/Card&gt;
 &nbsp;
-      &lt;Dialog open={billingDialogOpen} onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setBillingDialogOpen(false)}</span> maxWidth="sm" fullWidth&gt;
+      &lt;Dialog open={billingDialogOpen} onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setBillingDialogOpen(false)}</span> maxWidth="sm" fullWidth&gt;
         &lt;DialogTitle&gt;Billing &amp; Subscription&lt;/DialogTitle&gt;
         &lt;DialogContent&gt;
           &lt;Grid container spacing={2} sx={{ mt: 1 }}&gt;
@@ -1300,7 +1300,7 @@ export const <span class="cstat-no" title="statement not covered" >BillingWidget
           &lt;/Grid&gt;
         &lt;/DialogContent&gt;
         &lt;DialogActions&gt;
-          &lt;Button onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setBillingDialogOpen(false)}</span>&gt;Close&lt;/Button&gt;
+          &lt;Button onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setBillingDialogOpen(false)}</span>&gt;Close&lt;/Button&gt;
           &lt;Button variant="contained" color="primary"&gt;Upgrade Plan&lt;/Button&gt;
         &lt;/DialogActions&gt;
       &lt;/Dialog&gt;
@@ -1308,14 +1308,14 @@ export const <span class="cstat-no" title="statement not covered" >BillingWidget
   );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default OrgSwitcher;</span></pre></td></tr></table></pre>
+export default OrgSwitcher;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

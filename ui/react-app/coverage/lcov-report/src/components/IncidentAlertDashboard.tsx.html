@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/134</span>
+                <span class='fraction'>0/126</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/121</span>
+                <span class='fraction'>0/114</span>
             </div>
         
             
@@ -885,9 +885,8 @@
 <a name='L820'></a><a href='#L820'>820</a>
 <a name='L821'></a><a href='#L821'>821</a>
 <a name='L822'></a><a href='#L822'>822</a>
-<a name='L823'></a><a href='#L823'>823</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L823'></a><a href='#L823'>823</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -895,8 +894,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -904,8 +901,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -942,6 +941,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1706,10 +1706,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useEffect, useMemo } from 'react';</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
-<span class="cstat-no" title="statement not covered" >import { Box, Typography, Paper,  Card, CardContent,</span>
+import { Box, Typography, Paper,  Card, CardContent,
   Table, TableBody, TableCell, TableHead, TableRow,
   Chip, Button, TextField,
   Select, MenuItem, FormControl, InputLabel, Badge,
@@ -1717,8 +1717,8 @@ import type { ReactNode } from 'react';
   DialogActions, Stepper, Step, StepLabel,
   List, ListItem, ListItemText,
   ListItemIcon, Divider, Snackbar, Tabs, Tab } from '@mui/material';
-<span class="cstat-no" title="statement not covered" >import { Grid } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import {</span>
+import { Grid } from '@mui/material';
+import {
   Warning, Error as ErrorIcon, CheckCircle,
   Info, BugReport, Security, Timeline, Flag,
   PlayArrow, Pause, Escalator, Comment, Send,
@@ -1726,9 +1726,9 @@ import type { ReactNode } from 'react';
   FilterList, BarChart, AccountTree
 } from '@mui/icons-material';
 import type { Severity, SnackbarState, Alert as AlertType } from '../types';
-<span class="cstat-no" title="statement not covered" >import * as Recharts from 'recharts';</span>
+import * as Recharts from 'recharts';
 const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } = <span class="cstat-no" title="statement not covered" >Recharts as any;</span>
-<span class="cstat-no" title="statement not covered" >import API from '../services/api';</span>
+import API from '../services/api';
 &nbsp;
 interface ExtendedAlert extends AlertType {
   type: string;
@@ -1766,7 +1766,7 @@ interface Incident {
 &nbsp;
 const COLORS = <span class="cstat-no" title="statement not covered" >['#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899'];</span>
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >IncidentAlertDashboard = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span>) =</span>&gt; {</span>
+export const IncidentAlertDashboard = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
   const [alerts, setAlerts] = <span class="cstat-no" title="statement not covered" >useState&lt;ExtendedAlert[]&gt;([]);</span>
   const [incidents, setIncidents] = <span class="cstat-no" title="statement not covered" >useState&lt;Incident[]&gt;([]);</span>
   const [loading, setLoading] = <span class="cstat-no" title="statement not covered" >useState(false);</span>
@@ -1792,20 +1792,20 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
     escalated: '#8b5cf6'
   };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    fetchAlerts();</span>
 <span class="cstat-no" title="statement not covered" >    fetchIncidents();</span>
-    const interval = <span class="cstat-no" title="statement not covered" >setInterval(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    const interval = <span class="cstat-no" title="statement not covered" >setInterval(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      fetchAlerts();</span>
 <span class="cstat-no" title="statement not covered" >      fetchIncidents();</span>
     }, 30000);
-<span class="cstat-no" title="statement not covered" >    return <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >clearInterval(interval);</span></span>
+<span class="cstat-no" title="statement not covered" >    return <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >clearInterval(interval);</span></span>
   }, []);
 &nbsp;
-  const fetchAlerts = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const fetchAlerts = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setLoading(true);</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-       const res = <span class="cstat-no" title="statement not covered" >await API.get('/api/orgs/active').catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{ data: [] as ExtendedAlert[] })</span>);</span>
+       const res = <span class="cstat-no" title="statement not covered" >await API.get('/api/orgs/active').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{ data: [] as ExtendedAlert[] })</span>);</span>
       const backendAlerts = <span class="cstat-no" title="statement not covered" >res.data || [];</span>
       const demoAlerts = <span class="cstat-no" title="statement not covered" >generateDemoAlerts();</span>
 <span class="cstat-no" title="statement not covered" >      setAlerts(backendAlerts.length &gt; 0 ? backendAlerts : demoAlerts);</span>
@@ -1816,9 +1816,9 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
     }
   };
 &nbsp;
-  const fetchIncidents = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const fetchIncidents = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-       const res = <span class="cstat-no" title="statement not covered" >await API.get('/api/orgs/incidents').catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{ data: [] as Incident[] })</span>);</span>
+       const res = <span class="cstat-no" title="statement not covered" >await API.get('/api/orgs/incidents').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{ data: [] as Incident[] })</span>);</span>
       const backendIncidents = <span class="cstat-no" title="statement not covered" >res.data || [];</span>
       const demoIncidents = <span class="cstat-no" title="statement not covered" >generateDemoIncidents();</span>
 <span class="cstat-no" title="statement not covered" >      setIncidents(backendIncidents.length &gt; 0 ? backendIncidents : demoIncidents);</span>
@@ -1827,7 +1827,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
     }
   };
 &nbsp;
-  const generateDemoAlerts = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(): ExtendedAlert[] =</span>&gt; {</span>
+  const generateDemoAlerts = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span>: ExtendedAlert[] =&gt; {</span>
     const severities = <span class="cstat-no" title="statement not covered" >['critical', 'high', 'medium', 'low'];</span>
     const types = <span class="cstat-no" title="statement not covered" >['DEEPFAKE_DETECTED', 'SPOOFING_ATTEMPT', 'ANOMALY_DETECTED', 'BIAS_THRESHOLD_EXCEEDED', 'CONFIDENCE_DROPOUT'];</span>
     
@@ -1845,7 +1845,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
     }));
   };
 &nbsp;
-  const generateDemoIncidents = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(): Incident[] =</span>&gt; {</span>
+  const generateDemoIncidents = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span>: Incident[] =&gt; {</span>
     const statuses = <span class="cstat-no" title="statement not covered" >['open', 'investigating', 'resolved', 'escalated'];</span>
     const types = <span class="cstat-no" title="statement not covered" >['Security Breach Attempt', 'Model Drift Detected', 'Spoofing Campaign', 'Bias Anomaly', 'System Performance Degradation'];</span>
     
@@ -1926,10 +1926,10 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
 <span class="cstat-no" title="statement not covered" >    setIncidentWorkflowOpen(true);</span>
   };
 &nbsp;
-  const handleUpdateStatus = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(incidentId: string, newStatus: string) =&gt; {</span>
+  const handleUpdateStatus = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (incidentId: string, newStatus: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await API.put(`/api/incidents/${incidentId}/status`, { status: newStatus });</span>
-<span class="cstat-no" title="statement not covered" >      setIncidents(<span class="fstat-no" title="function not covered" >prev </span>=&gt; <span class="cstat-no" title="statement not covered" >prev.map(<span class="fstat-no" title="function not covered" >inc </span>=&gt; </span></span>
+<span class="cstat-no" title="statement not covered" >      setIncidents(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; <span class="cstat-no" title="statement not covered" >prev.map(<span class="fstat-no" title="function not covered" >in</span>c =&gt; </span></span>
 <span class="cstat-no" title="statement not covered" >        inc.id === incidentId ? { ...inc, status: newStatus, updatedAt: new Date().toISOString() } : inc</span>
       ));
 <span class="cstat-no" title="statement not covered" >      setSnackbar({ open: true, message: 'Status updated successfully', severity: 'success' });</span>
@@ -1938,31 +1938,31 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
     }
   };
 &nbsp;
-  const handleAcknowledgeAlert = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(alertId: string) =&gt; {</span>
+  const handleAcknowledgeAlert = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (alertId: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await API.put(`/api/alerts/${alertId}/acknowledge`);</span>
-<span class="cstat-no" title="statement not covered" >      setAlerts(<span class="fstat-no" title="function not covered" >prev </span>=&gt; <span class="cstat-no" title="statement not covered" >prev.map(<span class="fstat-no" title="function not covered" >a </span>=&gt; <span class="cstat-no" title="statement not covered" >a.id === alertId ? { ...a, status: 'acknowledged' } : a)</span>)</span>;</span>
+<span class="cstat-no" title="statement not covered" >      setAlerts(<span class="fstat-no" title="function not covered" >pr</span>ev =&gt; <span class="cstat-no" title="statement not covered" >prev.map(<span class="fstat-no" title="function not covered" >a </span>=&gt; <span class="cstat-no" title="statement not covered" >a.id === alertId ? { ...a, status: 'acknowledged' } : a)</span>)</span>;</span>
 <span class="cstat-no" title="statement not covered" >      setSnackbar({ open: true, message: 'Alert acknowledged', severity: 'success' });</span>
     } catch (err: any) {
 <span class="cstat-no" title="statement not covered" >      setSnackbar({ open: true, message: 'Failed to acknowledge alert', severity: 'error' });</span>
     }
   };
 &nbsp;
-  const filteredAlerts = <span class="cstat-no" title="statement not covered" >useMemo&lt;ExtendedAlert[]&gt;(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+  const filteredAlerts = <span class="cstat-no" title="statement not covered" >useMemo&lt;ExtendedAlert[]&gt;(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return alerts.filter(<span class="fstat-no" title="function not covered" >a </span>=&gt; </span>
 <span class="cstat-no" title="statement not covered" >      (filterSeverity === 'all' || a.severity === filterSeverity) &amp;&amp;</span>
       (filterStatus === 'all' || a.status === filterStatus)
     );
   }, [alerts, filterSeverity, filterStatus]);
 &nbsp;
-  const filteredIncidents = <span class="cstat-no" title="statement not covered" >useMemo&lt;Incident[]&gt;(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+  const filteredIncidents = <span class="cstat-no" title="statement not covered" >useMemo&lt;Incident[]&gt;(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return incidents.filter(<span class="fstat-no" title="function not covered" >i </span>=&gt; </span>
 <span class="cstat-no" title="statement not covered" >      (filterSeverity === 'all' || i.severity === filterSeverity) &amp;&amp;</span>
       (filterStatus === 'all' || i.status === filterStatus)
     );
   }, [incidents, filterSeverity, filterStatus]);
 &nbsp;
-  const alertSummary = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+  const alertSummary = <span class="cstat-no" title="statement not covered" >useMemo(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return alerts.reduce&lt;Record&lt;string, number&gt;&gt;(<span class="fstat-no" title="function not covered" >(a</span>cc, alert) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      acc[alert.severity!] = (acc[alert.severity!] || 0) + 1;</span>
 <span class="cstat-no" title="statement not covered" >      acc.total = (acc.total || 0) + 1;</span>
@@ -1970,7 +1970,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
     }, {});
   }, [alerts]);
 &nbsp;
-  const incidentSummary = <span class="cstat-no" title="statement not covered" >useMemo&lt;Record&lt;string, number&gt;&gt;(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+  const incidentSummary = <span class="cstat-no" title="statement not covered" >useMemo&lt;Record&lt;string, number&gt;&gt;(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return incidents.reduce(<span class="fstat-no" title="function not covered" >(a</span>cc, incident) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      acc[incident.status] = (acc[incident.status] || 0) + 1;</span>
 <span class="cstat-no" title="statement not covered" >      return acc;</span>
@@ -1995,7 +1995,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
           &lt;/Badge&gt;
         &lt;/Box&gt;
         &lt;Box sx={{ display: 'flex', gap: 1 }}&gt;
-          &lt;Button size="small" startIcon={&lt;Refresh /&gt;} onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; { <span class="cstat-no" title="statement not covered" >fetchAlerts(); <span class="cstat-no" title="statement not covered" ></span>fetchIncidents(); </span>}}&gt;
+          &lt;Button size="small" startIcon={&lt;Refresh /&gt;} onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; { <span class="cstat-no" title="statement not covered" >fetchAlerts(); <span class="cstat-no" title="statement not covered" ></span>fetchIncidents(); </span>}}&gt;
             Refresh
           &lt;/Button&gt;
           &lt;Button size="small" variant="contained" startIcon={&lt;Settings /&gt;}&gt;
@@ -2181,7 +2181,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
                       &lt;TableCell&gt;{new Date(alert.timestamp).toLocaleString()}&lt;/TableCell&gt;
                       &lt;TableCell&gt;
                         {alert.status === 'new' &amp;&amp; (
-                          &lt;Button size="small" onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handleAcknowledgeAlert(alert.id)}</span>&gt;
+                          &lt;Button size="small" onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleAcknowledgeAlert(alert.id)}</span>&gt;
                             Acknowledge
                           &lt;/Button&gt;
                         )}
@@ -2203,10 +2203,10 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
               &lt;CardContent&gt;
                 &lt;Typography variant="h6" gutterBottom&gt;Incident Response Workflow&lt;/Typography&gt;
                 &lt;Stepper activeStep={['open', 'investigating', 'resolved', 'closed'].indexOf(selectedIncident.status)} alternativeLabel&gt;
-                  &lt;Step&gt;&lt;StepLabel onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >selectedIncident.status !== 'open' &amp;&amp; handleUpdateStatus(selectedIncident.id, 'open')}</span>&gt;Open&lt;/StepLabel&gt;&lt;/Step&gt;
-                  &lt;Step&gt;&lt;StepLabel onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >selectedIncident.status !== 'investigating' &amp;&amp; handleUpdateStatus(selectedIncident.id, 'investigating')}</span>&gt;Investigating&lt;/StepLabel&gt;&lt;/Step&gt;
-                  &lt;Step&gt;&lt;StepLabel onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >selectedIncident.status !== 'resolved' &amp;&amp; handleUpdateStatus(selectedIncident.id, 'resolved')}</span>&gt;Resolved&lt;/StepLabel&gt;&lt;/Step&gt;
-                  &lt;Step&gt;&lt;StepLabel onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >selectedIncident.status !== 'closed' &amp;&amp; handleUpdateStatus(selectedIncident.id, 'closed')}</span>&gt;Closed&lt;/StepLabel&gt;&lt;/Step&gt;
+                  &lt;Step&gt;&lt;StepLabel onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >selectedIncident.status !== 'open' &amp;&amp; handleUpdateStatus(selectedIncident.id, 'open')}</span>&gt;Open&lt;/StepLabel&gt;&lt;/Step&gt;
+                  &lt;Step&gt;&lt;StepLabel onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >selectedIncident.status !== 'investigating' &amp;&amp; handleUpdateStatus(selectedIncident.id, 'investigating')}</span>&gt;Investigating&lt;/StepLabel&gt;&lt;/Step&gt;
+                  &lt;Step&gt;&lt;StepLabel onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >selectedIncident.status !== 'resolved' &amp;&amp; handleUpdateStatus(selectedIncident.id, 'resolved')}</span>&gt;Resolved&lt;/StepLabel&gt;&lt;/Step&gt;
+                  &lt;Step&gt;&lt;StepLabel onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >selectedIncident.status !== 'closed' &amp;&amp; handleUpdateStatus(selectedIncident.id, 'closed')}</span>&gt;Closed&lt;/StepLabel&gt;&lt;/Step&gt;
                 &lt;/Stepper&gt;
               &lt;/CardContent&gt;
             &lt;/Card&gt;
@@ -2234,7 +2234,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
                 &lt;/TableHead&gt;
                 &lt;TableBody&gt;
                   {filteredIncidents.map(<span class="fstat-no" title="function not covered" >(i</span>ncident) =&gt; (
-<span class="cstat-no" title="statement not covered" >                    &lt;TableRow key={incident.id} hover onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handleIncidentClick(incident)}</span> style={{ cursor: 'pointer' }}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;TableRow key={incident.id} hover onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleIncidentClick(incident)}</span> style={{ cursor: 'pointer' }}&gt;</span>
                       &lt;TableCell&gt;&lt;Typography variant="body2" fontFamily="monospace"&gt;{incident.id}&lt;/Typography&gt;&lt;/TableCell&gt;
                       &lt;TableCell&gt;{incident.title}&lt;/TableCell&gt;
                       &lt;TableCell&gt;
@@ -2291,7 +2291,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
               &lt;Card sx={{ p: 2 }}&gt;
                 &lt;Typography variant="subtitle2" gutterBottom&gt;Alerts Over Time&lt;/Typography&gt;
                 &lt;ResponsiveContainer width="100%" height={250}&gt;
-                  &lt;LineChart data={[...Array(24).keys()].map(<span class="fstat-no" title="function not covered" >hour </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span>
+                  &lt;LineChart data={[...Array(24).keys()].map(<span class="fstat-no" title="function not covered" >ho</span>ur =&gt; (<span class="cstat-no" title="statement not covered" >{</span>
                     hour: `${hour}:00`,
                     alerts: Math.floor(Math.random() * 20) + 5,
                     critical: Math.floor(Math.random() * 5)
@@ -2410,7 +2410,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
       )}
 &nbsp;
       {/* Incident Detail Dialog */}
-      &lt;Dialog open={incidentWorkflowOpen} onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setIncidentWorkflowOpen(false)}</span> maxWidth="md" fullWidth&gt;
+      &lt;Dialog open={incidentWorkflowOpen} onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setIncidentWorkflowOpen(false)}</span> maxWidth="md" fullWidth&gt;
         {selectedIncident &amp;&amp; (
           &lt;&gt;
             &lt;DialogTitle&gt;
@@ -2502,16 +2502,16 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
             &lt;/DialogContent&gt;
             &lt;DialogActions&gt;
               {selectedIncident.status !== 'resolved' &amp;&amp; (
-                &lt;Button onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handleUpdateStatus(selectedIncident.id, 'resolved')}</span> color="success"&gt;
+                &lt;Button onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleUpdateStatus(selectedIncident.id, 'resolved')}</span> color="success"&gt;
                   Mark Resolved
                 &lt;/Button&gt;
               )}
               {selectedIncident.status !== 'closed' &amp;&amp; (
-                &lt;Button onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >handleUpdateStatus(selectedIncident.id, 'closed')}</span>&gt;
+                &lt;Button onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleUpdateStatus(selectedIncident.id, 'closed')}</span>&gt;
                   Close Incident
                 &lt;/Button&gt;
               )}
-              &lt;Button onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setIncidentWorkflowOpen(false)}</span>&gt;Close&lt;/Button&gt;
+              &lt;Button onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setIncidentWorkflowOpen(false)}</span>&gt;Close&lt;/Button&gt;
             &lt;/DialogActions&gt;
           &lt;/&gt;
         )}
@@ -2520,7 +2520,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
       &lt;Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setSnackbar({ ...snackbar, open: false })}</span>
+        onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setSnackbar({ ...snackbar, open: false })}</span>
       &gt;
         &lt;Alert severity={snackbar.severity}&gt;{snackbar.message}&lt;/Alert&gt;
       &lt;/Snackbar&gt;
@@ -2528,7 +2528,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
   );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default IncidentAlertDashboard;</span>
+export default IncidentAlertDashboard;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -2536,7 +2536,7 @@ export const <span class="cstat-no" title="statement not covered" >IncidentAlert
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

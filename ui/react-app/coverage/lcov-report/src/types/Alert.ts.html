@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/types/index.ts</title>
+    <title>Code coverage report for src/types/Alert.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,7 +19,7 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/types</a> index.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/types</a> Alert.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
@@ -87,17 +87,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export * from './Person';
-export * from './Metrics';
-export * from './Alert';
-export * from './Consent';
-export * from './Log';
-export * from './Camera';
-export * from './Plan';
-// RecognitionResult is defined directly in types.ts, not here to avoid conflict
-export * from './Webhook';
-export * from './Plugin';
-export * from './Snackbar';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export interface Alert {
+  id: string;
+  title: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  message: string;
+  timestamp: string;
+  category?: string;
+  confidence?: number;
+  affected_systems?: string[];
+  metrics?: Record&lt;string, number&gt;;
+}
 &nbsp;
 &nbsp;</pre></td></tr></table></pre>
 

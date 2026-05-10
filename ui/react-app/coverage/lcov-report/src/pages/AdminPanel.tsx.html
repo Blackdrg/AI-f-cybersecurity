@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/105</span>
+                <span class='fraction'>0/95</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/51</span>
+                <span class='fraction'>0/47</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/91</span>
+                <span class='fraction'>0/85</span>
             </div>
         
             
@@ -696,24 +696,24 @@
 <a name='L631'></a><a href='#L631'>631</a>
 <a name='L632'></a><a href='#L632'>632</a>
 <a name='L633'></a><a href='#L633'>633</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1326,37 +1326,37 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/* Enhanced Admin Panel with Enterprise Features */
-<span class="cstat-no" title="statement not covered" >import React, { useState, useEffect } from 'react';</span>
-<span class="cstat-no" title="statement not covered" >import { </span>
+import React, { useState, useEffect } from 'react';
+import { 
   Box, Typography, Paper, List, ListItem, ListItemText, 
   Divider, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
   Chip, Table, TableBody, TableCell, TableHead, TableRow, Card, CardContent,
   Tabs, Tab, Alert, LinearProgress, IconButton, Tooltip, Switch,
   FormControlLabel, Select, MenuItem, CircularProgress
 } from '@mui/material';
-<span class="cstat-no" title="statement not covered" >import { Grid } from '@mui/material';</span>
-<span class="cstat-no" title="statement not covered" >import { </span>
+import { Grid } from '@mui/material';
+import { 
   VpnKey, Business, People, Receipt, Shield, Gavel, 
   Security, TrendingUp, BugReport, Key, 
   Settings, Analytics, Timeline, Memory, History, Article,
   Download
 } from '@mui/icons-material';
-<span class="cstat-no" title="statement not covered" >import API from '../services/api';</span>
+import API from '../services/api';
 &nbsp;
 // Lazy-loaded components
-const OperatorWorkflowPanel = <span class="cstat-no" title="statement not covered" >React.lazy(<span class="fstat-no" title="function not covered" >() =</span>&gt; </span>
-<span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  import('</span>../components/OperatorWorkflowPanel').c</span>atch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{ default: <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >&lt;Box&gt;Component unavailable&lt;/Box&gt; </span>})</span>)</span>
+const OperatorWorkflowPanel = <span class="cstat-no" title="statement not covered" >React.lazy(<span class="fstat-no" title="function not covered" >()</span> =&gt; </span>
+<span class="cstat-no" title="statement not covered" >  import('../components/OperatorWorkflowPanel').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{ default: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >&lt;Box&gt;Component unavailable&lt;/Box&gt; </span>})</span>)</span>
 );
-const ExplainableAIPanel = <span class="cstat-no" title="statement not covered" >React.lazy(<span class="fstat-no" title="function not covered" >() =</span>&gt; </span>
-<span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  import('</span>../components/ExplainableAIPanel').c</span>atch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{ default: <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >&lt;Box&gt;Component unavailable&lt;/Box&gt; </span>})</span>)</span>
+const ExplainableAIPanel = <span class="cstat-no" title="statement not covered" >React.lazy(<span class="fstat-no" title="function not covered" >()</span> =&gt; </span>
+<span class="cstat-no" title="statement not covered" >  import('../components/ExplainableAIPanel').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{ default: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >&lt;Box&gt;Component unavailable&lt;/Box&gt; </span>})</span>)</span>
 );
-const DashboardIntelligencePanel = <span class="cstat-no" title="statement not covered" >React.lazy(<span class="fstat-no" title="function not covered" >() =</span>&gt; </span>
-<span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  import('</span>../components/DashboardIntelligencePanel').c</span>atch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{ default: <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >&lt;Box&gt;Component unavailable&lt;/Box&gt; </span>})</span>)</span>
+const DashboardIntelligencePanel = <span class="cstat-no" title="statement not covered" >React.lazy(<span class="fstat-no" title="function not covered" >()</span> =&gt; </span>
+<span class="cstat-no" title="statement not covered" >  import('../components/DashboardIntelligencePanel').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{ default: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >&lt;Box&gt;Component unavailable&lt;/Box&gt; </span>})</span>)</span>
 );
-const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covered" >React.lazy(<span class="fstat-no" title="function not covered" >() =</span>&gt; </span>
-<span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  import('</span>../components/EnrichmentPortalPanel').c</span>atch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{ default: <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >&lt;Box&gt;Component unavailable&lt;/Box&gt; </span>})</span>)</span>
+const EnrichmentPortalPanel = <span class="cstat-no" title="statement not covered" >React.lazy(<span class="fstat-no" title="function not covered" >()</span> =&gt; </span>
+<span class="cstat-no" title="statement not covered" >  import('../components/EnrichmentPortalPanel').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{ default: <span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >&lt;Box&gt;Component unavailable&lt;/Box&gt; </span>})</span>)</span>
 );
 &nbsp;
 interface Organization {
@@ -1397,7 +1397,7 @@ interface ComplianceData {
   overallScore: number;
 }
 &nbsp;
-const AdminPanel = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+const AdminPanel = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
   const [orgs, setOrgs] = <span class="cstat-no" title="statement not covered" >useState&lt;Organization[]&gt;([]);</span>
   const [activeOrg, setActiveOrg] = <span class="cstat-no" title="statement not covered" >useState&lt;Organization | null&gt;(null);</span>
   const [isKeyDialogOpen, setIsKeyDialogOpen] = <span class="cstat-no" title="statement not covered" >useState(false);</span>
@@ -1411,19 +1411,19 @@ const AdminPanel = <span class="cstat-no" title="statement not covered" ><span c
   const [darkMode, setDarkMode] = <span class="cstat-no" title="statement not covered" >useState(true);</span>
   const [intelligenceTimeframe, setIntelligenceTimeframe] = <span class="cstat-no" title="statement not covered" >useState('24h');</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    fetchDashboardData();</span>
   }, []);
 &nbsp;
-  const fetchDashboardData = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const fetchDashboardData = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const [orgsRes, policiesRes, systemsRes, complianceRes, threatsRes, riskRes] = <span class="cstat-no" title="statement not covered" >await Promise.all([</span>
-        API.get('/api/organizations').catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{data: []})</span>),
-        API.get('/api/policies').catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{data: []})</span>),
-        API.get('/api/systems/status').catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{data: []})</span>),
-        API.get('/api/compliance/status').catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{data: {}})</span>),
-        API.get('/api/security/threats').catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{data: []})</span>),
-        API.get('/api/analytics/risk-metrics').catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; (<span class="cstat-no" title="statement not covered" >{data: {}})</span>)
+        API.get('/api/organizations').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{data: []})</span>),
+        API.get('/api/policies').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{data: []})</span>),
+        API.get('/api/systems/status').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{data: []})</span>),
+        API.get('/api/compliance/status').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{data: {}})</span>),
+        API.get('/api/security/threats').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{data: []})</span>),
+        API.get('/api/analytics/risk-metrics').catch(<span class="fstat-no" title="function not covered" >()</span> =&gt; (<span class="cstat-no" title="statement not covered" >{data: {}})</span>)
       ]);
       
 <span class="cstat-no" title="statement not covered" >        setOrgs(orgsRes.data);</span>
@@ -1439,7 +1439,7 @@ const AdminPanel = <span class="cstat-no" title="statement not covered" ><span c
     }
   };
 &nbsp;
-  const generateKey = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
+  const generateKey = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (!activeOrg) <span class="cstat-no" title="statement not covered" >return;</span></span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await API.post(`/api/organizations/${activeOrg.org_id}/api-keys?name=${newKeyName}`);</span>
@@ -1451,7 +1451,7 @@ const AdminPanel = <span class="cstat-no" title="statement not covered" ><span c
     }
   };
 &nbsp;
-  const updatePolicy = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >async </span>(policyId: any, enabled: any) =&gt; {</span>
+  const updatePolicy = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync (policyId: any, enabled: any) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await API.put(`/api/policies/${policyId}`, { enabled });</span>
 <span class="cstat-no" title="statement not covered" >      fetchDashboardData();</span>
@@ -1464,7 +1464,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
 <span class="cstat-no" title="statement not covered" >     setActiveTab(newValue);</span>
    };
 &nbsp;
-  const renderSystemHealth = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; (</span>
+  const renderSystemHealth = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Card sx={{ mb: 3 }}&gt;</span>
       &lt;CardContent&gt;
         &lt;Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}&gt;
@@ -1504,7 +1504,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
     &lt;/Card&gt;
   );
 &nbsp;
-  const renderPolicyManager = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; (</span>
+  const renderPolicyManager = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Card sx={{ mb: 3 }}&gt;</span>
       &lt;CardContent&gt;
         &lt;Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}&gt;
@@ -1556,7 +1556,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
     &lt;/Card&gt;
   );
 &nbsp;
-  const renderComplianceDashboard = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; (</span>
+  const renderComplianceDashboard = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Card sx={{ mb: 3 }}&gt;</span>
       &lt;CardContent&gt;
         &lt;Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}&gt;
@@ -1602,7 +1602,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
     &lt;/Card&gt;
   );
 &nbsp;
-  const renderRiskAnalytics = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; (</span>
+  const renderRiskAnalytics = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Card sx={{ mb: 3 }}&gt;</span>
       &lt;CardContent&gt;
         &lt;Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}&gt;
@@ -1646,7 +1646,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
     &lt;/Card&gt;
   );
 &nbsp;
-  const renderOriginalAdmin = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; (</span>
+  const renderOriginalAdmin = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Box&gt;</span>
       &lt;Typography variant="h4" gutterBottom&gt;Admin Dashboard&lt;/Typography&gt;
       &lt;Grid container spacing={3}&gt;
@@ -1654,10 +1654,10 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
           &lt;Paper sx={{ p: 2 }}&gt;
             &lt;Typography variant="h6" gutterBottom&gt;&lt;Business /&gt; Organizations&lt;/Typography&gt;
             &lt;List&gt;
-              {orgs.map(<span class="fstat-no" title="function not covered" >org </span>=&gt; (
+              {orgs.map(<span class="fstat-no" title="function not covered" >or</span>g =&gt; (
 <span class="cstat-no" title="statement not covered" >                &lt;ListItem </span>
                   key={org.org_id} 
-                  onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setActiveOrg(org)}</span>
+                  onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setActiveOrg(org)}</span>
                   sx={{ 
                     cursor: 'pointer',
                     bgcolor: activeOrg?.org_id === org.org_id ? 'action.selected' : 'transparent',
@@ -1700,7 +1700,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
               &lt;Paper sx={{ p: 2 }}&gt;
                 &lt;Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}&gt;
                   &lt;Typography variant="h6"&gt;&lt;VpnKey /&gt; API Keys&lt;/Typography&gt;
-                  &lt;Button size="small" onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setIsKeyDialogOpen(true)}</span>&gt;Generate Key&lt;/Button&gt;
+                  &lt;Button size="small" onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setIsKeyDialogOpen(true)}</span>&gt;Generate Key&lt;/Button&gt;
                 &lt;/Box&gt;
                 &lt;Typography variant="body2" color="text.secondary"&gt;
                   Manage API keys for server-side integrations.
@@ -1734,7 +1734,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
         &lt;/Grid&gt;
       &lt;/Grid&gt;
 &nbsp;
-      &lt;Dialog open={isKeyDialogOpen} onClose={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setIsKeyDialogOpen(false)}</span>&gt;
+      &lt;Dialog open={isKeyDialogOpen} onClose={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setIsKeyDialogOpen(false)}</span>&gt;
         &lt;DialogTitle&gt;Generate New API Key&lt;/DialogTitle&gt;
         &lt;DialogContent&gt;
           &lt;TextField
@@ -1748,7 +1748,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
           /&gt;
         &lt;/DialogContent&gt;
         &lt;DialogActions&gt;
-          &lt;Button onClick={<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >setIsKeyDialogOpen(false)}</span>&gt;Cancel&lt;/Button&gt;
+          &lt;Button onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setIsKeyDialogOpen(false)}</span>&gt;Cancel&lt;/Button&gt;
           &lt;Button onClick={generateKey} variant="contained"&gt;Generate&lt;/Button&gt;
         &lt;/DialogActions&gt;
       &lt;/Dialog&gt;
@@ -1823,9 +1823,9 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
           &lt;React.Suspense fallback={&lt;Box sx={{ p: 3, textAlign: 'center' }}&gt;&lt;CircularProgress /&gt;&lt;/Box&gt;}&gt;
 &lt;OperatorWorkflowPanel 
                recognitionResult={null}
-               onRetry={<span class="fstat-no" title="function not covered" >async </span>(adjustments: any) =&gt; <span class="cstat-no" title="statement not covered" >console.log('Retry requested:', adjustments)}</span>
-               onOverride={<span class="fstat-no" title="function not covered" >async </span>(data: any) =&gt; <span class="cstat-no" title="statement not covered" >console.log('Override requested:', data)}</span>
-               onEscalate={<span class="fstat-no" title="function not covered" >async </span>(data: any) =&gt; <span class="cstat-no" title="statement not covered" >console.log('Escalation requested:', data)}</span>
+               onRetry={<span class="fstat-no" title="function not covered" >as</span>ync (adjustments: any) =&gt; <span class="cstat-no" title="statement not covered" >console.log('Retry requested:', adjustments)}</span>
+               onOverride={<span class="fstat-no" title="function not covered" >as</span>ync (data: any) =&gt; <span class="cstat-no" title="statement not covered" >console.log('Override requested:', data)}</span>
+               onEscalate={<span class="fstat-no" title="function not covered" >as</span>ync (data: any) =&gt; <span class="cstat-no" title="statement not covered" >console.log('Escalation requested:', data)}</span>
              /&gt;
           &lt;/React.Suspense&gt;
         &lt;/Box&gt;
@@ -1847,7 +1847,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
           &lt;React.Suspense fallback={&lt;Box sx={{ p: 3, textAlign: 'center' }}&gt;&lt;CircularProgress /&gt;&lt;/Box&gt;}&gt;
 &lt;EnrichmentPortalPanel
                personId={activeOrg?.org_id}
-               onEnrichmentComplete={<span class="fstat-no" title="function not covered" >async </span>(results: any) =&gt; <span class="cstat-no" title="statement not covered" >console.log('Enrichment complete:', results)}</span>
+               onEnrichmentComplete={<span class="fstat-no" title="function not covered" >as</span>ync (results: any) =&gt; <span class="cstat-no" title="statement not covered" >console.log('Enrichment complete:', results)}</span>
                onAlertAction={<span class="fstat-no" title="function not covered" >(a</span>lert: any, action: any) =&gt; <span class="cstat-no" title="statement not covered" >console.log('Alert action:', alert, action)}</span>
              /&gt;
           &lt;/React.Suspense&gt;
@@ -1958,7 +1958,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
   );
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default AdminPanel;</span>
+export default AdminPanel;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -1966,7 +1966,7 @@ const handleTabChange = <span class="cstat-no" title="statement not covered" ><s
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-09T04:39:55.046Z
+                at 2026-05-10T12:00:43.753Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
