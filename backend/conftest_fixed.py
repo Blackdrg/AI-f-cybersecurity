@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest_asyncio
 from fastapi.testclient import TestClient
-from backend.app.main import app
+from app.main import app
 import fakeredis
 from stripe.test_helpers import StripeMock  # Assuming available or mock
 import pytest_mock

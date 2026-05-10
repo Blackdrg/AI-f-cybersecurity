@@ -3,8 +3,11 @@ Celery Configuration for AI-f Background Tasks
 Task routing, retry policies, and monitoring setup
 """
 import os
+import logging
 from celery import Celery
 from celery.schedules import crontab
+
+logger = logging.getLogger(__name__)
 
 # Redis broker URL from environment
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
@@ -94,7 +97,7 @@ if _anchor_schedule and _anchor_schedule != "disabled":
     else:
         # Default to hourly if unrecognized
         _schedule = crontab(minute=0, hour="*")
-    beat_schedule["blockchain-anchoring"] = {
+    app.conf.beat_schedule["blockchain-anchoring"] = {
         "task": "app.tasks.anchoring_tasks.anchor_audit_chain_to_blockchain",
         "schedule": _schedule,
     }
@@ -105,7 +108,7 @@ _model_retrain_schedule = os.getenv("MODEL_RETRAIN_SCHEDULE", "0 2 * * 0")  # De
 if _model_retrain_schedule and _model_retrain_schedule.lower() != "disabled":
     try:
         minute, hour, day, month, day_of_week = _model_retrain_schedule.split()
-        beat_schedule["automated-model-retraining"] = {
+        app.conf.beat_schedule["automated-model-retraining"] = {
             "task": "app.tasks.model_training_tasks.retrain_model_async",
             "schedule": crontab(minute=minute, hour=hour, day_of_month=day, month_of_year=month, day_of_week=day_of_week),
             "args": ("face_embedding", "/data/embeddings/latest", 10, 0.001),

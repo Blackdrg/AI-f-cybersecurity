@@ -675,7 +675,7 @@ async def stream_alerts(org_id: str = None):
 @router.get("/threat/feed")
 async def get_threat_feed(indicator_type: Optional[str] = None, limit: int = 50):
     """Get real-time threat intelligence feed."""
-    from backend.app.providers.threat_intel_provider import ThreatIntelProvider
+    from app.providers.threat_intel_provider import ThreatIntelProvider
     provider = ThreatIntelProvider()
     
     # Return cached or fresh threat data

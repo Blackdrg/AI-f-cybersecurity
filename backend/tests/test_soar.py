@@ -7,7 +7,7 @@ import asyncio
 from datetime import datetime
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from backend.app.services.incident_response import (
+from app.services.incident_response import (
     IncidentStatus, IncidentSeverity, IncidentRule, IncidentPlaybook,
     Incident, IncidentActionExecutor, IncidentResponseEngine, incident_engine
 )
@@ -71,7 +71,7 @@ class TestIncidentActionExecutor:
             status=IncidentStatus.OPEN
         )
 
-        with patch("backend.app.providers.threat_intel_provider.ThreatIntelProvider") as mock_provider_class:
+        with patch("app.providers.threat_intel_provider.ThreatIntelProvider") as mock_provider_class:
             mock_instance = AsyncMock()
             mock_instance.block_ip = AsyncMock(return_value=True)
             mock_provider_class.return_value = mock_instance

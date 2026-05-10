@@ -17,6 +17,10 @@ class SubscriptionResponse(BaseModel):
     created_at: str
 
 logger = logging.getLogger(__name__)
+
+# Validate Stripe key at module load
+_stripe_key = os.getenv("STRIPE_SECRET_KEY")
+if not _stripe_key:
     logger.error("STRIPE_SECRET_KEY environment variable is not set. Billing will fail.")
     env = os.getenv("ENVIRONMENT", "development")
     if env in ["production", "prod"]:

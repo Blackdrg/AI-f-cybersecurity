@@ -9,7 +9,7 @@ import logging
 import redis.asyncio as redis
 from typing import Optional
 
-from backend.app.security import get_encrypted_redis_client
+from app.security import get_encrypted_redis_client
 
 logger = logging.getLogger(__name__)
 

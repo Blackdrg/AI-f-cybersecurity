@@ -138,7 +138,7 @@ class IncidentActionExecutor:
 
     async def _block_ip(self, incident: Incident, params: Dict) -> str:
         """Block an IP address."""
-        from backend.app.providers.threat_intel_provider import ThreatIntelProvider
+        from app.providers.threat_intel_provider import ThreatIntelProvider
         ip = params.get("ip") or incident.title.split()[-1]
         provider = ThreatIntelProvider()
         success = await provider.block_ip(ip, reason=f"Incident {incident.incident_id}")
@@ -219,7 +219,7 @@ class IncidentActionExecutor:
 
     async def _log_audit(self, incident: Incident, params: Dict) -> str:
         """Log action to audit trail."""
-        from backend.app.db.db_client import get_db
+        from app.db.db_client import get_db
         try:
             db = await get_db()
             await db.pool.execute(

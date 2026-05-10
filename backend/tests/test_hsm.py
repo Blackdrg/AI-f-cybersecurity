@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
-from backend.app.security.hsm import (
+from app.security.hsm import (
     HSMKeystore, HSMMode, HSMWithoutError, SoftHSMKeystore, CloudHSMKeystore, get_hsm_keystore
 )
 
@@ -38,7 +38,7 @@ class TestSoftHSMKeystore:
         assert keystore.is_available() is False
 
     def test_initialize_without_pkcs11(self):
-        with patch("backend.app.security.hsm.PKCS11_AVAILABLE", False):
+        with patch("app.security.hsm.PKCS11_AVAILABLE", False):
             keystore = SoftHSMKeystore()
             result = keystore.initialize()
             assert result is False
@@ -51,18 +51,18 @@ class TestSoftHSMKeystore:
 
 class TestCloudHSMKeystore:
     def test_init_aws_missing_boto3(self):
-        with patch("backend.app.security.hsm.AWS_AVAILABLE", False):
+        with patch("app.security.hsm.AWS_AVAILABLE", False):
             with pytest.raises(RuntimeError, match="boto3 required"):
                 CloudHSMKeystore(provider="aws")
 
     def test_init_azure_missing_lib(self):
-        with patch("backend.app.security.hsm.AZURE_AVAILABLE", False):
+        with patch("app.security.hsm.AZURE_AVAILABLE", False):
             with pytest.raises(RuntimeError, match="azure-keyvault-keys required"):
                 CloudHSMKeystore(provider="azure")
 
     def test_is_available_initialized(self):
-        with patch("backend.app.security.hsm.AWS_AVAILABLE", True):
-            with patch("backend.app.security.hsm.boto3.session.Session") as mock_session:
+        with patch("app.security.hsm.AWS_AVAILABLE", True):
+            with patch("app.security.hsm.boto3.session.Session") as mock_session:
                 mock_client = MagicMock()
                 mock_session.return_value.client.return_value = mock_client
                 keystore = CloudHSMKeystore(provider="aws", key_id="test-key")

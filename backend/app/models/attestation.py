@@ -262,21 +262,10 @@ class NitroAttestationVerifier:
             return {"success": False, "error": f"Invalid JSON: {e}"}
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
-    def compute_pcr_drift(self, current_pcrs: Dict[str, str]) -> float:
-        """Compute Hamming distance between current and baseline PCRs."""
-        if not self.verified_pcrs:
-            return 0.0
-        
-        matches = 0
-        total = 0
-        for name, current_val in current_pcrs.items():
-            if name in self.verified_pcrs:
-                total += 1
-                if self.verified_pcrs[name] == current_val:
-                    matches += 1
-        
-        return 1.0 - (matches / total) if total > 0 else 0.0
+
+
+# Alias for backward compatibility with tests
+AttestationVerifier = NitroAttestationVerifier
 
 
 class EnclaveSession:

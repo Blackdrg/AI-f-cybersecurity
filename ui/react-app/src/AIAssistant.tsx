@@ -2,6 +2,7 @@ import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
 import { TextField, Button, Typography, Paper, Box, Avatar, CircularProgress, Alert } from '@mui/material';
 import { Send, SmartToy } from '@mui/icons-material';
+import './AIAssistant.css';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -43,9 +44,9 @@ const AIAssistant = () => {
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-            <Typography variant="h4" gutterBottom style={{ display: 'flex', alignItems: 'center' }}>
-                <SmartToy style={{ marginRight: '10px' }} />
+        <div className="ai-assistant-container">
+            <Typography variant="h4" gutterBottom className="ai-assistant-header">
+                <SmartToy className="ai-assistant-header-icon" />
                 AI Assistant
             </Typography>
             <Typography variant="body1" color="textSecondary" gutterBottom>
@@ -53,10 +54,10 @@ const AIAssistant = () => {
             </Typography>
 
             {/* Conversation Display */}
-            <Paper elevation={2} style={{ height: '400px', overflowY: 'auto', padding: '20px', marginBottom: '20px' }}>
+            <Paper elevation={2} className="conversation-paper">
                 {conversation.length === 0 ? (
-                    <Box style={{ textAlign: 'center', color: '#666', marginTop: '150px' }}>
-                        <SmartToy style={{ fontSize: '48px', marginBottom: '10px' }} />
+                    <Box className="empty-state-box">
+                        <SmartToy className="empty-state-icon" />
                         <Typography variant="h6">How can I help you today?</Typography>
                         <Typography variant="body2">
                             Try asking about face recognition algorithms, best practices, or troubleshooting tips.
@@ -64,20 +65,20 @@ const AIAssistant = () => {
                     </Box>
                 ) : (
                     conversation.map((message, index) => (
-                        <Box key={index} style={{ marginBottom: '20px', display: 'flex' }}>
-                            <Avatar style={{ marginRight: '10px', backgroundColor: message.role === 'user' ? '#1976d2' : '#4caf50' }}>
+                        <Box key={index} className="message-box">
+                            <Avatar className={message.role === 'user' ? 'avatar-user' : 'avatar-ai'}>
                                 {message.role === 'user' ? 'U' : <SmartToy />}
                             </Avatar>
-                            <Box style={{ flex: 1 }}>
-                                <Typography variant="subtitle2" style={{ fontWeight: 'bold' }}>
+                            <Box className="message-content">
+                                <Typography variant="subtitle2" className="message-sender">
                                     {message.role === 'user' ? 'You' : 'AI Assistant'}
                                     {message.model && (
-                                        <span style={{ fontSize: '0.8em', color: '#666', marginLeft: '10px' }}>
+                                        <span className="model-info">
                                             ({message.model})
                                         </span>
                                     )}
                                 </Typography>
-                                <Typography variant="body1" style={{ whiteSpace: 'pre-wrap' }}>
+                                <Typography variant="body1" className="message-text">
                                     {message.content}
                                 </Typography>
                             </Box>
@@ -85,11 +86,11 @@ const AIAssistant = () => {
                     ))
                 )}
                 {loading && (
-                    <Box style={{ display: 'flex', alignItems: 'center', marginTop: '20px' }}>
-                        <Avatar style={{ marginRight: '10px', backgroundColor: '#4caf50' }}>
+                    <Box className="loading-box">
+                        <Avatar className="avatar-ai">
                             <SmartToy />
                         </Avatar>
-                        <CircularProgress size={20} style={{ marginRight: '10px' }} />
+                        <CircularProgress size={20} className="loading-progress" />
                         <Typography variant="body2" color="textSecondary">AI is thinking...</Typography>
                     </Box>
                 )}
@@ -97,7 +98,7 @@ const AIAssistant = () => {
 
             {/* Input Form */}
             <form onSubmit={handleSubmit}>
-                <Box style={{ display: 'flex', gap: '10px' }}>
+                <Box className="input-box">
                     <TextField
                         fullWidth
                         variant="outlined"
@@ -113,7 +114,7 @@ const AIAssistant = () => {
                         variant="contained"
                         color="primary"
                         disabled={loading || !query.trim()}
-                        style={{ minWidth: '100px' }}
+                        className="send-button"
                         startIcon={loading ? <CircularProgress size={20} /> : <Send />}
                     >
                         {loading ? 'Sending' : 'Send'}
@@ -122,15 +123,15 @@ const AIAssistant = () => {
             </form>
 
             {error && (
-                <Alert severity="error" style={{ marginTop: '20px' }}>
+                <Alert severity="error" className="error-alert">
                     {error}
                 </Alert>
             )}
 
             {/* Example Questions */}
-            <Box style={{ marginTop: '30px' }}>
+            <Box className="example-questions-container">
                 <Typography variant="h6" gutterBottom>Example Questions:</Typography>
-                <Box style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <Box className="example-questions-box">
                     {[
                         "How does face recognition work?",
                         "What are the best practices for face recognition?",

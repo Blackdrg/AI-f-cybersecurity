@@ -65,10 +65,34 @@ from .models.bias_detector import BiasDetector
 from .plugins.loader import plugin_loader
 from .models.emotion_behavior import get_emotion_behavior_engine, EmotionBehaviorEngine
 
+# Import API routers
+from .api import enroll, recognize, video_recognize, stream_recognize
+from .api.admin import router as admin
+from .api.federated_learning import router as federated_learning
+from .api.revocation import router as revocation
+from .api.users import router as users
+from .api.plans import router as plans
+from .api.subscriptions import router as subscriptions
+from .api.payments import router as payments
+from .api.usage import router as usage
+from .api.ai_assistant import router as ai_assistant
+from .api.support import router as support
+from .api.public_enrich import router as public_enrich
+from .api.orgs import router as orgs
+from .api.cameras import router as cameras
+from .api.events import router as events
+from .api.alerts import router as alerts
+from .api.compliance import router as compliance
+from .api.mfa import router as mfa
+from .api.oauth import router as oauth
+from .api.plugins import router as plugins
+from .api.mpc import router as mpc
+
 app = FastAPI(title="Face Recognition Service", version="2.0.0")
 
 # Celery application
-celery = celery_module.celery_app
+from .celery import celery_app
+celery = celery_app
 
 from .middleware.authentication import AuthenticationMiddleware
 from .middleware.rate_limit import RateLimitMiddleware
@@ -195,6 +219,7 @@ async def startup_event():
     logger.info("Environment validation passed - all required secrets present")
 
     # Resilient DB initialization
+    from app.db.db_client import init_db, get_db
     db_initialized = False
     retries = 5
     while not db_initialized and retries > 0:
@@ -273,7 +298,7 @@ async def startup_event():
             )
 
     # Initialize production systems
-    global _production_systems_ready
+    # global _production_systems_ready (already defined at top of function)
     try:
         # 0. Redis PubSub & WebSocket Manager
         logger.info("Initializing Redis PubSub...")
@@ -481,35 +506,33 @@ app.include_router(recognize.router, prefix="/api/v1", tags=["recognize"])
 app.include_router(video_recognize.router, prefix="/api/v1", tags=["video_recognize"])
 app.include_router(stream_recognize.router, prefix="/ws/v1", tags=["stream_recognize"])
 # Enable v1 admin router
-app.include_router(admin_v1.router, prefix="/api/v1/admin", tags=["admin-v1"])
-app.include_router(federated_learning.router, prefix="/api/v1", tags=["federated_learning"])
+app.include_router(admin, prefix="/api/v1/admin", tags=["admin-v1"])
+app.include_router(federated_learning, prefix="/api/v1", tags=["federated_learning"])
 
 # Revocation API
-app.include_router(revocation.router, prefix="/api", tags=["auth"])
+app.include_router(revocation, prefix="/api", tags=["auth"])
 
 # Frontend-compatible routes
 app.include_router(enroll.router, prefix="/api", tags=["enroll"])
 app.include_router(recognize.router, prefix="/api", tags=["recognize"])
-app.include_router(admin.router, prefix="/api", tags=["admin"])
+app.include_router(admin, prefix="/api", tags=["admin"])
 
 # SaaS routers
-app.include_router(users.router, prefix="/api", tags=["users"])
-app.include_router(plans.router, prefix="/api", tags=["plans"])
-app.include_router(subscriptions.router, prefix="/api", tags=["subscriptions"])
-app.include_router(payments.router, prefix="/api", tags=["payments"])
-app.include_router(usage.router, prefix="/api", tags=["usage"])
-app.include_router(ai_assistant.router, prefix="/api", tags=["ai_assistant"])
-app.include_router(support.router, prefix="/api", tags=["support"])
-app.include_router(public_enrich.router, prefix="/api", tags=["public_enrich"])
-app.include_router(orgs.router, prefix="/api", tags=["orgs"])
-app.include_router(cameras.router, prefix="/api/orgs", tags=["cameras"])
-app.include_router(events.router, prefix="/api/orgs", tags=["events"])
-app.include_router(alerts.router, prefix="/api/orgs", tags=["alerts"])
-app.include_router(compliance.router, prefix="/api", tags=["compliance"])
-# Enable v1 compliance router
-app.include_router(compliance_v1.router, prefix="/api/v1/compliance", tags=["compliance-v1"])
-app.include_router(mfa.router, prefix="/api", tags=["mfa"])
-app.include_router(oauth.router, prefix="/api", tags=["oauth"])
+app.include_router(users, prefix="/api", tags=["users"])
+app.include_router(plans, prefix="/api", tags=["plans"])
+app.include_router(subscriptions, prefix="/api", tags=["subscriptions"])
+app.include_router(payments, prefix="/api", tags=["payments"])
+app.include_router(usage, prefix="/api", tags=["usage"])
+app.include_router(ai_assistant, prefix="/api", tags=["ai_assistant"])
+app.include_router(support, prefix="/api", tags=["support"])
+app.include_router(public_enrich, prefix="/api", tags=["public_enrich"])
+app.include_router(orgs, prefix="/api", tags=["orgs"])
+app.include_router(cameras, prefix="/api/orgs", tags=["cameras"])
+app.include_router(events, prefix="/api/orgs", tags=["events"])
+app.include_router(alerts, prefix="/api/orgs", tags=["alerts"])
+app.include_router(compliance, prefix="/api", tags=["compliance"])
+app.include_router(mfa, prefix="/api", tags=["mfa"])
+app.include_router(oauth, prefix="/api", tags=["oauth"])
 from .api import webhooks
 app.include_router(webhooks.router, prefix="/api", tags=["webhooks"])
 
@@ -521,20 +544,29 @@ app.include_router(legal_router, prefix="/api", tags=["legal"])
 from .api.recognition_v2 import router as recognition_v2_router
 app.include_router(recognition_v2_router, prefix="/api/v2", tags=["recognition_v2"])
 
-# Plugin management
-app.include_router(plugins.router, tags=["plugins"])
-
-# MPC cross-org matching
-app.include_router(mpc.router, prefix="/api/v1", tags=["mpc"])
-
 # GraphQL API (v2.2.1+)
-from .api.graphql_api import graphql_router
-app.add_route("/graphql", graphql_router)
-app.add_route("/graphql/", graphql_router)  # trailing slash
+try:
+    from .api.graphql_api import graphql_router
+    app.add_route("/graphql", graphql_router)
+    app.add_route("/graphql/", graphql_router)  # trailing slash
+except ImportError:
+    logger.warning("GraphQL API disabled - strawberry not installed")
 
 # Setup security, metrics, and rate limiting
+from app.security import setup_security
+try:
+    from app.security import setup_metrics
+except ImportError:
+    def setup_metrics(app):
+        pass  # No-op if not available
 setup_security(app)
 setup_metrics(app)
+
+# Plugin management
+app.include_router(plugins, tags=["plugins"])
+
+# MPC cross-org matching
+app.include_router(mpc, prefix="/api/v1", tags=["mpc"])
 
 # Global exception handler
 @app.exception_handler(Exception)
@@ -626,6 +658,7 @@ async def get_version():
 
 if __name__ == "__main__":
     async def run_servers():
+        from app.grpc.server import serve_grpc
         grpc_task = asyncio.create_task(serve_grpc())
         config = uvicorn.Config(app, host="0.0.0.0", port=8000)
         server = uvicorn.Server(config)

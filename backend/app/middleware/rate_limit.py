@@ -13,7 +13,7 @@ from typing import Optional, Callable, Tuple
 import logging
 import json
 
-from backend.app.security import get_encrypted_redis_client
+from app.security import get_encrypted_redis_client
 
 logger = logging.getLogger(__name__)
 

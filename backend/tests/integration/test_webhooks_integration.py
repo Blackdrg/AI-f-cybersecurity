@@ -16,7 +16,6 @@ import time
 from datetime import datetime
 from typing import Tuple, Optional, List, Dict, Any
 from app.services.stripe_service import billing_service
-from app.services.stripe_service import billing_service
 
 
 @pytest.mark.billing

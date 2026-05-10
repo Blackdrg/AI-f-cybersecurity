@@ -6,7 +6,6 @@ import numpy as np
 from ..federated_learning import (
     federated_server,
     client_orchestrator,
-    create_federated_client,
     RoundConfig
 )
 from ..schemas import StandardResponse

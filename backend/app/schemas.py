@@ -213,6 +213,7 @@ class AIAssistantRequest(BaseModel):
 
 
 class AIAssistantResponse(BaseModel):
+    model_config = {'protected_namespaces': ()}
     query: str
     response: str
     model_used: str
@@ -244,6 +245,7 @@ class LogsResponse(BaseModel):
 
 
 class FederatedUpdate(BaseModel):
+    model_config = {'protected_namespaces': ()}
     device_id: str
     model_gradients: Dict[str, Any]
     num_samples: int
@@ -251,6 +253,7 @@ class FederatedUpdate(BaseModel):
 
 
 class ModelVersion(BaseModel):
+    model_config = {'protected_namespaces': ()}
     version_id: str
     model_data: bytes
     created_at: str
@@ -258,6 +261,7 @@ class ModelVersion(BaseModel):
 
 
 class EdgeDeviceRequest(BaseModel):
+    model_config = {'protected_namespaces': ()}
     device_id: str
     action: str
     model_version: Optional[str] = None
@@ -270,6 +274,7 @@ class MultiCameraRequest(BaseModel):
 
 
 class OTADownload(BaseModel):
+    model_config = {'protected_namespaces': ()}
     device_id: str
     model_version: str
 
@@ -278,6 +283,23 @@ class AnalyticsResponse(BaseModel):
     time_series: List[Dict[str, Any]]
     bias_trends: List[Dict[str, Any]]
     device_stats: List[Dict[str, Any]]
+
+
+class QueryPerformanceRequest(BaseModel):
+    queries: List[Dict[str, Any]]
+
+
+class QueryPerformanceEntry(BaseModel):
+    name: str
+    query: str
+    execution_time_ms: float
+    rows_returned: int
+    timestamp: str
+
+
+class QueryPerformanceResponse(BaseModel):
+    results: List[QueryPerformanceEntry]
+    summary: Dict[str, Any]
 
 
 class UsageResponse(BaseModel):

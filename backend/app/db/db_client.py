@@ -1943,6 +1943,51 @@ class DBClient:
             rows = await conn.fetch("SELECT * FROM edge_devices WHERE status = 'active'")
             return [dict(row) for row in rows]
 
+    async def get_query_performance(self, queries: List[Dict[str, Any]], iterations: int = 10) -> List[Dict[str, Any]]:
+        """Execute a list of queries and measure their performance."""
+        import time
+        results = []
+
+        for query_def in queries:
+            name = query_def.get("name", "Unnamed query")
+            query = query_def.get("query", "")
+            params = query_def.get("params", ())
+
+            if not query:
+                continue
+
+            times = []
+            rows_count = 0
+
+            for i in range(iterations):
+                start = time.perf_counter()
+                try:
+                    rows = await self.fetch(query, *params)
+                    elapsed = (time.perf_counter() - start) * 1000
+                    times.append(elapsed)
+                    rows_count = len(rows) if rows else 0
+                except Exception as e:
+                    results.append({
+                        "name": name,
+                        "query": query[:200],
+                        "execution_time_ms": -1,
+                        "rows_returned": 0,
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "error": str(e)
+                    })
+                    break
+            else:
+                median_time = sorted(times)[len(times) // 2] if times else 0
+                results.append({
+                    "name": name,
+                    "query": query[:200],
+                    "execution_time_ms": median_time,
+                    "rows_returned": rows_count,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+        return results
+
     async def close(self):
         """Close the connection pool."""
         if hasattr(self, 'pool') and self.pool is not None:
