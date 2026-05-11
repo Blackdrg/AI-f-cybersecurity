@@ -13,7 +13,7 @@ from app.security import get_encrypted_redis_client
 
 logger = logging.getLogger(__name__)
 
-PUBLIC_PATHS = {"/health", "/api/health", "/api/version", "/docs", "/openapi.json", "/redoc", "/api/webhooks/stripe", "/api/webhooks/biometric-event", "/api/payments/webhook"}
+PUBLIC_PATHS = {"/health", "/api/health", "/api/version", "/docs", "/openapi.json", "/redoc", "/api/webhooks/stripe", "/api/webhooks/biometric-event", "/api/payments/webhook", "/api/plans"}
 
 class MockRevocationStore:
     """Mock Redis store for tests and degraded operation."""

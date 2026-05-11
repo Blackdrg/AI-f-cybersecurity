@@ -179,7 +179,7 @@ class DecisionEngine:
             "ethical": ctx.ethical_score,
             "bias_risk": ctx.bias_risk,
         }
-        
+
         result = {
             "decision": decision,
             "action": "allow" if decision == "accept" else (
@@ -190,7 +190,7 @@ class DecisionEngine:
             "factors": factors,
             "xai": {
                 "top_contributor": max(factors, key=lambda k: abs(factors[k] - 0.5)),
-                "weight_explanation": {k: v * self.weights[k] for k, v in factors.items()},
+                "weight_explanation": {k: v * self.weights.get(k, 0.0) for k, v in factors.items()},
             },
             "audit_required": decision == "review",
             # New fields

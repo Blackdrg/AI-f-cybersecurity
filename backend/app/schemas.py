@@ -304,8 +304,8 @@ class QueryPerformanceResponse(BaseModel):
 
 class UsageResponse(BaseModel):
     user_id: str
-    period_start: str
-    period_end: str
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
     recognitions_used: int
     enrollments_used: int
     recognitions_limit: int

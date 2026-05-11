@@ -263,6 +263,33 @@ class NitroAttestationVerifier:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    def compute_pcr_drift(self, current_pcrs: Dict[str, str]) -> float:
+        """
+        Compute PCR drift between current values and the verified baseline.
+
+        Returns a score between 0.0 (no drift) and 1.0 (complete mismatch).
+        Compares each PCR register present in both baseline and current values.
+        """
+        if not self.verified_pcrs:
+            logger.warning("No verified PCR baseline available; returning 0 drift")
+            return 0.0
+
+        drifted = 0
+        compared = 0
+        for pcr_name, baseline_value in self.verified_pcrs.items():
+            if pcr_name in current_pcrs:
+                compared += 1
+                if current_pcrs[pcr_name] != baseline_value:
+                    drifted += 1
+
+        if compared == 0:
+            logger.warning("No overlapping PCR registers to compare")
+            return 0.0
+
+        drift_score = drifted / compared
+        logger.info(f"PCR drift: {drifted}/{compared} registers changed ({drift_score:.4f})")
+        return drift_score
+
 
 # Alias for backward compatibility with tests
 AttestationVerifier = NitroAttestationVerifier

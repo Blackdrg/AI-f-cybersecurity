@@ -22,7 +22,7 @@ import pytest
 # Environment configuration (set BEFORE any app imports)
 # =============================================================================
 os.environ.setdefault('ENVIRONMENT', 'test')
-os.environ.setdefault('JWT_SECRET', 'test-jwt-secret-key-64byte-long-string-here-for-HS256')
+os.environ.setdefault('JWT_SECRET', 'test-jwt-secret-key-64byte-long-string-here-for-HS256!!!')
 os.environ.setdefault('ENCRYPTION_KEY', '0XKYdoZg1Q4f1mXPIWwEVRwQcGm0sKomFk4N5ksJ2nA=')
 os.environ.setdefault('OPENAI_API_KEY', 'sk-test-mock-openai')
 os.environ.setdefault('STRIPE_SECRET_KEY', 'sk_test_mock_stripe')
@@ -203,6 +203,23 @@ class InMemoryDB:
             'recognitions_limit': limits['recognitions'],
             'enrollments_limit': limits['enrollments']
         }
+
+    async def is_webhook_event_processed(self, event_id: str) -> bool:
+        """Check if a webhook event has already been processed."""
+        return False
+
+    async def record_webhook_event(self, event_id: str, event_type: str, data: dict) -> bool:
+        """Record a webhook event for idempotency."""
+        return True
+
+    async def mark_webhook_processed(self, event_id: str) -> bool:
+        """Mark a webhook event as processed."""
+        return True
+
+    async def log_recognition_event(self, org_id: str, person_id: str, camera_id: str,
+                                     confidence: float, metadata: dict = None) -> str:
+        """Log a recognition event for audit."""
+        return f"evt_{uuid.uuid4().hex[:8]}"
 
     async def get_monthly_usage(self, customer_id):
         return {'recognitions': 0, 'enrollments': 0}

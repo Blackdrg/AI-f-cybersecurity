@@ -174,6 +174,7 @@ async def recognize_faces(
 
         db = await get_db()
         response_faces = []
+        age_gender = None
 
         for face in faces:
             if enable_spoof_check and face['spoof_score'] > 0.5:
@@ -349,14 +350,14 @@ async def recognize_faces(
             if age_gender:
                 bias_input = [{
                     "is_known": not is_unknown,
-                    "matches": [{"score": de_result.confidence}],
+                    "matches": [{"score": de_result.get('confidence', de_result.get('total_score', 0))}],
                     "gender": age_gender.get('gender', 'unknown'),
                     "age": age_gender.get('age', 'unknown')
                 }]
                 bm = bias_detector.detect_bias(bias_input)
                 if bm.get('demographic_parity_difference', 0) > 0.1:
                     if age_gender.get('gender') == 'F' or (age_gender.get('age') or 0) > 60:
-                        de_result = de_result._replace(confidence=min(1.0, de_result.confidence * 1.1))
+                        de_result['confidence'] = min(1.0, de_result.get('confidence', de_result.get('total_score', 0)) * 1.1)
 
             # Build matches
             face_matches = [
@@ -393,10 +394,10 @@ async def recognize_faces(
                 "age": age_gender['age'] if age_gender else None,
                 "gender": age_gender['gender'] if age_gender else None,
                 "behavior": behavior,
-                "identity_score": float(de_result.confidence),
-                "decision": de_result.decision,
-                "risk_level": de_result.risk_level.value if hasattr(de_result.risk_level, 'value') else str(de_result.risk_level),
-                "decision_factors": de_result.factors,
+                "identity_score": float(de_result.get('confidence', de_result.get('total_score', 0))),
+                "decision": de_result.get('decision', 'review'),
+                "risk_level": de_result.get('risk_level', 'unknown'),
+                "decision_factors": de_result.get('factors', {}),
                 # New AI reliability fields
                 "hallucination_risk": {
                     "score": hallucination_risk.risk_score if hallucination_risk else None,
@@ -413,11 +414,11 @@ async def recognize_faces(
                     org_id=user.get("org_id"),
                     person_id=db_matches[0]['person_id'] if db_matches else None,
                     camera_id=camera_id,
-                    confidence=float(de_result.confidence),
+                    confidence=float(de_result.get('confidence', de_result.get('total_score', 0))),
                     metadata={
                         "user_id": user.get("user_id"),
-                        "decision": de_result.decision,
-                        "risk_level": str(de_result.risk_level),
+                        "decision": de_result.get('decision', 'review'),
+                        "risk_level": str(de_result.get('risk_level', 'unknown')),
                         "num_matches": len(db_matches),
                         "spoof_score": face.get('spoof_score', 0.0),
                         "emotion": emotion,

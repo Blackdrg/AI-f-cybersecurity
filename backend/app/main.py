@@ -139,30 +139,31 @@ def validate_required_env_vars():
                 missing_required.append(f"{var} ({description})")
             else:
                 logger.warning(f"Env var {var} not set. {description}")
+            continue
         # Check for placeholder/test defaults
-    if var == "STRIPE_SECRET_KEY" and value.startswith(("sk_test_", "sk_test_mock")):
-        if env in ["production", "prod"]:
-            insecure.append(f"{var} uses test key; production key required")
-    elif var == "OPENAI_API_KEY" and value in ["sk-test-mock-openai", "", "sk-", "sk-test"]:
-        if env in ["production", "prod"]:
-            insecure.append(f"{var} uses mock key; real API key required")
-    elif var == "ENCRYPTION_KEY":
-        if len(value) < 32:
-            insecure.append(f"{var} must be ≥32 bytes; got {len(value)}")
-        if value in ["fallback-key-32bytes-for-dev!!!", "dev-encryption-key-change-me", "your-32-byte-secret-key-here123456789012"]:
+        if var == "STRIPE_SECRET_KEY" and value.startswith(("sk_test_", "sk_test_mock")):
             if env in ["production", "prod"]:
-                insecure.append(f"{var} uses development fallback key")
-    elif var == "JWT_SECRET":
-        # Should be at least 64 characters for HS512
-        if len(value) < 64:
-            insecure.append(f"{var} must be ≥64 bytes (for HS512); got {len(value)}")
-        if value in ["dev-secret-change-me", "your-super-secret-key-change-it"]:
+                insecure.append(f"{var} uses test key; production key required")
+        elif var == "OPENAI_API_KEY" and value in ["sk-test-mock-openai", "", "sk-", "sk-test"]:
             if env in ["production", "prod"]:
-                insecure.append(f"{var} uses default development secret")
-    elif var == "BING_API_KEY":
-        if value.startswith("test-") or value == "":
-            if env in ["production", "prod"]:
-                insecure.append(f"{var} uses test key; production Bing Search API key required")
+                insecure.append(f"{var} uses mock key; real API key required")
+        elif var == "ENCRYPTION_KEY":
+            if len(value) < 32:
+                insecure.append(f"{var} must be ≥32 bytes; got {len(value)}")
+            if value in ["fallback-key-32bytes-for-dev!!!", "dev-encryption-key-change-me", "your-32-byte-secret-key-here123456789012"]:
+                if env in ["production", "prod"]:
+                    insecure.append(f"{var} uses development fallback key")
+        elif var == "JWT_SECRET":
+            # Should be at least 64 characters for HS512
+            if len(value) < 64:
+                insecure.append(f"{var} must be ≥64 bytes (for HS512); got {len(value)}")
+            if value in ["dev-secret-change-me", "your-super-secret-key-change-it"]:
+                if env in ["production", "prod"]:
+                    insecure.append(f"{var} uses default development secret")
+        elif var == "BING_API_KEY":
+            if value.startswith("test-") or value == "":
+                if env in ["production", "prod"]:
+                    insecure.append(f"{var} uses test key; production Bing Search API key required")
 
     # Check feature-critical vars (warn in prod, but don't fail startup)
     for var, description in FEATURE_ENV_VARS.items():

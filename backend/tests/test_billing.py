@@ -4,6 +4,9 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.api.subscriptions import router as subscriptions_router
 from app.security import create_token
+import hmac
+import hashlib
+import json
 
 @pytest.fixture
 def client():
@@ -44,12 +47,15 @@ class TestStripeBilling:
             "type": "checkout.session.completed",
             "data": {"object": {"id": "cs_test_123"}}
         }
-        # Use correct header name for x_stripe_signature
-        headers = {"x-stripe-signature": "test_sig"}
-        
+        # Use valid HMAC signature matching the configured webhook secret
+        webhook_secret = "whsec_change_me"
+        raw_payload = json.dumps(payload).encode()
+        valid_sig = "sha256=" + hmac.new(webhook_secret.encode(), raw_payload, hashlib.sha256).hexdigest()
+        headers = {"x-stripe-signature": valid_sig}
+
         response = client.post(
             "/api/webhooks/stripe",
-            json=payload,
+            data=raw_payload,
             headers=headers
         )
         assert response.status_code == 200
