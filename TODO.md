@@ -1,11 +1,6 @@
-# Frontend TypeScript Fixes Progress
+# TODO (blackboxai)
 
-## Plan Steps:
-- [ ] Step 2: Replace Grid -> Grid2 in all files
-- [ ] Step 3: Add Props interfaces to components
-- [ ] Step 4: Type all event handlers
-- [ ] Step 5: Run type check and build test
-- [ ] Step 6: Complete
+- [x] Patch `backend/app/models/voice_embedder.py` to monkeypatch `torchaudio.set_audio_backend` before importing SpeechBrain.
 
-Waiting for plan approval.
+- [ ] Restart backend (uvicorn) and verify `/api/health` works without VoiceEmbedder crash.
 

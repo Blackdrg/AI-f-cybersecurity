@@ -1,0 +1,74 @@
+Loaded ONNX spoof_detector: D:\AI-F\AI-f\backend\models\onnx_bundle\spoof_detector.onnx
+Loaded ONNX deepfake_detector: D:\AI-F\AI-f\backend\models\onnx_bundle\deepfake_detector.onnx
+Loaded ONNX face_reconstructor: D:\AI-F\AI-f\backend\models\onnx_bundle\face_reconstructor.onnx
+Loaded ONNX face_embedding: D:\AI-F\AI-f\backend\models\onnx_bundle\insightface_buffalo_l.onnx
+Loaded ONNX xception_spoof: D:\AI-F\AI-f\backend\models\onnx_bundle\xceptionnet_spoof_detector.onnx
+Loaded ONNX behavioral_predictor: D:\AI-F\AI-f\backend\models\onnx_bundle\behavioral_predictor.onnx
+Loaded ONNX gait_analyzer: D:\AI-F\AI-f\backend\models\onnx_bundle\gaitset.onnx
+Loaded 7 ONNX models from bundle: D:\AI-F\AI-f\backend\models\onnx_bundle
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\cuda\__init__.py:54: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+GaitSet ONNX loaded from D:\AI-F\AI-f\backend\models\onnx_bundle\gaitset.onnx
+Loaded pretrained LSTM weights
+LSTM Behavioral Predictor loaded on cpu, weights: True
+Loading faiss with AVX512 support.
+Could not load library with AVX512 support due to: ModuleNotFoundError("No module named 'faiss.swigfaiss_avx512'")
+Loading faiss with AVX2 support.
+Successfully loaded faiss with AVX2 support.
+FaceDetector: InsightFace not installed. Using mock detection.
+Install: pip install insightface
+SpoofDetector: ONNX=True, Deepfake ONNX=True
+GFPGAN package not installed; using Navier-Stokes inpainting
+FaceEmbedder: InsightFace not available. Using mock embeddings.
+SpeechBrain or PyTorch not available, voice embedding disabled
+GaitSet ONNX loaded from D:\AI-F\AI-f\backend\models\onnx_bundle\gaitset.onnx
+FaceDetector: InsightFace not installed. Using mock detection.
+Install: pip install insightface
+SpoofDetector: ONNX=True, Deepfake ONNX=True
+GFPGAN package not installed; using Navier-Stokes inpainting
+FaceEmbedder: InsightFace not available. Using mock embeddings.
+SpeechBrain or PyTorch not available, voice embedding disabled
+GaitSet ONNX loaded from D:\AI-F\AI-f\backend\models\onnx_bundle\gaitset.onnx
+Loaded pretrained LSTM weights
+LSTM Behavioral Predictor loaded on cpu, weights: True
+FaceDetector: InsightFace not installed. Using mock detection.
+Install: pip install insightface
+SpoofDetector: ONNX=True, Deepfake ONNX=True
+GFPGAN package not installed; using Navier-Stokes inpainting
+FaceEmbedder: InsightFace not available. Using mock embeddings.
+FaceDetector: InsightFace not installed. Using mock detection.
+Install: pip install insightface
+SpoofDetector: ONNX=True, Deepfake ONNX=True
+GFPGAN package not installed; using Navier-Stokes inpainting
+FaceEmbedder: InsightFace not available. Using mock embeddings.
+Loaded pretrained LSTM weights
+LSTM Behavioral Predictor loaded on cpu, weights: True
+SpoofDetector: ONNX=True, Deepfake ONNX=True
+GFPGAN package not installed; using Navier-Stokes inpainting
+STRIPE_SECRET_KEY environment variable is not set. Billing will fail.
+STRIPE_WEBHOOK_SECRET not set - webhook signature verification disabled
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\pydantic\_internal\_fields.py:149: UserWarning: Field "model_used" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+BING_API_KEY not set - Bing search enrichment disabled
+ThreatIntelProvider running in DEMO MODE — synthetic data only. Set OTX_API_KEY/MISP_API_KEY for real feeds.
+Blockchain anchoring scheduled: hourly
+Model retraining scheduled: 0 2 * * 0
+GraphQL API disabled - strawberry not installed
+INFO:     Started server process [15272]
+INFO:     Waiting for application startup.
+Starting up Face Recognition Service...
+Env var STRIPE_SECRET_KEY not set. Stripe billing and subscription provisioning (required for paid features)
+Env var OPENAI_API_KEY not set. OpenAI GPT assistant integration (required for AI assistant features)
+Env var ENCRYPTION_KEY not set. 32-byte AES-256-GCM key for encrypting biometric templates at rest (required)
+Env var JWT_SECRET not set. 64-byte secret for JWT token signing (required for authentication)
+Env var BING_API_KEY not set. Bing Search API key for enrichment portal (required for external enrichment)
+Metrics endpoint accessible without token — set METRICS_TOKEN for security
+Environment validation passed - all required secrets present
+Vault secret DB_PASSWORD error: HTTPConnectionPool(host='vault', port=8200): Max retries exceeded with url: /v1/secret/data/DB_PASSWORD (Caused by NameResolutionError("HTTPConnection(host='vault', port=8200): Failed to resolve 'vault' ([Errno 11001] getaddrinfo failed)"))
+Database init failed: name 'logger' is not defined. Retrying in 5s... (4 left)
+Database initialized successfully
+DB monitoring init failed: can only concatenate list (not "str") to list
+Initializing Redis PubSub...
+Redis PubSub manager initialized

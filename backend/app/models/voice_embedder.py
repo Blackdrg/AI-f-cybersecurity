@@ -8,11 +8,15 @@ from typing import Optional, Dict, Any
 
 import numpy as np
 
+# Optional dependency: librosa (used for signal analysis/resampling)
+# Pylance may report missing imports in some environments; runtime import is tolerated.
 try:
-    import librosa
+    import librosa  # type: ignore
     LIBROSA_AVAILABLE = True
 except ImportError:
+    librosa = None  # type: ignore
     LIBROSA_AVAILABLE = False
+
 
 try:
     import torch
@@ -20,16 +24,37 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
 
+# --- SpeechBrain / torchaudio compatibility ---
+# Some SpeechBrain versions call torchaudio.set_audio_backend(),
+# but newer torchaudio releases removed it.
+# Monkeypatch a no-op before importing SpeechBrain.
 try:
-    from speechbrain.inference.speaker import EncoderClassifier
+    import torchaudio  # type: ignore
+
+    if not hasattr(torchaudio, "set_audio_backend"):
+        def _noop_set_audio_backend(*args, **kwargs):
+            return None
+
+        torchaudio.set_audio_backend = _noop_set_audio_backend  # type: ignore[attr-defined]
+except Exception:
+    # If torchaudio isn't importable, SpeechBrain will also likely fail.
+    pass
+
+# NOTE: Pylance may not resolve `speechbrain` in this repo/environment.
+# We intentionally keep the import dynamic and tolerant.
+try:
+    from speechbrain.inference.speaker import EncoderClassifier  # type: ignore
     SPEECHBRAIN_AVAILABLE = True
-except ImportError:
+except Exception:
     SPEECHBRAIN_AVAILABLE = False
+
+
+
 
 logger = logging.getLogger(__name__)
 
-
 import scipy.signal as sig
+
 
 class VoiceLivenessDetector:
     """Detects voice liveness to prevent replay attacks."""
@@ -125,6 +150,8 @@ class VoiceLivenessDetector:
         try:
             # Simple zero-crossing rate variation as proxy for jitter
             zcr = librosa.feature.zero_crossing_rate(signal)[0]
+
+
             zcr_var = np.std(zcr) / (np.mean(zcr) + 1e-10)
             # Live speech has natural jitter
             return min(1.0, zcr_var * 3)

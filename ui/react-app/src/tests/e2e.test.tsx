@@ -61,9 +61,14 @@ const RBACGuard = ({ children, requiredPermission }: { children?: React.ReactNod
 const renderWithRouter = (component: React.ReactElement, { route = '/' } = {}) => {
   window.history.pushState({}, 'Test page', route);
   return render(
-    React.createElement(BrowserRouter, null,
-      React.createElement(AuthProvider, null, component)
-    )
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
+      <AuthProvider>{component}</AuthProvider>
+    </BrowserRouter>
   );
 };
 
