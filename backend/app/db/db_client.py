@@ -150,6 +150,34 @@ class DBClient:
             ]
         self.current_replica_index = 0
 
+    def _init_kms(self):
+        """Initialize AWS KMS client for key management.
+
+        Returns KMS client if boto3 is available and credentials exist,
+        otherwise returns None (falls back to local key management).
+        """
+        if BOTO3_AVAILABLE:
+            try:
+                return boto3.client('kms', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+            except Exception:
+                return None
+        return None
+
+    def _load_encryption_key(self) -> bytes:
+        """Load encryption key for Fernet symmetric encryption.
+
+        Uses a centralized secrets vault, falling back to env var or dev key.
+        """
+        try:
+            from app.security.vault import get_encryption_key as vault_get_key
+            key = vault_get_key()
+        except Exception:
+            key = os.getenv('ENCRYPTION_KEY', 'dev-key-fallback-32bytes-ok!')
+
+        import base64
+        key_bytes = key.encode()[:32].ljust(32, b'\0')
+        return base64.urlsafe_b64encode(key_bytes)
+
     async def init_db(self):
         """Initialize database connection pools with retry logic."""
         try:

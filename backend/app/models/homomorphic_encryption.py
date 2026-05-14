@@ -603,9 +603,9 @@ class HomomorphicEncryptionEngine:
 
 class HEKeyManager:
     """Manages HE key lifecycle: generation, storage, rotation."""
-    
-    def __init__(self, config: HEContextConfig, keys_dir: str = None):
-        self.config = config
+
+    def __init__(self, config: HomomorphicEncryptionEngine = None, keys_dir: str = None):
+        self.config = config or HomomorphicEncryptionEngine()
         self.keys_dir = keys_dir or os.getenv("HE_KEYS_DIR", "/app/keys/he")
         os.makedirs(self.keys_dir, exist_ok=True)
         self._current_key_id: Optional[str] = None
@@ -704,19 +704,19 @@ class HomomorphicEncryptionEngine:
     - Batch operations on encrypted vectors
     - Key rotation with version tracking and graceful migration
     - Ciphertext integrity validation via MACs
-    - Benchmarking and performance monitoring
+- Benchmarking and performance monitoring
     """
-    
+
     def __init__(
-        self, 
-        config: Optional[HEContextConfig] = None,
+        self,
+        config: Optional[HomomorphicEncryptionEngine] = None,
         require_he: bool = None,
         enable_validation: bool = True,
         validator_mac_key: Optional[bytes] = None
     ):
         """
         Initialize HE Engine.
-        
+
         Args:
             config: HE context configuration
             require_he: If True, raises error if TenSEAL unavailable.
@@ -725,32 +725,32 @@ class HomomorphicEncryptionEngine:
             enable_validation: Enable ciphertext MAC validation (production)
             validator_mac_key: HMAC key for ciphertext validation
         """
-        self.config = config or HEContextConfig()
-        
+        self.config = config or HomomorphicEncryptionEngine()
+
         # Determine if we require real HE
         if require_he is None:
             env = os.getenv("ENVIRONMENT", "development").lower()
             require_he = (env == "production")
-        
+
         self.require_he = require_he
         self.simulation_mode = False
         self.context = None
         self.key_manager = None
         self._active_key_id: Optional[str] = None
         self._ciphertext_version = 1
-        
+
         # Validation layer
         self._validator = HECiphertextValidator(
             mac_key=validator_mac_key,
             require_mac=enable_validation and require_he
         ) if enable_validation else None
-        
+
         # Rotation manager
         self._rotation_mgr: Optional[HEKeyRotationManager] = None
-        
+
         # Benchmark suite (lazy init)
         self._benchmark_suite: Optional[HEBenchmarkSuite] = None
-        
+
         # Metrics
         self._metrics = {
             "encryptions": 0,
@@ -759,7 +759,7 @@ class HomomorphicEncryptionEngine:
             "key_rotations": 0,
             "validation_failures": 0
         }
-        
+
         if not TENSEAL_AVAILABLE:
             if self.require_he:
                 raise RuntimeError(
@@ -771,7 +771,7 @@ class HomomorphicEncryptionEngine:
                 self.simulation_mode = True
         else:
             self._initialize_he()
-    
+
     def _initialize_he(self):
         """Initialize TenSEAL context with key management."""
         try:
@@ -1269,3 +1269,7 @@ class HomomorphicVectorStore:
             item_id: self.he_engine.verify_encrypted_integrity(enc)
             for item_id, enc in self.embeddings.items()
         }
+
+
+# Backward compatibility alias
+HEContextConfig = HomomorphicEncryptionEngine

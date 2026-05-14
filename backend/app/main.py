@@ -20,7 +20,33 @@ from app.db.db_client import DBClient, get_db
 from app.services.redis_client import RedisClient, get_redis
 from app.pubsub import RedisPubSubManager
 from app.api.v1 import api_router
-from app.api import health
+from app.api import health, admin
+from app.api.enroll import router as enroll_router
+from app.api.recognize import router as recognize_router
+from app.api.federated_learning import router as federated_learning_router
+from app.api.webhooks import router as webhooks_router
+from app.api.payments import router as payments_router
+from app.api.orgs import router as orgs_router
+from app.api.users import router as users_router
+from app.api.events import router as events_router
+from app.api.usage import router as usage_router
+from app.api.subscriptions import router as subscriptions_router
+from app.api.support import router as support_router
+from app.api.mfa import router as mfa_router
+from app.api.oauth import router as oauth_router
+from app.api.revocation import router as revocation_router
+from app.api.cameras import router as cameras_router
+from app.api.video_recognize import router as video_recognize_router
+from app.api.stream_recognize import router as stream_recognize_router
+from app.api.recognition_v2 import router as recognition_v2_router
+from app.api.public_enrich import router as public_enrich_router
+from app.api.plans import router as plans_router
+from app.api.legal import router as legal_router
+from app.api.consent import router as consent_router
+from app.api.mpc import router as mpc_router
+from app.api.plugins import router as plugins_router
+from app.api.ai_assistant import router as ai_assistant_router
+from app.api.alerts import router as alerts_router
 from app.services.threat_enrichment_pipeline import ThreatEnrichmentPipeline
 
 
@@ -113,6 +139,33 @@ app.add_middleware(
 # Routes
 app.include_router(api_router, prefix='/api/v1')
 app.include_router(health.health_router)
+app.include_router(admin.router, prefix='/api')
+app.include_router(enroll_router, prefix='/api')
+app.include_router(recognize_router, prefix='/api')
+app.include_router(federated_learning_router, prefix='/api')
+app.include_router(webhooks_router, prefix='/api')
+app.include_router(payments_router, prefix='/api')
+app.include_router(orgs_router, prefix='/api')
+app.include_router(users_router, prefix='/api')
+app.include_router(events_router, prefix='/api')
+app.include_router(usage_router, prefix='/api')
+app.include_router(subscriptions_router, prefix='/api')
+app.include_router(support_router, prefix='/api')
+app.include_router(mfa_router, prefix='/api')
+app.include_router(oauth_router, prefix='/api')
+app.include_router(revocation_router, prefix='/api')
+app.include_router(cameras_router, prefix='/api')
+app.include_router(video_recognize_router, prefix='/api')
+app.include_router(stream_recognize_router, prefix='/api')
+app.include_router(recognition_v2_router, prefix='/api')
+app.include_router(public_enrich_router, prefix='/api')
+app.include_router(plans_router, prefix='/api')
+app.include_router(legal_router, prefix='/api')
+app.include_router(consent_router, prefix='/api')
+app.include_router(mpc_router, prefix='/api')
+app.include_router(plugins_router, prefix='/api')
+app.include_router(ai_assistant_router, prefix='/api')
+app.include_router(alerts_router, prefix='/api')
 
 
 @app.get('/healthz')

@@ -438,10 +438,10 @@ class QuantumResistantCrypto:
 
 
 class PQCMigrationLayer:
-     def __init__(self, config: MigrationConfig = None, enable_hybrid_mode: bool = None):
-         self.config = config or MigrationConfig()
-         if enable_hybrid_mode is not None:
-             self.config.enable_hybrid_mode = enable_hybrid_mode
+    def __init__(self, config: MigrationConfig = None, enable_hybrid_mode: bool = None):
+        self.config = config or MigrationConfig()
+        if enable_hybrid_mode is not None:
+            self.config.enable_hybrid_mode = enable_hybrid_mode
         self._supported_algorithms = {
             'kem': ['kyber512', 'kyber768', 'kyber1024'],
             'signature': ['dilithium2', 'dilithium3', 'dilithium5'],

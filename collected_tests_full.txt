@@ -1,0 +1,1012 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.7, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\mehta\AppData\Local\Programs\Python\Python311\python.exe
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: D:\AI-F\AI-f\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, asyncio-1.3.0, benchmark-5.2.3, cov-7.1.0, mock-3.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... gRPC tests pass
+collected 274 items / 19 errors
+
+<Package backend>
+  <Dir tests>
+    <Dir e2e>
+      <Module test_auth_flows.py>
+        E2E Authentication flow tests.
+        Tests complete authentication flows from signup to authenticated API access.
+        <Class TestE2EAuthentication>
+          End-to-end authentication flow tests.
+          <Function test_signup_flow>
+            Test user registration flow.
+          <Function test_login_flow>
+            Test user login flow.
+          <Function test_protected_endpoint_access>
+            Test accessing protected endpoints with JWT.
+          <Function test_jwt_refresh_flow>
+            Test JWT token refresh flow.
+          <Function test_logout_flow>
+            Test user logout and token revocation.
+          <Function test_mfa_verification_flow>
+            Test MFA verification during login.
+        <Class TestAuthorization>
+          Test authorization and role-based access control.
+          <Function test_role_based_access>
+            Test that roles are enforced correctly.
+          <Function test_org_isolation>
+            Test organization-level data isolation.
+      <Module test_e2e.py>
+        E2E Tests for Frontend + Backend flows using pytest-playwright.
+        <Function test_signup_login_recognize>
+          E2E: signup -> login -> enroll -> recognize -> dashboard.
+        <Function test_billing_flow>
+          E2E: Subscription -> webhook -> quota.
+      <Module test_smoke.py>
+        Production environment smoke tests.
+        Minimal tests to verify the system is operational in production.
+        <Class TestProductionSmokeTests>
+          Smoke tests for production deployment verification.
+          <Function test_environment_variables>
+            Verify required environment variables are set.
+          <Function test_database_connection>
+            Test database is reachable.
+          <Function test_redis_connection>
+            Test Redis is reachable.
+          <Function test_api_health_endpoint>
+            Test API health endpoint.
+          <Function test_openapi_schema>
+            Test OpenAPI schema is accessible.
+          <Function test_model_loading>
+            Test that ONNX models can be loaded.
+          <Function test_stripe_connection>
+            Test Stripe API is configured.
+    <Dir integration>
+      <Module test_api_contract.py>
+        API contract testing using Schemathesis.
+        
+        Tests that all API endpoints conform to the OpenAPI specification.
+        Runs against live test server and validates:
+        - Request/response schemas
+        - Status codes
+        - Required fields
+        - Data types
+        - Error responses
+        <Class TestAPIContract>
+          Contract tests validating API against OpenAPI spec.
+          <Function test_schema_loaded>
+            Verify OpenAPI schema loads and has endpoints.
+      <Module test_biometric_pipeline.py>
+        Biometric pipeline integration tests.
+        Tests end-to-end biometric recognition pipeline including face detection, embedding, and matching.
+        <Class TestBiometricPipeline>
+          Integration tests for the biometric recognition pipeline.
+          <Coroutine test_face_detection_stage>
+            Test face detection stage of pipeline.
+          <Coroutine test_face_alignment_stage>
+            Test face alignment stage.
+          <Coroutine test_embedding_generation>
+            Test face embedding generation.
+          <Coroutine test_spoof_detection>
+            Test anti-spoofing stage.
+          <Coroutine test_full_pipeline_execution>
+            Test complete pipeline execution.
+        <Class TestBiometricAccuracy>
+          Test biometric accuracy and performance.
+          <Coroutine test_embedding_consistency>
+            Test that embeddings are consistent for same face.
+          <Coroutine test_embedding_randomness>
+            Test that different faces have distinct embeddings.
+      <Module test_celery.py>
+        Celery task queue integration tests.
+        
+        Tests asynchronous task processing:
+        - Task creation and execution
+        - Result backend
+        - Task retries and error handling
+        - Queue routing and priorities
+        <Class TestCeleryIntegration>
+          Integration tests for Celery task queue.
+          <Function test_task_enqueue_and_execute>
+            Test that a task can be enqueued and executed.
+          <Function test_task_retry_on_failure>
+            Test that tasks retry on transient failures.
+          <Function test_task_result_backend>
+            Test that task results are stored and retrievable.
+          <Function test_task_priority_queues>
+            Test that tasks respect queue priorities.
+          <Function test_task_chord_execution>
+            Test chord (group + callback) execution.
+          <Coroutine test_task_result_expiry>
+            Test that task results expire after configured TTL.
+          <Function test_task_timeout>
+            Test that tasks respect time limits.
+          <Function test_task_revocation>
+            Test that tasks can be revoked before execution.
+      <Module test_database.py>
+        Database integration tests.
+        
+        Tests real PostgreSQL + pgvector operations including:
+        - Connection pooling
+        - Vector storage and retrieval
+        - HNSW index performance
+        - Transaction isolation
+        - Concurrent access patterns
+        <Class TestDatabaseIntegration>
+          Tests for real database connectivity and operations.
+          <Coroutine test_database_connection_real>
+            Test that we can connect to the real database.
+          <Coroutine test_pgvector_extension_loaded>
+            Verify pgvector extension is available and functional.
+          <Coroutine test_vector_insert_and_query>
+            Test inserting and querying vector data.
+          <Coroutine test_hnsw_index_performance>
+            Test HNSW index query performance.
+          <Coroutine test_transaction_isolation>
+            Test transaction isolation and rollback behavior.
+          <Coroutine test_concurrent_connections>
+            Test that connection pooling works correctly under concurrency.
+          <Coroutine test_audit_log_insertion>
+            Test that audit logs can be inserted and retrieved.
+          <Coroutine test_jsonb_operations>
+            Test JSONB column operations (used for metadata, preferences).
+      <Module test_migrations.py>
+        Integration tests for database migrations.
+        
+        Tests all Alembic migrations can be upgraded and downgraded successfully
+        with data integrity preservation across up/down cycles.
+        <Class TestMigrations>
+          Test suite for database migration rollback capabilities.
+          <Coroutine test_migration_upgrade_all>
+            Test that all migrations can be upgraded successfully.
+          <Coroutine test_migration_downgrade_all>
+            Test that all migrations can be downgraded in reverse order.
+          <Coroutine test_migration_upgrade_downgrade_cycle>
+            Test full up/down cycle preserves database integrity.
+          <Coroutine test_each_migration_individually>
+            Test that each migration can be applied and reverted individually.
+      <Module test_multitenant.py>
+        Multi-tenant integration tests.
+        Tests tenant isolation, resource quotas, and cross-tenant security.
+        <Class TestMultiTenantIsolation>
+          Test multi-tenant data and resource isolation.
+          <Coroutine test_tenant_data_isolation>
+            Test that tenant data is properly isolated.
+          <Coroutine test_tenant_resource_quotas>
+            Test tenant resource quota enforcement.
+          <Coroutine test_cross_tenant_access_prevention>
+            Test that cross-tenant access is prevented.
+        <Class TestTenantScoping>
+          Test tenant-scoped operations.
+          <Coroutine test_tenant_scoped_queries>
+            Test that queries automatically include tenant_id filtering.
+          <Coroutine test_tenant_context_propagation>
+            Test that tenant context flows through async calls.
+      <Module test_onnx_models.py>
+        ONNX model integration tests.
+        
+        Tests real ONNX model loading, inference, and performance:
+        - Model file loading from disk
+        - Input preprocessing and output postprocessing
+        - Inference latency and throughput
+        - Model metadata and input/output schema validation
+        <Class TestONNXModels>
+          Integration tests for ONNX model loading and inference.
+          <Function test_face_detection_model_loads>
+            Verify face detection model loads successfully.
+          <Function test_face_embedding_model_loads>
+            Verify face embedding model loads successfully.
+          <Function test_face_detection_inference_shape>
+            Test that face detection returns expected output shape.
+          <Function test_face_embedding_inference_shape>
+            Test that face embedding returns 512-d vector.
+          <Function test_model_inference_latency>
+            Measure inference latency (should be < 50ms on CPU).
+          <Function test_model_input_preprocessing>
+            Test that input preprocessing matches expected model format.
+          <Function test_multiple_inferences_consistency>
+            Test that same input produces consistent embeddings.
+          <Function test_model_metadata>
+            Verify model metadata and version info if available.
+      <Module test_recognition_e2e.py>
+        End-to-end recognition pipeline integration test.
+        
+        This test exercises the complete flow from image upload to recognition result:
+        1. Enroll a test identity with face embedding
+        2. Store embedding in database
+        3. Query recognition endpoint with test image
+        4. Verify correct identity is returned
+        5. Test audit trail integrity
+        <Class TestRecognitionPipelineE2E>
+          Full end-to-end integration tests for the recognition pipeline.
+          <Coroutine test_full_enrollment_to_recognition_flow>
+            Test: Enroll identity -> Verify in DB -> Recognize -> Confirm match.
+          <Coroutine test_embedding_storage_and_retrieval>
+            Test storing a real embedding and retrieving similar vectors.
+          <Coroutine test_audit_log_integrity>
+            Test that audit logs maintain integrity and can be verified.
+          <Coroutine test_multi_modal_fusion_simulation>
+            Simulate multi-modal (face + voice + gait) enrollment and matching.
+          <Coroutine test_encryption_at_rest>
+            Test that sensitive data is encrypted before storage.
+          <Coroutine test_concurrent_recognition_requests>
+            Test concurrent recognition requests don't cause race conditions.
+          <Coroutine test_cache_invalidation_on_enroll>
+            Test that enrollment correctly invalidates related cache entries.
+      <Module test_redis.py>
+        Redis integration tests.
+        
+        Tests real Redis operations including:
+        - Connection and cluster mode
+        - Rate limiting with sliding window
+        - JWT revocation store
+        - Pub/Sub messaging
+        - Lua script execution (if used)
+        <Class TestRedisIntegration>
+          Integration tests for Redis operations.
+          <Coroutine test_redis_connection>
+            Test basic Redis connectivity.
+          <Coroutine test_rate_limiting_sliding_window>
+            Test sliding window rate limiting implementation.
+          <Coroutine test_rate_limit_exceeded>
+            Test that rate limit enforcement works.
+          <Coroutine test_jwt_revocation_store>
+            Test JWT token revocation storage and lookup.
+          <Coroutine test_redis_pubsub>
+            Test Pub/Sub messaging for real-time notifications.
+          <Coroutine test_redis_lru_cache>
+            Test LRU caching pattern with maxmemory policy.
+          <Coroutine test_redis_scripts>
+            Test Lua script execution (used for atomic operations).
+          <Coroutine test_redis_persistence_survives_restart>
+            Test that Redis persists data across connections (simulated).
+          <Coroutine test_redis_cluster_ops>
+            Test cluster-aware operations if using Redis Cluster.
+      <Module test_replication.py>
+        Integration tests for database replication and failover.
+        
+        Tests:
+        - Write to primary appears on replica within SLA (5 seconds)
+        - Read replica failover scenarios
+        - Primary failover simulation
+        - Consistency verification between primary and replica
+        <Class TestReplication>
+          Test suite for database replication and failover.
+          <Coroutine test_write_propagates_to_replica>
+            Test that writes to primary appear on replica within SLA (5 seconds).
+          <Coroutine test_replica_health_checking>
+            Test that replica health checking works correctly.
+          <Coroutine test_read_queries_use_replicas>
+            Test that read queries with use_replica=True hit the replica pool.
+          <Coroutine test_replica_failover_on_down>
+            Test failover behavior when replica becomes unavailable.
+          <Coroutine test_round_robin_load_balancing>
+            Test that read replicas are used in round-robin fashion.
+          <Coroutine test_consistency_after_multiple_writes>
+            Test data consistency between primary and replica after multiple writes.
+          <Coroutine test_replication_with_complex_query>
+            Test replication of complex queries with joins and aggregations.
+          <Coroutine test_replication_lag_alerting>
+            Test that replication lag exceeding threshold triggers alerts.
+          <Coroutine test_cross_region_replication_consistency>
+            Test consistency across cross-region replicas (if configured).
+      <Module test_stripe_integration.py>
+        Stripe integration tests.
+        Tests payment processing, webhooks, subscriptions, and billing flows.
+        <Class TestStripeIntegration>
+          Integration tests for Stripe payment processing.
+          <Function test_webhook_signature_verification>
+            Test Stripe webhook signature verification.
+          <Coroutine test_payment_intent_creation>
+            Test creating a Stripe payment intent.
+          <Coroutine test_subscription_creation>
+            Test creating a Stripe subscription.
+          <Coroutine test_webhook_event_handling>
+            Test handling Stripe webhook events.
+          <Coroutine test_subscription_status_sync>
+            Test syncing subscription status from Stripe to database.
+        <Class TestBillingFlows>
+          Test complete billing workflows.
+          <Coroutine test_free_to_premium_upgrade>
+            Test upgrading from free to premium tier.
+          <Coroutine test_payment_failure_handling>
+            Test handling payment failures.
+          <Coroutine test_subscription_cancellation>
+            Test subscription cancellation flow.
+      <Module test_vector_search.py>
+        FAISS and pgvector integration tests.
+        
+        Tests vector search capabilities across both FAISS and PostgreSQL:
+        - Index creation and search performance
+        - Cosine similarity vs Euclidean distance
+        - Index building time and memory usage
+        - Search accuracy at various k values
+        <Class TestFAISSIntegration>
+          FAISS-specific integration tests.
+          <Function test_faiss_index_creation>
+            Test that a FAISS HNSW index can be created.
+          <Function test_faiss_add_vectors>
+            Test adding vectors to FAISS index.
+          <Function test_faiss_search_accuracy>
+            Test that FAISS returns correct nearest neighbors.
+          <Function test_faiss_search_performance>
+            Benchmark FAISS search latency with 10K vectors.
+          <Function test_faiss_hnsw_params>
+            Verify HNSW parameters are set correctly.
+        <Class TestPgVectorIntegration>
+          Tests for pgvector extension in PostgreSQL.
+          <Coroutine test_pgvector_insert_and_search>
+            Test vector insertion and similarity search in Postgres.
+          <Coroutine test_pgvector_index_performance>
+            Test pgvector HNSW index query performance.
+          <Coroutine test_pgvector_distance_metrics>
+            Test different distance metrics (L2, cosine, inner product).
+          <Coroutine test_pgvector_index_types>
+            Test HNSW vs IVFFlat index performance.
+          <Coroutine test_pgvector_batch_insert_performance>
+            Test bulk insert performance.
+      <Module test_webhooks_integration.py>
+        Stripe webhook integration tests.
+        
+        Tests real Stripe webhook handling:
+        - Webhook signature verification with real payloads
+        - Event idempotency
+        - Subscription lifecycle events
+        - Payment intent handling
+        <Class TestStripeWebhooksIntegration>
+          Integration tests for Stripe webhook processing.
+          <Function test_webhook_signature_verification>
+            Test that webhook signatures are correctly verified.
+          <Coroutine test_checkout_session_completed>
+            Test processing of successful checkout completion webhook.
+          <Coroutine test_invoice_payment_succeeded>
+            Test invoice payment success updates subscription.
+          <Coroutine test_subscription_canceled>
+            Test subscription cancellation webhook.
+          <Coroutine test_webhook_idempotency>
+            Test that duplicate webhook events don't cause double-processing.
+          <Function test_webhook_invalid_signature>
+            Test that tampered webhook payloads are rejected.
+          <Coroutine test_webhook_event_persistence>
+            Test that all webhook events are stored for audit.
+      <Module test_websocket.py>
+        WebSocket integration tests for real-time streaming.
+        Tests WebSocket connections, message handling, and pub/sub patterns.
+        <Class TestWebSocketIntegration>
+          Integration tests for WebSocket endpoints.
+          <Coroutine test_websocket_connection_accepted>
+            Test that WebSocket connections are accepted.
+          <Coroutine test_websocket_message_broadcast>
+            Test broadcasting messages to WebSocket clients.
+          <Coroutine test_websocket_camera_subscription>
+            Test camera-specific WebSocket subscriptions.
+          <Coroutine test_websocket_recognition_events>
+            Test recognition event routing to subscribers.
+        <Class TestWebSocketPerformance>
+          Performance tests for WebSocket handling.
+          <Coroutine test_concurrent_websocket_connections>
+            Test handling multiple concurrent WebSocket connections.
+    <Module test_benchmark_fixed.py>
+      Benchmark and performance tests for AI-f.
+      Validates SLAs and performance characteristics.
+      <Class TestFaceDetectionBenchmark>
+        Benchmark face detection performance.
+        <Function test_face_detection_latency>
+          Benchmark face detection latency.
+        <Function test_face_embedding_latency>
+          Benchmark face embedding generation.
+      <Class TestVectorSearchBenchmark>
+        Benchmark vector search performance.
+        <Function test_vector_search_latency>
+          Benchmark vector search latency.
+        <Function test_batch_vector_search>
+          Benchmark batch vector search.
+      <Class TestEndToEndBenchmark>
+        Benchmark end-to-end recognition pipeline.
+        <Function test_e2e_recognition_latency>
+          Benchmark complete recognition pipeline.
+        <Function test_concurrent_requests>
+          Test handling of concurrent requests.
+      <Class TestThroughputBenchmark>
+        Benchmark system throughput.
+        <Function test_throughput_under_load>
+          Test system throughput under sustained load.
+      <Class TestAccuracyBenchmark>
+        Benchmark accuracy metrics.
+        <Function test_recognition_accuracy>
+          Benchmark recognition accuracy.
+      <Function test_overall_performance>
+        Overall system performance test.
+    <Module test_edge_device.py>
+      <Function test_edge_device_plugin_initialization>
+      <Function test_register_device>
+      <Function test_update_device_model>
+    <Module test_grpc.py>
+      <Function test_grpc_edge_adapter>
+    <Module test_hsm.py>
+      <Class TestHSMMode>
+        <Function test_hsm_mode_values>
+        <Function test_hsm_without_error>
+      <Class TestSoftHSMKeystore>
+        <Function test_init>
+        <Function test_detect_softhsm_lib_none>
+        <Function test_is_available_uninitialized>
+        <Function test_initialize_without_pkcs11>
+        <Function test_initialize_without_lib>
+      <Class TestCloudHSMKeystore>
+        <Function test_init_aws_missing_boto3>
+        <Function test_init_azure_missing_lib>
+        <Function test_is_available_initialized>
+      <Class TestHSMKeystore>
+        <Function test_init_default_mode>
+        <Function test_init_software_mode>
+        <Function test_initialize_software_success>
+        <Function test_initialize_none_mode>
+        <Function test_encrypt_without_initialization>
+        <Function test_generate_key_cloud_not_implemented>
+        <Function test_rotate_key_software>
+        <Function test_get_status>
+        <Function test_close>
+      <Class TestGetHSMKeystore>
+        <Function test_singleton>
+    <Module test_integration.py>
+      <Class TestIntegration>
+        <Function test_database_connection>
+        <Function test_recognize_with_mock>
+        <Function test_rate_limit>
+        <Function test_policy_engine>
+    <Module test_jwt_revocation.py>
+      Tests for JWT distributed revocation system
+      <Coroutine test_jwt_revocation_store_connection>
+      <Coroutine test_jwt_revocation_flow>
+      <Coroutine test_batch_revocation>
+      <Coroutine test_token_introspection>
+      <Coroutine test_revocation_on_uninitialized_store>
+        Test behavior when Redis is not available.
+      <Coroutine test_revoke_token_error_handling>
+        Test that errors during revocation are handled gracefully.
+    <Module test_key_rotation.py>
+      Key rotation tests with load testing for 100K embeddings.
+      Tests the cryptographic key rotation system under heavy load.
+      <Class TestKeyRotation>
+        Test suite for encryption key rotation.
+        <Function test_key_rotation_initialization>
+          Test that DBClient initializes key rotation method.
+        <Function test_fernet_key_generation>
+          Test Fernet key generation and validation.
+        <Function test_key_format_validation>
+          Test that invalid key formats are rejected.
+        <Function test_encryption_decryption_cycle>
+          Test basic encryption/decryption of embeddings.
+        <Function test_different_keys_produce_different_ciphertext>
+          Test that different keys produce different encrypted output.
+        <Function test_rotation_method_signature>
+          Test that rotate_embedding_keys has correct signature.
+        <Function test_rotation_with_mock_db>
+          Test key rotation with mocked database.
+        <Function test_key_rotation_under_load>
+          Test key rotation with 100K embeddings (simulated with batching).
+          This tests the batch processing and transaction handling.
+        <Function test_key_rotation_transaction_rollback>
+          Test that failed rotations rollback transactions.
+        <Function test_large_embedding_encryption>
+          Test encryption of very large embeddings.
+        <Function test_multiple_key_rotations>
+          Test multiple sequential key rotations.
+        <Function test_concurrent_rotation_simulation>
+          Simulate concurrent rotation operations.
+        <Function test_key_rotation_with_none_values>
+          Test that None embeddings are handled gracefully.
+        <Function test_performance_benchmark>
+          Benchmark encryption/decryption performance.
+    <Module test_mpc_enhanced.py>
+      Tests for Multi-Party Computation (MPC) with SPDZ protocol.
+      
+      Validates:
+      - Shamir Secret Sharing (SSS) correctness
+      - Additive secret sharing reconstruction
+      - Beaver triple multiplication
+      - MPC party coordination
+      - Secure aggregation with dropout tolerance
+      - ZKP proof generation and verification
+      <Class TestFieldArithmetic>
+        Test finite field arithmetic operations.
+        <Function test_add>
+        <Function test_sub>
+        <Function test_mul>
+        <Function test_inv>
+        <Function test_neg>
+        <Function test_random_in_field>
+      <Class TestShamirSecretSharing>
+        Test Shamir's secret sharing scheme.
+        <Function test_share_and_reconstruct_3_of_3>
+        <Function test_share_and_reconstruct_threshold>
+        <Function test_insufficient_shares_fails>
+        <Function test_share_uniqueness>
+          Each sharing generates different shares.
+        <Function test_share_serialization>
+      <Class TestBeaverTriple>
+        Test Beaver triple generation and multiplication.
+        <Function test_triple_generation>
+        <Function test_triple_multiplication_with_shares>
+          Test multiplication using Beaver triples.
+      <Class TestMPCParty>
+        Test individual MPC party operations.
+        <Function test_share_secret>
+        <Function test_add_shares>
+      <Class TestMPCOrchestrator>
+        Test MPC orchestration across parties.
+        <Coroutine test_private_sum_three_parties>
+          Test secure sum across 3 parties.
+        <Coroutine test_secure_aggregation>
+          Test secure aggregation (federated learning).
+      <Class TestZKPIntegration>
+        Test ZKP for MPC verification.
+        <Function test_multiplication_proof_generation>
+          Generate and verify multiplication proof.
+        <Function test_batch_verification>
+      <Class TestSecureAggregation>
+        Test Bonawitz-style secure aggregation.
+        <Coroutine test_secure_sum_three_parties>
+          Test secure sum with pairwise masks using scalar values.
+        <Coroutine test_mask_cancellation>
+          Test that pairwise masks sum to zero globally.
+      <Class TestConvenienceFunctions>
+        Test high-level utility functions.
+        <Function test_share_value_function>
+        <Function test_reconstruct_secret_function>
+        <Function test_generate_beaver_triple_function>
+    <Module test_multi_camera.py>
+      <Function test_process_multi_camera>
+        Process multi-camera request with mocked dependencies.
+      <Function test_websocket_multi_camera_message>
+        Test WebSocket multi-camera message handling.
+    <Module test_performance.py>
+      Performance benchmarks for the face recognition system.
+      <Class TestLatencyBenchmarks>
+        Benchmark latency across system components.
+        <Function test_enrollment_latency>
+          Benchmark enrollment latency.
+        <Function test_recognition_latency>
+          Benchmark recognition latency.
+      <Class TestThroughputBenchmarks>
+        Benchmark throughput.
+        <Function test_concurrent_requests>
+          Test concurrent request handling.
+      <Class TestMemoryBenchmarks>
+        Benchmark memory usage.
+        <Function test_memory_growth_under_load>
+          Test that memory doesn't grow excessively under load.
+      <Class TestDatabaseBenchmarks>
+        Benchmark database operations.
+        <Function test_db_connection_pool>
+          Test database connection pool efficiency.
+    <Module test_public_enrich.py>
+      <Class TestRedactor>
+        <Function test_redact_ssn>
+        <Function test_redact_email>
+        <Function test_redact_phone>
+        <Function test_redact_results>
+      <Class TestMockProvider>
+        <Coroutine test_search>
+      <Class TestResultAggregator>
+        <Coroutine test_enrich_with_mock>
+        <Coroutine test_enrich_invalid_provider>
+      <Class TestSchemas>
+        <Function test_consent_request>
+        <Function test_public_enrich_request>
+        <Function test_provider_result>
+    <Module test_rate_limit.py>
+      <Coroutine test_sliding_window_rate_limit>
+        Test the Redis-backed sliding window logic.
+      <Coroutine test_rate_limit_different_keys>
+        Test that different keys have independent limits.
+      <Coroutine test_rate_limit_window_expiry>
+        Test that rate limits expire after the window.
+      <Coroutine test_rate_limit_headers>
+        Test that rate limit headers are correctly calculated.
+    <Module test_soar.py>
+      <Class TestIncidentEnums>
+        <Function test_incident_status_values>
+        <Function test_incident_severity_values>
+      <Class TestIncidentRule>
+        <Function test_rule_creation>
+      <Class TestIncident>
+        <Function test_incident_creation>
+      <Class TestIncidentActionExecutor>
+        <Function test_singleton>
+        <Coroutine test_block_ip>
+        <Coroutine test_require_mfa_reset>
+        <Coroutine test_quarantine_enrollment>
+        <Coroutine test_alert_admin>
+        <Coroutine test_flag_transaction>
+        <Coroutine test_suspend_account>
+        <Coroutine test_unknown_action>
+      <Class TestIncidentPlaybook>
+        <Coroutine test_execute_empty_steps>
+        <Coroutine test_execute_with_steps>
+      <Class TestIncidentResponseEngine>
+        <Function test_singleton>
+        <Function test_default_rules>
+        <Function test_default_playbooks>
+        <Coroutine test_evaluate_event_no_match>
+        <Coroutine test_evaluate_event_match>
+        <Function test_evaluate_conditions_true>
+        <Function test_evaluate_conditions_false_missing_key>
+        <Function test_evaluate_conditions_false_low_value>
+        <Coroutine test_update_incident_status>
+        <Function test_get_incidents_filter>
+        <Function test_get_incidents_all>
+      <Class TestGlobalEngine>
+        <Function test_incident_engine_exists>
+    <Module test_spoof_detection.py>
+      Spoof detection tests with real attack samples.
+      Tests for presentation attack detection (PAD) including print, replay, and deepfake attacks.
+      <Class TestEnhancedSpoofDetector>
+        Tests for the EnhancedSpoofDetector.
+        <Function test_detector_initialization>
+          Test that detector initializes correctly.
+        <Function test_detect_real_face>
+          Test detection on a real face image.
+        <Function test_detect_print_attack>
+          Test detection of print/photo attack.
+        <Function test_detect_screen_replay_attack>
+          Test detection of screen replay attack.
+        <Function test_detect_with_occlusion>
+          Test detection with partial face occlusion.
+        <Function test_confidence_thresholds>
+          Test that confidence scores are properly bounded.
+        <Function test_multiple_detections_consistent>
+          Test that multiple detections on same image are consistent.
+        <Function test_detect_returns_required_keys>
+          Test that detect returns all required keys.
+        <Function test_spoof_score_interpretation>
+          Test that higher spoof score means more likely to be spoof.
+        <Function test_different_image_sizes[image_size0]>
+          Test detector with different image sizes.
+        <Function test_different_image_sizes[image_size1]>
+          Test detector with different image sizes.
+        <Function test_different_image_sizes[image_size2]>
+          Test detector with different image sizes.
+      <Class TestSpoofDetectionIntegration>
+        Integration tests combining spoof detection with recognition.
+        <Function test_recognition_with_spoof_check_enabled>
+          Test that recognition can be configured with spoof checking.
+        <Function test_enrollment_with_spoof_protection>
+          Test that enrollment checks for spoofing.
+        <Function test_high_spoof_confidence_rejection>
+          Test that high spoof confidence leads to rejection.
+      <Class TestLivenessDetection>
+        Tests for liveness detection (part of spoof detection).
+        <Function test_temporal_variance_calculation>
+          Test calculation of temporal variance for liveness.
+        <Function test_blink_detection>
+          Test blink detection (simplified).
+        <Function test_challenge_response_simulation>
+          Test that challenge-response can be simulated.
+      <Class TestSpoofDetectionMetrics>
+        Test metrics and performance of spoof detection.
+        <Function test_detection_latency>
+          Test that spoof detection is reasonably fast.
+        <Function test_batch_processing>
+          Test processing multiple images.
+        <Function test_false_positive_rate_estimate>
+          Estimate false positive rate on random images.
+    <Module test_validation.py>
+      Tests for behavioral predictor LSTM (10 tests).
+      <Class TestBehavioralPredictorLSTM>
+        <Function test_lstm_predict_single>
+        <Function test_lstm_temporal_sequence>
+        <Function test_behavior_categories[fatigue-0.9-tired]>
+        <Function test_behavior_categories[aggression-0.8-angry]>
+        <Function test_behavior_categories[engagement-0.95-happy]>
+        <Function test_model_info>
+        <Function test_history_reset>
+        <Function test_gpu_fallback>
+        <Function test_predict_with_gaze>
+        <Function test_long_sequence>
+        <Function test_accuracy_threshold>
+        <Function test_invalid_input>
+
+=================================== ERRORS ====================================
+_____________ ERROR collecting tests/test_attestation_enhanced.py _____________
+ImportError while importing test module 'D:\AI-F\AI-f\backend\tests\test_attestation_enhanced.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1147: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:690: in _load_unlocked
+    ???
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\test_attestation_enhanced.py:19: in <module>
+    import responses  # For mocking HTTP requests
+    ^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'responses'
+__________________ ERROR collecting tests/test_benchmark.py ___________________
+tests\test_benchmark.py:17: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+___________________ ERROR collecting tests/test_billing.py ____________________
+tests\test_billing.py:4: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+____________________ ERROR collecting tests/test_enroll.py ____________________
+tests\test_enroll.py:3: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+______________ ERROR collecting tests/test_federated_learning.py ______________
+tests\test_federated_learning.py:2: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+_________________ ERROR collecting tests/test_he_enhanced.py __________________
+tests\test_he_enhanced.py:26: in <module>
+    from app.models.homomorphic_encryption import (
+app\models\homomorphic_encryption.py:604: in <module>
+    class HEKeyManager:
+app\models\homomorphic_encryption.py:607: in HEKeyManager
+    def __init__(self, config: HEContextConfig, keys_dir: str = None):
+                               ^^^^^^^^^^^^^^^
+E   NameError: name 'HEContextConfig' is not defined
+_________________ ERROR collecting tests/test_he_rotation.py __________________
+tests\test_he_rotation.py:25: in <module>
+    from app.models.homomorphic_encryption import (
+app\models\homomorphic_encryption.py:604: in <module>
+    class HEKeyManager:
+app\models\homomorphic_encryption.py:607: in HEKeyManager
+    def __init__(self, config: HEContextConfig, keys_dir: str = None):
+                               ^^^^^^^^^^^^^^^
+E   NameError: name 'HEContextConfig' is not defined
+__________________ ERROR collecting tests/test_multimodal.py __________________
+tests\test_multimodal.py:16: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+____________________ ERROR collecting tests/test_oauth.py _____________________
+tests\test_oauth.py:3: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+___________________ ERROR collecting tests/test_payments.py ___________________
+tests\test_payments.py:5: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+_______________ ERROR collecting tests/test_payments_webhook.py _______________
+tests\test_payments_webhook.py:6: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+_____________________ ERROR collecting tests/test_pqc.py ______________________
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1147: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:690: in _load_unlocked
+    ???
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\test_pqc.py:8: in <module>
+    from app.security.pqc import (
+E     File "D:\AI-F\AI-f\backend\app\security\pqc.py", line 445
+E       self._supported_algorithms = {
+E                                     ^
+E   IndentationError: unindent does not match any outer indentation level
+_________________ ERROR collecting tests/test_pqc_enhanced.py _________________
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1147: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:690: in _load_unlocked
+    ???
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\test_pqc_enhanced.py:22: in <module>
+    from app.security.pqc import (
+E     File "D:\AI-F\AI-f\backend\app\security\pqc.py", line 445
+E       self._supported_algorithms = {
+E                                     ^
+E   IndentationError: unindent does not match any outer indentation level
+__________________ ERROR collecting tests/test_recognize.py ___________________
+tests\test_recognize.py:3: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+_____________________ ERROR collecting tests/test_saas.py _____________________
+tests\test_saas.py:4: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+___________________ ERROR collecting tests/test_tee_full.py ___________________
+ImportError while importing test module 'D:\AI-F\AI-f\backend\tests\test_tee_full.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1147: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:690: in _load_unlocked
+    ???
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\test_tee_full.py:13: in <module>
+    from app.models.attestation import NitroAttestationVerifier
+app\models\attestation.py:32: in <module>
+    from cryptography.x509 import Certificate, Store, CertificateStoreContext
+E   ImportError: cannot import name 'Store' from 'cryptography.x509' (C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\cryptography\x509\__init__.py)
+_________________ ERROR collecting tests/test_tee_security.py _________________
+ImportError while importing test module 'D:\AI-F\AI-f\backend\tests\test_tee_security.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1204: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1176: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1147: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:690: in _load_unlocked
+    ???
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\test_tee_security.py:5: in <module>
+    from app.models.attestation import NitroAttestationVerifier, EnclaveSession
+app\models\attestation.py:32: in <module>
+    from cryptography.x509 import Certificate, Store, CertificateStoreContext
+E   ImportError: cannot import name 'Store' from 'cryptography.x509' (C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\cryptography\x509\__init__.py)
+_____________ ERROR collecting tests/test_validation_framework.py _____________
+tests\test_validation_framework.py:15: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+___________________ ERROR collecting tests/test_webhooks.py ___________________
+tests\test_webhooks.py:7: in <module>
+    from app.main import app
+app\main.py:115: in <module>
+    app.include_router(health.health_router)
+                       ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'app.api.health' has no attribute 'health_router'
+============================== warnings summary ===============================
+C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\cuda\__init__.py:54
+  C:\Users\mehta\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\cuda\__init__.py:54: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+    import pynvml  # type: ignore[import]
+
+tests\e2e\test_auth_flows.py:9
+  D:\AI-F\AI-f\backend\tests\e2e\test_auth_flows.py:9: PytestUnknownMarkWarning: Unknown pytest.mark.auth - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.auth
+
+tests\e2e\test_auth_flows.py:10
+  D:\AI-F\AI-f\backend\tests\e2e\test_auth_flows.py:10: PytestUnknownMarkWarning: Unknown pytest.mark.e2e - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.e2e
+
+tests\e2e\test_auth_flows.py:124
+  D:\AI-F\AI-f\backend\tests\e2e\test_auth_flows.py:124: PytestUnknownMarkWarning: Unknown pytest.mark.auth - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.auth
+
+tests\e2e\test_auth_flows.py:125
+  D:\AI-F\AI-f\backend\tests\e2e\test_auth_flows.py:125: PytestUnknownMarkWarning: Unknown pytest.mark.e2e - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.e2e
+
+tests\e2e\test_smoke.py:8
+  D:\AI-F\AI-f\backend\tests\e2e\test_smoke.py:8: PytestUnknownMarkWarning: Unknown pytest.mark.smoke - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.smoke
+
+tests\e2e\test_smoke.py:9
+  D:\AI-F\AI-f\backend\tests\e2e\test_smoke.py:9: PytestUnknownMarkWarning: Unknown pytest.mark.e2e - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.e2e
+
+tests\integration\test_biometric_pipeline.py:9
+  D:\AI-F\AI-f\backend\tests\integration\test_biometric_pipeline.py:9: PytestUnknownMarkWarning: Unknown pytest.mark.biometric - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.biometric
+
+tests\integration\test_biometric_pipeline.py:105
+  D:\AI-F\AI-f\backend\tests\integration\test_biometric_pipeline.py:105: PytestUnknownMarkWarning: Unknown pytest.mark.biometric - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.biometric
+
+tests\integration\test_multitenant.py:8
+  D:\AI-F\AI-f\backend\tests\integration\test_multitenant.py:8: PytestUnknownMarkWarning: Unknown pytest.mark.multitenant - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.multitenant
+
+tests\integration\test_multitenant.py:73
+  D:\AI-F\AI-f\backend\tests\integration\test_multitenant.py:73: PytestUnknownMarkWarning: Unknown pytest.mark.multitenant - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.multitenant
+
+tests\integration\test_websocket.py:10
+  D:\AI-F\AI-f\backend\tests\integration\test_websocket.py:10: PytestUnknownMarkWarning: Unknown pytest.mark.websocket - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.websocket
+
+tests\integration\test_websocket.py:66
+  D:\AI-F\AI-f\backend\tests\integration\test_websocket.py:66: PytestUnknownMarkWarning: Unknown pytest.mark.websocket - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.websocket
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/test_attestation_enhanced.py
+ERROR tests/test_benchmark.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_billing.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_enroll.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_federated_learning.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_he_enhanced.py - NameError: name 'HEContextConfig' is not defined
+ERROR tests/test_he_rotation.py - NameError: name 'HEContextConfig' is not defined
+ERROR tests/test_multimodal.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_oauth.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_payments.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_payments_webhook.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_pqc.py
+ERROR tests/test_pqc_enhanced.py
+ERROR tests/test_recognize.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_saas.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_tee_full.py
+ERROR tests/test_tee_security.py
+ERROR tests/test_validation_framework.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+ERROR tests/test_webhooks.py - AttributeError: module 'app.api.health' has no attribute 'health_router'
+!!!!!!!!!!!!!!!!!! Interrupted: 19 errors during collection !!!!!!!!!!!!!!!!!!!
+=================== 274 tests collected, 19 errors in 3.17s ===================

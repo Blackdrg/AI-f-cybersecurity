@@ -29,9 +29,59 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidSignature
-from cryptography.x509 import Certificate, Store, CertificateStoreContext
 import requests
 import datetime
+
+logger = logging.getLogger(__name__)
+
+# Build a certificate store using the OpenSSL backend
+def _create_cert_store():
+    """Create a certificate store from cryptography's trusted roots."""
+    from cryptography.hazmat.backends.openssl import backend as openssl_backend
+    return openssl_backend._lib.X509_STORE_new()
+
+
+class _CertStore:
+    """Minimal certificate store wrapper compatible with cryptography 42.x."""
+    def __init__(self):
+        self._certs = []
+
+    def add_cert(self, cert):
+        self._certs.append(cert)
+
+    def verify_certificate(self, cert):
+        """Verify a certificate against stored root CAs using public key verification."""
+        for root_cert in self._certs:
+            try:
+                # Verify signature using root's public key
+                root_pub = root_cert.public_key()
+                cert.signature  # Access to verify structure exists
+                # For full chain validation, we check the issuer matches
+                issuer = cert.issuer
+                subject = root_cert.subject
+                # Check if issuer matches a root CA subject
+                for attr in ['commonName', 'organizationName']:
+                    try:
+                        issuer_cn = issuer.get_attributes_for_oid(
+                            x509.oid.NameOID.COMMON_NAME
+                        )[0].value
+                        root_cn = subject.get_attributes_for_oid(
+                            x509.oid.NameOID.COMMON_NAME
+                        )[0].value
+                        if issuer_cn == root_cn:
+                            root_pub.verify(
+                                cert.signature,
+                                cert.tbs_certificate_bytes,
+                                ec.ECDSA(hashes.SHA256()) if isinstance(root_pub, ec.EllipticCurvePublicKey)
+                                else padding.PKCS1v15(),
+                                hashes.SHA256() if not isinstance(root_pub, ec.EllipticCurvePublicKey) else None
+                            )
+                            return True
+                    except Exception:
+                        continue
+            except Exception:
+                continue
+        return False
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +141,7 @@ class NitroAttestationVerifier:
     AWS_NITRO_LEAF_CERT_URL = "https://aws.nitro-enclaves.amazonaws.com/certificate"
     
     # In-memory certificate store
-    _cert_store: Optional[Store] = None
+    _cert_store: Optional[_CertStore] = None
     _cert_cache_expiry: Optional[datetime] = None
     _cert_cache_ttl = 3600  # 1 hour
     
@@ -104,7 +154,7 @@ class NitroAttestationVerifier:
     def _initialize_cert_store(self):
         """Initialize certificate store with AWS root CAs."""
         if NitroAttestationVerifier._cert_store is None:
-            store = Store()
+            store = _CertStore()
             
             # Load well-known AWS root CAs (inline for reliability)
             # Amazon Root CA 1 (primary)
@@ -157,14 +207,12 @@ yaqB5R85nhkD2gJtw+XTvm4ZudgQIAhqL2JqRamGv4pI8hqbBqTjfxGl5RHrhE1p
                 default_backend()
             )
             
-            # Verify against known AWS root
+# Verify against known AWS root
             try:
-                store_ctx = CertificateStoreContext(
-                    store=self._cert_store,
-                    certificate=cert
-                )
-                store_ctx.verify_certificate()
-                logger.info("AWS Nitro certificate chain validated")
+                if self._cert_store.verify_certificate(cert):
+                    logger.info("AWS Nitro certificate chain validated")
+                else:
+                    logger.warning("Certificate chain validation failed: root CA match not found")
             except Exception as chain_err:
                 logger.warning(f"Certificate chain validation failed: {chain_err}")
                 # Still cache for potential offline use

@@ -22,7 +22,7 @@ from ..models.bias_detector import BiasDetector
 from ..models.hallucination_detector import HallucinationRisk, hallucination_detector
 from ..models.emotion_behavior import get_emotion_behavior_engine, BehaviorContext
 from ..db.db_client import get_db
-from ..schemas import StandardResponse
+from ..schemas import StandardResponse, FaceMatch
 from ..security import require_auth
 from ..metrics import recognition_count, recognition_latency
 from ..middleware.policy_enforcement import require_recognize_policy
@@ -441,19 +441,34 @@ async def recognize_faces(
                 from ..models.explainable_ai import ExplainableDecision, DecisionFactor
                 factors = [
                     DecisionFactor(
-                        factor=f.get("factor", "unknown"),
+                        source=f.get("factor", "unknown"),
                         contribution=float(f.get("impact", 0.0)),
-                        description=f.get("description", "")
-                    ) for f in de_result.factors
+                        confidence=1.0,  # Default confidence
+                        raw_score=float(f.get("impact", 0.0)),
+                        normalized_score=float(f.get("impact", 0.0)),
+                        direction="positive" if float(f.get("impact", 0.0)) > 0 else "negative",
+                        metadata={}
+                    )
+                    for f in de_result.get("factors", {}).values()
                 ]
+                # Calculate risk level based on decision and other factors
+                risk_score = 0.3  # Default low risk
+                if de_result.get("decision") == "deny":
+                    risk_score = 0.8  # High risk
+                elif de_result.get("decision") == "review":
+                    risk_score = 0.5  # Medium risk
+                
                 expl = decision_breakdown_engine.explain_decision(
-                    decision=de_result.decision,
-                    confidence=float(de_result.confidence),
-                    risk_score=0.5 if de_result.risk_level.value == "low" else 0.8,
+                    decision=de_result.get("decision", "review"),
+                    confidence=float(de_result.get("confidence", de_result.get("total_score", 0))),
+                    risk_score=risk_score,
                     face_result=de_face,
-                    liveness_score=1.0 - face['spoof_score'],
-                    factors=factors,
-                    processing_time_ms=0.0
+                    voice_result=None,  # Not available in this context
+                    gait_result=None,   # Not available in this context
+                    liveness_result={"liveness_score": 1.0 - face['spoof_score']},
+                    metadata={
+                        "decision_threshold": 0.7
+                    }
                 )
                 resp_face["explanation"] = expl.to_dict()
 
