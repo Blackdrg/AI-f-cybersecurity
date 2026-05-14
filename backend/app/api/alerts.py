@@ -153,7 +153,7 @@ def generate_demo_incidents():
 @router.post("/{org_id}/rules")
 async def create_rule(org_id: str, rule: dict, current_user=Depends(require_org_admin)):
     """Create a new alert rule for the organization."""
-    db = await get_db()
+    db = get_db()
     try:
         rule_id = await db.pool.fetchval("""
             INSERT INTO alert_rules (org_id, name, condition, actions)
@@ -168,7 +168,7 @@ async def create_rule(org_id: str, rule: dict, current_user=Depends(require_org_
 @router.get("/{org_id}/alerts")
 async def list_alerts(org_id: str, current_user=Depends(require_org_admin)):
     """List fired alerts for the organization."""
-    db = await get_db()
+    db = get_db()
     try:
         rows = await db.pool.fetch("""
             SELECT 
@@ -209,7 +209,7 @@ async def list_alerts(org_id: str, current_user=Depends(require_org_admin)):
 @router.get("/active")
 async def get_active_alerts():
     """Get all active alerts across all organizations (for dashboard)."""
-    db = await get_db()
+    db = get_db()
     if db.pool is None:
         return {"alerts": generate_demo_alerts()}
     
@@ -248,7 +248,7 @@ async def get_active_alerts():
 
 async def insert_alert(org_id: str, alert_type: str, severity: str, message: str, confidence: float, source: str, event_id=None, rule_id=None, details=None) -> dict:
     """Insert a new alert into the database."""
-    db = await get_db()
+    db = get_db()
     try:
         alert_id = await db.pool.fetchval("""
             INSERT INTO alerts (org_id, event_id, rule_id, type, severity, message, confidence, source, details)
@@ -379,7 +379,7 @@ async def check_confidence_dropout(db, org_id: str, now: datetime) -> Optional[d
 @router.put("/{alert_id}/acknowledge")
 async def acknowledge_alert(alert_id: str, current_user=Depends(require_org_admin)):
     """Acknowledge an alert."""
-    db = await get_db()
+    db = get_db()
     try:
         await db.pool.execute("""
             UPDATE alerts SET status = 'acknowledged', acknowledged_at = NOW()
@@ -391,7 +391,7 @@ async def acknowledge_alert(alert_id: str, current_user=Depends(require_org_admi
 
 async def process_event_rules(event_id: str, org_id: str, person_id: str, camera_id: str):
     """Background task to check rules against a new recognition event."""
-    db = await get_db()
+    db = get_db()
     try:
         rules = await db.pool.fetch("SELECT * FROM alert_rules WHERE org_id = $1 AND is_active = TRUE", org_id)
         for rule in rules:
@@ -416,7 +416,7 @@ async def process_event_rules(event_id: str, org_id: str, person_id: str, camera
 @router.get("/incidents")
 async def get_incidents():
     """Get all incidents."""
-    db = await get_db()
+    db = get_db()
     try:
         incidents = await db.pool.fetch("""
             SELECT * FROM incidents ORDER BY created_at DESC
@@ -430,7 +430,7 @@ async def get_incidents():
 @router.put("/incidents/{incident_id}/status")
 async def update_incident_status(incident_id: str, status: str, current_user=Depends(require_org_admin)):
     """Update incident status."""
-    db = await get_db()
+    db = get_db()
     try:
         await db.pool.execute("""
             UPDATE incidents SET status = $1, updated_at = NOW()
@@ -443,7 +443,7 @@ async def update_incident_status(incident_id: str, status: str, current_user=Dep
 @router.post("/incidents")
 async def create_incident(incident: dict, current_user=Depends(require_org_admin)):
     """Create a new incident."""
-    db = await get_db()
+    db = get_db()
     try:
         incident_id = await db.pool.fetchval("""
             INSERT INTO incidents (org_id, title, description, severity, status, created_by)
@@ -459,7 +459,7 @@ async def create_incident(incident: dict, current_user=Depends(require_org_admin
 @router.get("/audit/forensic/{event_id}")
 async def get_forensic_trace(event_id: str, current_user=Depends(require_org_admin)):
     """Get forensic trace for a specific event."""
-    db = await get_db()
+    db = get_db()
     try:
         trace = await db.pool.fetch("""
             SELECT * FROM audit_log 
@@ -517,7 +517,7 @@ async def get_admin_logs(
     current_user=Depends(require_org_admin)
 ):
     """Get admin audit logs."""
-    db = await get_db()
+    db = get_db()
     try:
         base_query = "SELECT timestamp, action, person_id, details FROM audit_log"
         conditions = []
@@ -566,9 +566,9 @@ async def get_admin_logs(
 @router.get("/admin/analytics")
 async def get_admin_analytics(current_user=Depends(require_org_admin)):
     """Get admin analytics."""
-    db = await get_db()
+    db = get_db()
     try:
-        time_series = await db.fetch("""
+        time_series = await db.pool.fetch("""
             SELECT DATE(timestamp) as date, action, COUNT(*) as count
             FROM audit_log
             WHERE timestamp >= NOW() - INTERVAL '30 days'
@@ -583,7 +583,7 @@ async def get_admin_analytics(current_user=Depends(require_org_admin)):
                 'enrollments': row['count'] if row['action'] == 'enroll' else 0
             })
 
-        bias_trends = await db.fetch("""
+        bias_trends = await db.pool.fetch("""
             SELECT DATE(timestamp) as date, details->>'demographic_parity_difference' as dpd
             FROM audit_log
             WHERE action = 'bias_report' AND timestamp >= NOW() - INTERVAL '30 days'
@@ -591,7 +591,7 @@ async def get_admin_analytics(current_user=Depends(require_org_admin)):
         """)
         bias_data = [{'date': str(row['date']), 'dpd': float(row['dpd'])} for row in bias_trends]
 
-        device_stats = await db.fetch("SELECT device_id, status, last_seen FROM edge_devices")
+        device_stats = await db.pool.fetch("SELECT device_id, status, last_seen FROM edge_devices")
         dev_data = [dict(row) for row in device_stats]
 
         return {

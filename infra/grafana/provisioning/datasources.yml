@@ -1,0 +1,51 @@
+# Grafana Dashboard and Datasource Provisioning
+# Place in /etc/grafana/provisioning/
+
+# --- Dashboard Provisioning ---
+apiVersion: 1
+providers:
+  - name: 'ai-f-dashboards'
+    orgId: 1
+    folder: 'AI-f'
+    type: file
+    disableDeletion: true
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true
+
+# --- Datasource Provisioning ---
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: face_recognition
+    user: ai_f_user
+    secureJsonData:
+      password: "${DB_PASSWORD}"
+    jsonData:
+      postgresVersion: "1500"
+      sslmode: disable
+      timescaledb: false
+
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    url: redis://redis-master:6379
+    secureJsonData:
+      password: "${REDIS_PASSWORD}"
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false

@@ -60,7 +60,7 @@ async def stripe_webhook(request: Request):
         logger.error("Invalid webhook signature")
         return JSONResponse(content={"status": "error", "detail": "Invalid signature"}, status_code=400)
     
-    db = await get_db()
+    db = get_db()
     event_type = event.get("type")
     event_data = event.get("data", {}).get("object", {})
     
@@ -176,7 +176,7 @@ async def stripe_webhook(request: Request):
 @router.get("/payments/history", response_model=List[PaymentResponse])
 async def get_payment_history(current_user=Depends(get_current_user)):
     """Get payment history for current user."""
-    db = await get_db()
+    db = get_db()
     payments = await db.get_payment_history(current_user["user_id"])
 
     return [
@@ -194,7 +194,7 @@ async def get_payment_history(current_user=Depends(get_current_user)):
 @router.get("/payments/invoice/{payment_id}")
 async def generate_invoice(payment_id: str, current_user=Depends(get_current_user)):
     """Generate a PDF invoice for a specific payment."""
-    db = await get_db()
+    db = get_db()
     payment = await db.pool.fetchrow("SELECT * FROM payments WHERE payment_id = $1 AND user_id = $2", payment_id, current_user["user_id"])
     
     if not payment:

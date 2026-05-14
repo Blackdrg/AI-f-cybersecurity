@@ -20,7 +20,7 @@ async def get_status():
 
 @router.get("/persons/{person_id}", response_model=PersonResponse)
 async def get_person(person_id: str, user: dict = Depends(require_admin)):
-    db = await get_db()
+    db = get_db()
     person = await db.get_person(person_id)
     if not person:
         raise HTTPException(status_code=404, detail="Person not found")
@@ -36,7 +36,7 @@ async def revoke_person(person_id: str, request: RevokeRequest, user: dict = Dep
 
 @router.delete("/persons/{person_id}", response_model=DeleteResponse)
 async def delete_person(person_id: str, user: dict = Depends(require_admin)):
-    db = await get_db()
+    db = get_db()
     deleted = await db.delete_person(person_id)
     return DeleteResponse(deleted=deleted, message="Person deleted")
 
@@ -62,7 +62,7 @@ async def get_metrics(user: dict = Depends(require_admin)):
 
 @router.post("/consent_vault")
 async def manage_consent_vault(request: ConsentVaultRequest, user=Depends(require_auth)):
-    db = await get_db()
+    db = get_db()
     user_id = user['user_id']
     if request.action == 'grant':
         async with db.pool.acquire() as conn:
@@ -86,7 +86,7 @@ async def manage_consent_vault(request: ConsentVaultRequest, user=Depends(requir
 
 @router.get("/bias_report", response_model=BiasReport)
 async def get_bias_report(user=Depends(require_operator)):
-    db = await get_db()
+    db = get_db()
     async with db.pool.acquire() as conn:
         rows = await conn.fetch("SELECT * FROM audit_log WHERE action = 'recognize' ORDER BY timestamp DESC LIMIT 1000")
         recent_recognitions = [dict(row) for row in rows]
@@ -104,7 +104,7 @@ async def submit_feedback(
     feedback_type: str = Form(...),
     user: dict = Depends(require_admin)
 ):
-    db = await get_db()
+    db = get_db()
     success = await db.submit_feedback(person_id, recognition_id, correct_person_id, confidence_score, feedback_type)
     return {"message": "Feedback submitted", "success": success}
 
@@ -119,7 +119,7 @@ async def get_logs(
     limit: int = Query(100, description="Maximum number of logs to return"),
     user: dict = Depends(require_admin)
 ):
-    db = await get_db()
+    db = get_db()
     base_query = "SELECT timestamp, action, person_id, details FROM audit_log"
     conditions = []
     params = []
@@ -148,7 +148,7 @@ async def get_logs(
 
 @router.post("/models/upload")
 async def upload_model(model: ModelVersion, user: dict = Depends(require_admin)):
-    db = await get_db()
+    db = get_db()
     version_id = model.version_id
     if db.pool is None:
         return {"message": "Model uploaded (degraded mode)", "version_id": version_id}
@@ -162,7 +162,7 @@ async def upload_model(model: ModelVersion, user: dict = Depends(require_admin))
 
 @router.get("/models/download")
 async def download_model(request: OTADownload, user: dict = Depends(require_admin)):
-    db = await get_db()
+    db = get_db()
     if db.pool is None:
         raise HTTPException(status_code=404, detail="Model not found (degraded mode)")
     async with db.pool.acquire() as conn:
@@ -175,7 +175,7 @@ async def download_model(request: OTADownload, user: dict = Depends(require_admi
 
 @router.get("/analytics", response_model=AnalyticsResponse)
 async def get_analytics(timeframe: str = Query('24h'), user: dict = Depends(require_admin)):
-    db = await get_db()
+    db = get_db()
     
     # Map timeframe to interval
     intervals = {
@@ -320,7 +320,7 @@ async def risk_metrics(user: dict = Depends(require_admin)):
 @router.get("/analytics/risk-trends")
 async def risk_trends(timeframe: str = Query('24h'), user: dict = Depends(require_admin)):
     """Time-series risk score data."""
-    db = await get_db()
+    db = get_db()
     # Determine interval based on timeframe
     interval = 'hour' if timeframe == '1h' else 'day'
     date_trunc = f"DATE_TRUNC('{interval}', timestamp)"
@@ -345,7 +345,7 @@ async def risk_trends(timeframe: str = Query('24h'), user: dict = Depends(requir
 @router.get("/sessions/active")
 async def get_active_sessions(user: dict = Depends(require_admin)):
     """Get active identity sessions with behavioral data."""
-    db = await get_db()
+    db = get_db()
     sessions_list = []
     try:
         # Try to get real sessions from in-memory tracker

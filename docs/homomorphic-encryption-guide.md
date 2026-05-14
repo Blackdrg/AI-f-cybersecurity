@@ -1,8 +1,8 @@
 # Homomorphic Encryption (TenSEAL) Implementation
 
-## Status: Fully Implemented ✓
+## Status: Fully Implemented & Enhanced ✓
 
-The `HomomorphicEncryptionEngine` in `backend/app/models/homomorphic_encryption.py` provides complete homomorphic encryption capabilities using the TenSEAL library (CKKS scheme).
+The `HomomorphicEncryptionEngine` in `backend/app/models/homomorphic_encryption.py` provides complete homomorphic encryption capabilities using the TenSEAL library (CKKS scheme), with production enhancements for security, performance, and maintainability.
 
 ### Features
 
@@ -11,7 +11,11 @@ The `HomomorphicEncryptionEngine` in `backend/app/models/homomorphic_encryption.
 - ✅ **Batch Encryption**: Multiple embeddings encrypted efficiently
 - ✅ **Cross-Organization Matching**: Secure identity matching without data sharing
 - ✅ **Encrypted Nearest Neighbor**: k-NN search on encrypted vectors
-- ✅ **Integrity Verification**: Tamper detection for encrypted data
+- ✅ **Ciphertext Integrity Validation**: HMAC-based tamper detection
+- ✅ **Automated Key Rotation**: 30-day rotation with 90-day grace period
+- ✅ **Key Migration**: Seamless re-encryption with version tracking
+- ✅ **Performance Benchmarking**: Built-in benchmark suite with Metrics
+- ✅ **Graceful Degradation**: Simulation mode when TenSEAL unavailable
 
 ### Architecture
 
@@ -20,10 +24,22 @@ Backend Application
     │
     ├── HomomorphicEncryptionEngine (TenSEAL CKKS)
     │       ├── Context Setup (poly_modulus_degree=8192)
-    │       ├── Key Generation (public, secret, relin, galois)
-    │       ├── encrypt_embedding()     → CKKS encryption
+    │       ├── Key Generation & Rotation Manager
+    │       ├── Ciphertext Validator (HMAC + hash integrity)
+    │       ├── encrypt_embedding()    → CKKS encryption + validation
     │       ├── compute_encrypted_cosine_similarity() → Homomorphic ops
-    │       └── encrypted_nearest_neighbor_search()
+    │       ├── encrypted_nearest_neighbor_search()
+    │       └── benchmark_and_report() → Performance metrics
+    │
+    ├── HECiphertextValidator
+    │       ├── HMAC generation and verification
+    │       ├── Anti-replay nonce tracking
+    │       └── Plaintext hash integrity
+    │
+    ├── HEKeyRotationManager
+    │       ├── Rotation scheduling (30-day default)
+    │       ├── Grace period tracking (90-day)
+    │       └── Ciphertext migration orchestration
     │
     └── HomomorphicVectorStore
             ├── add_embedding()    → Encrypt & store
@@ -174,14 +190,22 @@ Environment variables control HE behavior:
 ### Testing
 
 ```bash
-# Test HE operations
+# Core HE operations
 pytest backend/tests/test_homomorphic_encryption.py -v
 
-# Test encrypted search
-pytest backend/tests/test_encrypted_search.py -v
+# Benchmark suite
+python3 -c "
+from backend.app.models.homomorphic_encryption import HomomorphicEncryptionEngine
+engine = HomomorphicEncryptionEngine()
+results = engine.benchmark_and_report('/tmp/he_benchmarks.json')
+print(results['summary'])
+"
 
-# Integration test
-pytest backend/tests/test_encrypted_pipeline.py -v
+# Key rotation tests
+pytest backend/tests/test_he_rotation.py -v
+
+# Ciphertext validation tests
+pytest backend/tests/test_he_enhanced.py -v
 ```
 
 ### Limitations
@@ -199,6 +223,100 @@ pytest backend/tests/test_encrypted_pipeline.py -v
 - [ ] Bootstrapping for unlimited depth circuits
 - [ ] Hybrid HE + MPC for additional privacy
 - [ ] FIPS 140-2 Level 3 HSM integration
+
+---
+
+## Key Rotation & Migration
+
+**Automatic key rotation** ensures long-term security of encrypted data.
+
+### Rotation Policy
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| Rotation interval | 30 days | Active key lifetime |
+| Grace period | 90 days | Old keys retained for decryption |
+| Re-encryption trigger | On next write after rotation due | |
+| Key storage | Local filesystem (`/app/keys/he/`) or HSM | |
+
+### Migration Process
+
+1. **Rotation due** → `HEKeyRotationManager` generates new key
+2. **Old key** → marked `active=false`, but kept for decryption
+3. **New encryptions** → use new key automatically
+4. **Background re-encryption** → migrate old ciphertexts (optional)
+5. **Grace period expiry** → old keys archived securely
+
+### Ciphertext Metadata
+
+Every HE ciphertext includes versioned metadata:
+
+```json
+{
+  "ciphertext": "base64...",
+  "metadata": {
+    "version": "1",
+    "scheme": "CKKS",
+    "poly_modulus_degree": 8192,
+    "scale": 1099511627776,
+    "key_id": "key_20260513_123456",
+    "created_at": "2026-05-13T12:34:56Z",
+    "hash_sha256": "abc123..."  // For integrity verification
+  },
+  "mac": "hmac_signature",
+  "nonce": "unique_nonce"
+}
+```
+
+### Manual Migration
+
+```python
+from backend.app.models.homomorphic_encryption import HomomorphicEncryptionEngine
+engine = HomomorphicEncryptionEngine()
+
+# Migrate old ciphertext to new key
+old_package = load_ciphertext("user_123.he")
+new_package = engine._rotation_mgr.migrate_ciphertext(
+    old_package,
+    target_key_id=engine.get_active_key()
+)
+# Then re-encrypt with new key using decrypt + encrypt cycle
+```
+
+---
+
+## Ciphertext Integrity Validation
+
+Prevents tampering and replay attacks.
+
+### Validation Checks
+
+1. **HMAC verification** → Authenticates ciphertext origin
+2. **SHA256 hash** → Ensures plaintext integrity
+3. **Timestamp freshness** → Prevents replay (5 min window)
+4. **Key version check** → Ensures correct decryption key
+
+### Validator API
+
+```python
+from backend.app.models.homomorphic_encryption import HECiphertextValidator
+
+validator = HECiphertextValidator(
+    mac_key=os.urandom(32),
+    require_mac=True  # Production
+)
+
+# Wrap ciphertext with integrity tags
+package = validator.wrap_ciphertext(
+    encrypted_bytes,
+    metadata=HECiphertextMetadata(key_id="key-v1"),
+    plaintext=original_embedding  # Optional: include for hash
+)
+
+# Unwrap and validate
+ct_bytes, meta = validator.unwrap_ciphertext(package)
+# Raises ValueError if MAC fails, timestamp too old, or tampered
+```
 
 ### References
 

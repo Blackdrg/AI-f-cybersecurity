@@ -43,7 +43,7 @@ class MFAService:
             backup_codes.append(code)
             hashed_codes.append(self._hash_backup_code(code))
         
-        db = await get_db()
+        db = get_db()
         async with db.pool.acquire() as conn:
             # Store secret and hashed backup codes
             await conn.execute("""
@@ -70,7 +70,7 @@ class MFAService:
     
     async def verify_totp_code(self, user_id: str, code: str) -> bool:
         """Verify a TOTP code against stored secret"""
-        db = await get_db()
+        db = get_db()
         async with db.pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT secret FROM mfa_secrets WHERE user_id = $1 AND enabled = true",
@@ -104,7 +104,7 @@ class MFAService:
         
         code_hash = self._hash_backup_code(code)
         
-        db = await get_db()
+        db = get_db()
         async with db.pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT backup_codes_hash, backup_codes_used FROM mfa_secrets WHERE user_id = $1 AND enabled = true",
@@ -136,7 +136,7 @@ class MFAService:
     
     async def enable_mfa_after_verification(self, user_id: str) -> bool:
         """Mark MFA as enabled after initial TOTP verification"""
-        db = await get_db()
+        db = get_db()
         async with db.pool.acquire() as conn:
             result = await conn.execute(
                 "UPDATE mfa_secrets SET enabled = true, enabled_at = NOW() WHERE user_id = $1",
@@ -146,7 +146,7 @@ class MFAService:
     
     async def disable_mfa(self, user_id: str, password: str) -> bool:
         """Disable MFA (requires password confirmation)"""
-        db = await get_db()
+        db = get_db()
         async with db.pool.acquire() as conn:
             # Verify password
             user = await conn.fetchrow(
@@ -165,7 +165,7 @@ class MFAService:
     
     async def is_mfa_enabled(self, user_id: str) -> bool:
         """Check if user has MFA enabled"""
-        db = await get_db()
+        db = get_db()
         async with db.pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT enabled FROM mfa_secrets WHERE user_id = $1 AND enabled = true",
@@ -175,7 +175,7 @@ class MFAService:
     
     async def get_backup_codes_count(self, user_id: str) -> int:
         """Get count of remaining unused backup codes"""
-        db = await get_db()
+        db = get_db()
         async with db.pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT backup_codes_used FROM mfa_secrets WHERE user_id = $1",

@@ -1,16 +1,70 @@
-  faiss:
-    image: faiss/faiss:gpu
-    command: faiss_index_server /faiss/index --host 0.0.0.0 --port 50051 --enable-grpc
+version: '3.8'
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports: ["5433:5432"]
     volumes:
-      - faiss_index:/faiss/index
-    ports:
-      - "50051:50051"
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: face_recognition
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: changeme_prod
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redisdata:/data
+    ports: ["6380:6379"]
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: postgresql://postgres:changeme_prod@postgres:5432/face_recognition
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: supersecretkeychangeinprod
+    volumes:
+      - ../backend/models:/app/models:ro
+    depends_on: [postgres, redis]
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+
+  backend-gpu:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.gpu
+    ports: ["8001:8000"]
+    environment:
+      DATABASE_URL: postgresql://postgres:changeme_prod@postgres:5432/face_recognition
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ../backend/models:/app/models:ro
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
               capabilities: [gpu]
-    depends_on:
-      - backend
+    profiles: [gpu]
+
+  faiss:
+    image: faiss/faiss:gpu-latest
+    ports: ["50051:50051"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+    profiles: [gpu]
+
+volumes:
+  pgdata:
+  redisdata:

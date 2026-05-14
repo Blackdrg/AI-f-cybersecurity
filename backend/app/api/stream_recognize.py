@@ -47,7 +47,7 @@ async def recognize_stream(
     if camera_id:
         await connection_manager.subscribe_to_camera(ws_id, camera_id)
     
-    db = await get_db()
+    db = get_db()
     
     try:
         while True:

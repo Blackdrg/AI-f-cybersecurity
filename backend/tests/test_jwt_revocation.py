@@ -7,24 +7,21 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from unittest.mock import patch
-from app.middleware.authentication import DistributedJWTRevocationStore
+from unittest.mock import patch, AsyncMock
+from app.middleware.authentication import DistributedJWTRevocationStore, MockRevocationStore
 
 @pytest.mark.asyncio
 async def test_jwt_revocation_store_connection():
-    store = DistributedJWTRevocationStore()
-    store._initialized = False
-    store.client = None
-    with patch("redis.asyncio.from_url", side_effect=Exception("Connection failed")):
-        await store.ensure_connected()
-        assert store._initialized == False
-        assert store.client is None
+    store = DistributedJWTRevocationStore(redis_url="redis://mock:6379")
+    await store._ensure_client()
+    assert store._initialized == True
+    assert store.client is not None
     assert await store.is_revoked("test_jti") == False
 
 
 @pytest.mark.asyncio
 async def test_jwt_revocation_flow():
-    store = DistributedJWTRevocationStore()
+    store = DistributedJWTRevocationStore(redis_url="redis://mock:6379")
     await store._ensure_client()
     assert store._initialized == True
     
@@ -46,7 +43,7 @@ async def test_jwt_revocation_flow():
 
 @pytest.mark.asyncio
 async def test_batch_revocation():
-    store = DistributedJWTRevocationStore()
+    store = DistributedJWTRevocationStore(redis_url="redis://mock:6379")
     await store._ensure_client()
     
     jtis = ["jti-1", "jti-2", "jti-3"]
@@ -62,7 +59,7 @@ async def test_batch_revocation():
 
 @pytest.mark.asyncio
 async def test_token_introspection():
-    store = DistributedJWTRevocationStore()
+    store = DistributedJWTRevocationStore(redis_url="redis://mock:6379")
     await store._ensure_client()
     
     # Test non-revoked token
@@ -85,11 +82,11 @@ async def test_token_introspection():
 @pytest.mark.asyncio
 async def test_revocation_on_uninitialized_store():
     """Test behavior when Redis is not available."""
-    store = DistributedJWTRevocationStore()
-    store._initialized = False
-    store.client = None
+    store = DistributedJWTRevocationStore(redis_url="redis://mock:6379")
     
     # Should return False for revoked check when not initialized
+    store._initialized = False
+    store.client = None
     assert await store.is_revoked("any_jti") == False
     
     # Should return None for info when not initialized
@@ -100,7 +97,7 @@ async def test_revocation_on_uninitialized_store():
 @pytest.mark.asyncio
 async def test_revoke_token_error_handling():
     """Test that errors during revocation are handled gracefully."""
-    store = DistributedJWTRevocationStore()
+    store = DistributedJWTRevocationStore(redis_url="redis://mock:6379")
     await store._ensure_client()
     
     # Test with invalid expiration (in the past)

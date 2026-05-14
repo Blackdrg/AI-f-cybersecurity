@@ -16,7 +16,7 @@ class BillingAccuracySystem:
         Cross checks internal system usage (from DB/Prometheus) with external billing (e.g., Stripe).
         """
         from ..db.db_client import get_db
-        db = await get_db()
+        db = get_db()
         
         # 1. Get internal usage (mocked query for demonstration)
         # In a real app, this would sum up recognitions and enrollments in the DB for the period

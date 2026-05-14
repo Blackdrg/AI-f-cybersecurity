@@ -33,7 +33,7 @@ def generate_bias_report(self, org_id: str = None, days_back: int = 30):
         from datetime import datetime, timedelta
         
         async def compute():
-            db = await get_db()
+            db = get_db()
             detector = BiasDetector()
             cutoff = datetime.utcnow() - timedelta(days=days_back)
             recognitions = await db.get_recognitions_since(org_id, cutoff)
@@ -57,7 +57,7 @@ def enrich_identity_with_external_data(self, person_id: str, sources: list = Non
         from app.providers.wikipedia_provider import WikipediaProvider
         
         async def enrich():
-            db = await get_db()
+            db = get_db()
             person = await db.get_person(person_id)
             if not person:
                 return {"error": "Person not found"}
@@ -89,7 +89,7 @@ def calculate_risk_scores_batch(self, org_id: str = None, batch_size: int = 1000
         from app.scoring_engine import risk_scorer
         
         async def score_batch():
-            db = await get_db()
+            db = get_db()
             events = await db.get_unscored_recognitions(org_id, limit=batch_size)
             scored = 0
             total_risk = 0

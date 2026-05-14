@@ -91,7 +91,7 @@ async def oauth_callback(provider: str, request: Request):
     
     # Find or create user in our system
     from ..db.db_client import get_db
-    db = await get_db()
+    db = get_db()
     user = await db.get_user_by_email(email)
     
     if not user:

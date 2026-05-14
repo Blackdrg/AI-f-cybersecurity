@@ -41,7 +41,7 @@ def process_recognition_batch(self, image_batch, camera_ids, threshold=0.7, top_
         embedder = FaceEmbedder()
         
         async def process():
-            db = await get_db()
+            db = get_db()
             results = []
             for img_bytes, camera_id in zip(image_batch, camera_ids):
                 try:
@@ -89,7 +89,7 @@ def enroll_person_async(self, person_data, images, voice_files=None, gait_video=
         zkp_manager = ZKProofManager()
         
         async def process():
-            db = await get_db()
+            db = get_db()
             person_id = person_data.get('person_id')
             face_embeddings = []
             for img_bytes in images:
@@ -125,7 +125,7 @@ def cleanup_stale_sessions(self, max_age_hours=24):
         from app.db.db_client import get_db
         
         async def cleanup():
-            db = await get_db()
+            db = get_db()
             return {
                 "deleted_sessions": await db.delete_expired_sessions(max_age_hours),
                 "deleted_cache": await db.cleanup_redis_cache()
@@ -145,7 +145,7 @@ def verify_audit_chain_integrity(self, start_id=None, end_id=None):
         from app.models.zkp_proper import ZKProofManager
         
         async def verify():
-            db = await get_db()
+            db = get_db()
             zkp = ZKProofManager()
             logs = await db.get_audit_logs_range(start_id, end_id)
             broken = []
@@ -193,7 +193,7 @@ def process_video_recognition(self, video_path: str, camera_id: str, org_id: str
         embedder = FaceEmbedder()
         
         async def process():
-            db = await get_db()
+            db = get_db()
             cap = cv2.VideoCapture(video_path)
             if not cap.isOpened():
                 raise ValueError(f"Cannot open: {video_path}")

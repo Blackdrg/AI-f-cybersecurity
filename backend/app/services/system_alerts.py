@@ -21,7 +21,7 @@ _check_interval_seconds = 300  # 5 minutes
 
 async def _check_all_organizations():
     """Iterate over all organizations and evaluate system alerts."""
-    db = await get_db()
+    db = get_db()
     if db.pool is None:
         logger.warning("DB not available for system alert checks")
         return

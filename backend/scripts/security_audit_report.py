@@ -21,7 +21,7 @@ async def verify_audit_chain():
     print("AUDIT CHAIN INTEGRITY VERIFICATION")
     print("=" * 60)
     
-    db = await get_db()
+    db = get_db()
     
     # Secret key for HMAC (must match the one used during logging)
     # In a real system, this might be in a KMS or Vault

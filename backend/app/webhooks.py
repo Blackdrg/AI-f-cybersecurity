@@ -41,7 +41,7 @@ class WebhookManager:
             logger.error(f"Webhook error: {webhook_url}, error: {str(e)}")
 
     async def trigger_event(self, event: str, data: Dict[str, Any]):
-        db = await get_db()
+        db = get_db()
         # Fetch webhooks from DB (placeholder)
         webhooks = []  # await db.get_webhooks_for_event(event)
 

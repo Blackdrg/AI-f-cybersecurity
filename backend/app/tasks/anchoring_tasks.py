@@ -45,7 +45,7 @@ def anchor_audit_chain_to_blockchain(self):
 
         async def anchor():
             # Get latest audit log hash (chain tip)
-            db = await get_db()
+            db = get_db()
             latest_hash = await db.get_latest_audit_hash()
             if not latest_hash:
                 logger.warning("Blockchain anchoring skipped: no audit logs yet")

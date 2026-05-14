@@ -19,7 +19,7 @@ async def simulate_incident_response():
     print("INCIDENT RESPONSE SIMULATION TEST")
     print("=" * 60)
     
-    db = await get_db()
+    db = get_db()
     
     # 1. Simulate Brute Force Attempt
     print("\n[SCENARIO 1] Simulating MFA Brute Force...")

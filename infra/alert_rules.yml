@@ -1,0 +1,173 @@
+# =============================================================================
+# Prometheus Alert Rules
+# =============================================================================
+groups:
+  - name: database_alerts
+    rules:
+      # High connection pool utilization
+      - alert: HighDBConnectionPoolUtilization
+        expr: db_pool_utilization_percent > 90
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "DB connection pool utilization high ({{ $value }}%)"
+          description: "Connection pool is {{ $value }}% full. Consider scaling."
+
+      # Critical pool utilization
+      - alert: CriticalDBConnectionPoolUtilization
+        expr: db_pool_utilization_percent > 95
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DB connection pool CRITICAL ({{ $value }}%)"
+          description: "Connection pool nearly exhausted. Immediate action required."
+
+      # Replication lag
+      - alert: HighReplicationLag
+        expr: db_replication_lag_seconds > 5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Replication lag exceeds 5s ({{ $value }}s)"
+          description: "Read replicas are lagging behind primary."
+
+      # Critical replication lag
+      - alert: CriticalReplicationLag
+        expr: db_replication_lag_seconds > 30
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Replication lag CRITICAL ({{ $value }}s)"
+          description: "Severe replication lag. Check replica health."
+
+      # Slow query rate
+      - alert: HighSlowQueryRate
+        expr: rate(db_slow_queries_total[1m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 10 slow queries/second"
+          description: "Slow query rate is {{ $value }}/s. Investigate query performance."
+
+      # High query latency
+      - alert: HighQueryLatency
+        expr: histogram_quantile(0.99, rate(db_queries_duration_seconds_bucket[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P99 query latency exceeds 1s"
+          description: "P99 latency is {{ $value }}s. Check for slow queries."
+
+      # PostgreSQL down
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is DOWN"
+          description: "PostgreSQL instance {{ $labels.instance }} is unreachable."
+
+  - name: redis_alerts
+    rules:
+      # Redis down
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is DOWN"
+          description: "Redis instance {{ $labels.instance }} is unreachable."
+
+      # Redis memory usage
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage high ({{ $value }}%)"
+
+      # Redis connection count
+      - alert: RedisHighConnections
+        expr: redis_connected_clients > 500
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis has {{ $value }} connected clients"
+
+  - name: application_alerts
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Error rate exceeds 5%"
+          description: "5xx error rate is {{ $value * 100 }}%."
+
+      # High latency
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 latency exceeds 2s"
+
+      # Celery queue backlog
+      - alert: CeleryQueueBacklog
+        expr: celery_queue_length > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Celery queue backlog ({{ $value }} tasks)"
+
+      # Celery worker down
+      - alert: CeleryWorkerDown
+        expr: celery_workers_online == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "All Celery workers are DOWN"
+
+  - name: infrastructure_alerts
+    rules:
+      # Endpoint health
+      - alert: EndpointDown
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Endpoint {{ $labels.instance }} is DOWN"
+
+      # Disk space
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes / node_filesystem_size_bytes * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space below 10% on {{ $labels.instance }}"
+
+      # CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU usage above 85% on {{ $labels.instance }}"

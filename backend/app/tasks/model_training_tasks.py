@@ -101,7 +101,7 @@ def publish_model_to_registry(self, model_name: str, version: str, model_path: s
         from app.models.model_calibrator import version_manager
         
         async def publish():
-            db = await get_db()
+            db = get_db()
             version_manager.register_version(
                 version=version,
                 model_name=model_name,

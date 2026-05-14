@@ -6,7 +6,7 @@ sys.path.append('.')
 
 async def test_db():
     try:
-        db = await get_db()
+        db = get_db()
         print("✓ DB initialized successfully")
 
         # Test basic operations

@@ -172,7 +172,7 @@ async def recognize_faces(
             finally:
                 os.unlink(vp)
 
-        db = await get_db()
+        db = get_db()
         response_faces = []
         age_gender = None
 

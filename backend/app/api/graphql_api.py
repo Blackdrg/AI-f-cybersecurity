@@ -1,5 +1,6 @@
 """Production GraphQL API for AI-f Enterprise using Strawberry."""
 import os
+import json
 import base64
 import logging
 import uuid
@@ -165,7 +166,7 @@ def _decode_base64_image(base64_str: str) -> np.ndarray:
 
 async def _get_person_by_id(person_id: str) -> Optional[Dict[str, Any]]:
     """Fetch person from database."""
-    db = await get_db()
+    db = get_db()
     try:
         row = await db.pool.fetchrow(
             "SELECT person_id, name, created_at, updated_at FROM persons WHERE person_id = $1",
@@ -180,7 +181,7 @@ async def _get_person_by_id(person_id: str) -> Optional[Dict[str, Any]]:
 
 async def _create_audit_log(event_type: str, person_id: Optional[str], details: Dict[str, Any]):
     """Create audit log entry."""
-    db = await get_db()
+    db = get_db()
     try:
         await db.pool.execute(
             "INSERT INTO audit_log (event_type, person_id, details) VALUES ($1, $2, $3)",
@@ -221,7 +222,7 @@ class Query:
         offset: int = 0
     ) -> List[PersonType]:
         """Search persons with optional filter."""
-        db = await get_db()
+        db = get_db()
         try:
             query = "SELECT person_id, name, created_at, updated_at FROM persons"
             params = []
@@ -296,7 +297,7 @@ class Query:
             embedding = embedder.embed(face_crop)
             
             # Search database
-            db = await get_db()
+            db = get_db()
             rows = await db.pool.fetch("""
                 SELECT e.person_id, p.name, e.embedding_id, 1.0 - (e.embedding <=> $1) as similarity
                 FROM embeddings e
@@ -350,7 +351,7 @@ class Query:
         since: Optional[datetime] = None
     ) -> List[AuditLogEntryType]:
         """Query audit trail with filters."""
-        db = await get_db()
+        db = get_db()
         try:
             query = "SELECT id, event_type as action, person_id as resource_id, details, timestamp, user_id, ip_address FROM audit_log"
             conditions = []
@@ -400,7 +401,7 @@ class Query:
     @strawberry.field
     async def system_health(self) -> SystemHealthType:
         """Check system health status."""
-        db = await get_db()
+        db = get_db()
         db_status = "connected"
         try:
             await db.pool.execute("SELECT 1")
@@ -488,7 +489,7 @@ class Mutation:
             template_id = str(uuid.uuid4())
             
             # Store in database
-            db = await get_db()
+            db = get_db()
             
             # Insert person
             await db.pool.execute("""
@@ -547,7 +548,7 @@ class Mutation:
         Returns:
             Verification result with confidence
         """
-        db = await get_db()
+        db = get_db()
         
         # Fetch both embeddings
         emb_a_row = await db.pool.fetchrow(
@@ -622,7 +623,7 @@ class Mutation:
         Returns:
             True if successful
         """
-        db = await get_db()
+        db = get_db()
         try:
             # Soft-delete (mark as inactive)
             await db.pool.execute(

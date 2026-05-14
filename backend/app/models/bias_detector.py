@@ -5,7 +5,7 @@ from typing import Dict, List, Any
 logger = logging.getLogger(__name__)
 
 try:
-    from fairlearn.metrics import (
+    from fairlearn.metrics import (  # type: ignore
         demographic_parity_difference, 
         equalized_odds_difference,
         MetricFrame,
@@ -13,7 +13,7 @@ try:
         false_positive_rate,
         false_negative_rate
     )
-    from sklearn.metrics import accuracy_score
+    from sklearn.metrics import accuracy_score  # type: ignore
     FAIRLEARN_AVAILABLE = True
 except ImportError:
     FAIRLEARN_AVAILABLE = False

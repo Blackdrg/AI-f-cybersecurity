@@ -102,16 +102,10 @@ class RedisRateLimiter:
         await self.client.zremrangebyscore(key, 0, now - 60)
 
 
-# Global in-memory storage for rate limiting (cross-pod shared state)
-# This provides a fallback when Redis is unavailable
-_global_rate_limit_storage = {}
-
-
 class MockRedisClient:
     """Mock Redis client for testing and Redis fallback."""
     def __init__(self):
-        global _global_rate_limit_storage
-        self.data = _global_rate_limit_storage
+        self.data = {}
     
     def pipeline(self):
         return MockPipeline(self)

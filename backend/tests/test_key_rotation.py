@@ -123,25 +123,16 @@ class TestKeyRotation:
         
         assert final_decrypted == original_bytes
 
-    @pytest.mark.asyncio
-    async def test_key_rotation_under_load(self):
+    def test_key_rotation_under_load(self):
         """
         Test key rotation with 100K embeddings (simulated with batching).
         This tests the batch processing and transaction handling.
         """
         from cryptography.fernet import Fernet
-        from unittest.mock import MagicMock, AsyncMock, patch
         
         # Generate keys
         old_key = Fernet.generate_key()
         new_key = Fernet.generate_key()
-        
-        # Create mock database client
-        db = DBClient()
-        
-        # Mock the pool and connection
-        mock_conn = AsyncMock()
-        mock_pool = AsyncMock()
         
         # Simulate 100K embeddings in batches
         total_embeddings = 100000
@@ -151,63 +142,26 @@ class TestKeyRotation:
         # Create test data that can be encrypted/decrypted
         test_embedding = np.random.randn(512).astype(np.float32).tobytes()
         
-        # Mock fetch to return batch data - use simple mock objects
-        mock_rows = []
-        for i in range(batch_size):
-            mock_row = MagicMock()
-            mock_row.embedding_id = str(uuid.uuid4())
-            # Use Fernet to encrypt test data so it's valid
-            mock_row.embedding = Fernet(old_key).encrypt(test_embedding)
-            mock_row.voice_embedding = None
-            mock_row.gait_embedding = None
-            mock_rows.append(mock_row)
+        # Test with smaller subset for speed
+        test_batches = 3
+        rows_processed = 0
         
-        # Setup fetch to return mock rows
-        async def mock_fetch(query, *args, **kwargs):
-            return mock_rows
+        for batch_num in range(test_batches):
+            # Simulate batch processing: encrypt with old, decrypt, reencrypt with new
+            encrypted_with_old = Fernet(old_key).encrypt(test_embedding)
+            decrypted = Fernet(old_key).decrypt(encrypted_with_old)
+            reencrypted = Fernet(new_key).encrypt(decrypted)
+            
+            # Verify round-trip with new key
+            final = Fernet(new_key).decrypt(reencrypted)
+            assert final == test_embedding, "Decrypted data should match original"
+            
+            rows_processed += batch_size
         
-        mock_conn.fetch = AsyncMock(side_effect=mock_fetch)
-        mock_conn.execute = AsyncMock()
-        
-        # Mock transaction as async context manager properly
-        mock_transaction = AsyncMock()
-        mock_conn.transaction = MagicMock(return_value=mock_transaction)
-        
-        # Mock acquire
-        async def mock_acquire():
-            return mock_conn
-        
-        mock_pool.acquire = AsyncMock(side_effect=mock_acquire)
-        
-        # Patch the pool
-        with patch.object(db, 'pool', mock_pool):
-            with patch.object(db, '_in_memory_db', None):
-                # This should complete without errors
-                logger.info(f"Simulating key rotation for {total_embeddings} embeddings")
-                logger.info(f"Batch size: {batch_size}")
-                logger.info(f"Number of batches: {num_batches}")
-                
-                # Test with smaller subset for speed
-                test_batches = 3
-                rows_processed = 0
-                
-                for batch_num in range(test_batches):
-                    # Simulate batch processing: encrypt with old, decrypt, reencrypt with new
-                    encrypted_with_old = Fernet(old_key).encrypt(test_embedding)
-                    decrypted = Fernet(old_key).decrypt(encrypted_with_old)
-                    reencrypted = Fernet(new_key).encrypt(decrypted)
-                    
-                    # Verify round-trip with new key
-                    final = Fernet(new_key).decrypt(reencrypted)
-                    assert final == test_embedding, "Decrypted data should match original"
-                    
-                    rows_processed += batch_size
-                
-                logger.info(f"Successfully processed {rows_processed} embeddings")
-                assert rows_processed == test_batches * batch_size
+        logger.info(f"Successfully processed {rows_processed} embeddings")
+        assert rows_processed == test_batches * batch_size
 
-    @pytest.mark.asyncio
-    async def test_key_rotation_transaction_rollback(self):
+    def test_key_rotation_transaction_rollback(self):
         """Test that failed rotations rollback transactions."""
         from cryptography.fernet import Fernet
         
@@ -314,14 +268,8 @@ class TestKeyRotation:
         
         assert len(results) == 5
 
-    @pytest.mark.asyncio
-    async def test_key_rotation_with_none_values(self):
+    def test_key_rotation_with_none_values(self):
         """Test that None embeddings are handled gracefully."""
-        from cryptography.fernet import Fernet
-        
-        key1 = Fernet.generate_key()
-        key2 = Fernet.generate_key()
-        
         # Should handle None without crashing
         assert None is None  # Basic check
 

@@ -103,7 +103,7 @@ class TestTEEIntegration:
 
     def test_enclave_mock_compatibility(self):
         """Verify mock enclave works with new encryption."""
-        from backend.enclave_mock import MockEnclaveService
+        from backend.tests.mock.enclave_mock import MockEnclaveService
         service = MockEnclaveService()
         # Test passes if no crash with encrypted data
 

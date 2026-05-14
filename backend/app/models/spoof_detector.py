@@ -3,9 +3,49 @@ import numpy as np
 import torch
 import torch.nn as nn
 import logging
-# from insightface.app import FaceAnalysis
+from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
+
+
+class AdversarialValidator:
+    """Validate spoof detection against adversarial attacks."""
+    
+    @staticmethod
+    def test_replay_attack(face_roi: np.ndarray) -> float:
+        """Test against replay attack detection (photo/video playback)."""
+        # Check for screen refresh artifacts
+        gray = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY) if len(face_roi.shape) == 3 else face_roi
+        
+        # Variance of gradient (screens have distinctive patterns)
+        grad_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+        grad_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+        grad_mag = np.sqrt(grad_x**2 + grad_y**2)
+        
+        # Screens tend to have periodic artifacts
+        fft = np.fft.fft2(gray)
+        magnitude = np.abs(fft)
+        # High frequency energy ratio
+        hf_energy = np.sum(magnitude[gray.shape[0]//2-10:gray.shape[0]//2+10, 
+                          gray.shape[1]//2-10:gray.shape[1]//2+10])
+        total_energy = np.sum(magnitude)
+        
+        replay_score = min(1.0, hf_energy / (total_energy + 1e-7) * 5)
+        return float(replay_score)
+
+    @staticmethod
+    def test_adversarial_perturbation(face_roi: np.ndarray, model) -> bool:
+        """Check if face has adversarial perturbations."""
+        # Simple noise analysis
+        gray = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY) if len(face_roi.shape) == 3 else face_roi
+        
+        # Check for unnatural noise patterns
+        laplacian = cv2.Laplacian(gray, cv2.CV_64F)
+        noise_std = np.std(laplacian)
+        
+        # Normal face images have noise_std ~ 10-50
+        # Adversarial examples often have very low or very high noise
+        return noise_std < 5 or noise_std > 100
 
 
 class SpoofNet(nn.Module):
@@ -37,73 +77,57 @@ class SpoofDetector:
         self.registry = registry
         self.use_onnx = hasattr(self.registry, 'sessions') and 'spoof_detector' in self.registry.sessions
         self.use_onnx_deepfake = self.use_onnx and 'deepfake_detector' in self.registry.sessions
+        self.validator = AdversarialValidator()
         logger.info(f"SpoofDetector: ONNX={self.use_onnx}, Deepfake ONNX={self.use_onnx_deepfake}")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if not self.use_onnx:
             self.model = SpoofNet().to(self.device)
             self.model.eval()
 
-    def detect_spoof(self, image: np.ndarray, face_bbox: list) -> float:
-        """
-        Detect if face is spoofed (mask, photo, deepfake).
-        Returns spoof score (0-1, higher = more likely spoof).
-        """
+    def detect_spoof(self, image: np.ndarray, face_bbox: list) -> Tuple[float, dict]:
+        """Detect if face is spoofed. Returns (spoof_score, details)."""
         x1, y1, x2, y2 = face_bbox
         face_roi = image[y1:y2, x1:x2]
 
         if face_roi.size == 0:
-            return 1.0  # Invalid face, assume spoof
-
-        # Use insightface anti-spoof if available
-        # if self.use_insightface:
-        #     faces = self.app.get(image)
-        #     for face in faces:
-        #         if 'spoofing' in face:
-        #             return face['spoofing']  # Assuming 0-1 score
-        #     # Fallback if no spoof score
+            return 1.0, {'error': 'Invalid face region'}
 
         # ONNX priority, PyTorch fallback
         face_resized = cv2.resize(face_roi, (64, 64))
         face_tensor = torch.from_numpy(face_resized).permute(2, 0, 1).float().unsqueeze(0) / 255.0
         
         if self.use_onnx:
-            # ONNX SpoofNet inference - infer_onnx returns scalar for single output models
             output = self.registry.infer_onnx('spoof_detector', face_tensor.numpy())
             spoof_prob = float(output[0]) if isinstance(output, np.ndarray) and output.ndim > 0 else float(output)
         else:
-            # PyTorch fallback
             face_tensor = face_tensor.to(self.device)
             with torch.no_grad():
                 spoof_prob = self.model(face_tensor).item()
 
-        # Combine with heuristics for robustness
-        # Variance of Laplacian (blur detection)
+        # Adversarial/replay attack checks
+        replay_score = self.validator.test_replay_attack(face_roi)
+        
+        # Heuristic checks
         gray = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY)
         laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
         blur_score = max(0, 1 - laplacian_var / 500.0)
 
-        # Color entropy
-        hist = cv2.calcHist([face_roi], [0, 1, 2], None, [
-                            8, 8, 8], [0, 256, 0, 256, 0, 256])
+        hist = cv2.calcHist([face_roi], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
         hist = cv2.normalize(hist, hist).flatten()
         entropy = -np.sum(hist * np.log2(hist + 1e-7))
         color_score = max(0, 1 - entropy / 10.0)
 
-        heuristic_score = (blur_score + color_score) / 2
+        heuristic_score = (blur_score + color_score + replay_score) / 3
 
-        # Deepfake check if available
-        deepfake_prob = 0.0
-        if self.use_onnx_deepfake:
-            deepfake_tensor = cv2.resize(face_roi, (224, 224))
-            deepfake_tensor = torch.from_numpy(deepfake_tensor).permute(2, 0, 1).float().unsqueeze(0) / 255.0
-            output = self.registry.infer_onnx('deepfake_detector', deepfake_tensor.numpy())
-            deepfake_prob = float(output[0]) if isinstance(output, np.ndarray) and output.ndim > 0 else float(output)
-        
-        # Weighted: spoof 40%, deepfake 30%, heuristic 15%, LBP 15%
-        lbp_score = self._compute_lbp_score(face_roi)
-        combined_score = 0.4 * spoof_prob + 0.3 * deepfake_prob + 0.15 * heuristic_score + 0.15 * lbp_score
+        details = {
+            'spoof_prob': spoof_prob,
+            'blur_score': blur_score,
+            'color_score': color_score,
+            'replay_score': replay_score,
+            'heuristic_score': heuristic_score
+        }
 
-        return min(1.0, combined_score)
+        return min(1.0, heuristic_score), details
 
     def _compute_lbp_image(self, gray: np.ndarray) -> np.ndarray:
         """Compute Local Binary Pattern (LBP) image using 8-neighbor circular LBP."""

@@ -79,7 +79,7 @@ async def verify_mfa(request: MFVerifyRequest, user: dict = Depends(require_auth
     await mfa_service.enable_mfa_after_verification(user_id)
     
     # Log audit event
-    db = await get_db()
+    db = get_db()
     await db.log_audit_event(
         action="mfa_enabled",
         person_id=None,
@@ -103,13 +103,13 @@ async def verify_totp_for_login(request: MFVerifyRequest, user: dict = Depends(r
     valid = await mfa_service.verify_totp_code(user_id, code)
     if not valid:
         # Log failed attempt for anomaly detection
-        db = await get_db()
+        db = get_db()
         # Note: log_mfa_attempt should handle internal rate limiting/lockout logic
         await db.log_mfa_attempt(user_id, 'totp', False, "unknown")
         raise HTTPException(status_code=401, detail="Invalid MFA code")
     
     # Log successful attempt
-    db = await get_db()
+    db = get_db()
     await db.log_mfa_attempt(user_id, 'totp', True, "unknown")
     
     # Generate new JWT with mfa_verified claim
@@ -142,7 +142,7 @@ async def verify_backup_code(request: MFVerifyRequest, user: dict = Depends(requ
     )
     
     # Log
-    db = await get_db()
+    db = get_db()
     await db.log_audit_event(
         action="mfa_backup_used",
         person_id=None,
@@ -175,7 +175,7 @@ async def disable_mfa(request: MFAEnableRequest, user: dict = Depends(require_au
         raise HTTPException(status_code=400, detail="Invalid password")
     
     # Log
-    db = await get_db()
+    db = get_db()
     await db.log_audit_event(
         action="mfa_disabled",
         person_id=None,

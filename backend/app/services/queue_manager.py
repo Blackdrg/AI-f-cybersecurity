@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # No global event loop - each task manages its own loop safely
 
 async def get_db_async():
-    db = await get_db()
+    db = get_db()
     return db
 
 app = Celery('face_recognition', broker='redis://localhost:6379/0')
@@ -40,7 +40,7 @@ def process_frame(self, camera_id: str, top_k: int = 1, threshold: float = 0.6):
     faces = detector.detect_faces(img)
     
     async def _process():
-        db = await get_db()
+        db = get_db()
         results = []
         for face in faces:
             # Process face (stub - full in stream_recognize)
@@ -120,7 +120,7 @@ def run_sla_check():
     from ..db.db_client import get_db
     
     async def _check():
-        db = await get_db()
+        db = get_db()
         start = time.time()
         try:
             # Check DB

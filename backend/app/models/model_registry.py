@@ -122,7 +122,7 @@ class ModelRegistry:
         )
         
         # Store in DB
-        db = await get_db()
+        db = get_db()
         await db.store_model_metadata(metadata)
         
         logger.info(f"Registered model {model_id} ({size_bytes} bytes, checksum {checksum[:8]})")
@@ -130,7 +130,7 @@ class ModelRegistry:
     
     async def get_model_info(self, model_id: str) -> Optional[ModelMetadata]:
         """Get model metadata by ID"""
-        db = await get_db()
+        db = get_db()
         row = await db.get_model_metadata(model_id)
         if row:
             return ModelMetadata(**row)
@@ -138,13 +138,13 @@ class ModelRegistry:
     
     async def list_models(self, name: str = None, status: str = None) -> List[ModelMetadata]:
         """List all models with optional filters"""
-        db = await get_db()
+        db = get_db()
         rows = await db.list_model_metadata(name_filter=name, status=status)
         return [ModelMetadata(**row) for row in rows]
     
     async def promote_to_production(self, model_id: str) -> bool:
         """Promote a model version to production"""
-        db = await get_db()
+        db = get_db()
         # Demote current production if exists
         await db.update_model_status_by_name(
             name=model_id.split('_')[0],  # base name
@@ -159,7 +159,7 @@ class ModelRegistry:
     
     async def get_production_model(self, name: str) -> Optional[ModelMetadata]:
         """Get current production model by name"""
-        db = await get_db()
+        db = get_db()
         row = await db.get_production_model(name)
         return ModelMetadata(**row) if row else None
     
@@ -187,7 +187,7 @@ class ModelRegistry:
         if dest_path:
             shutil.copy2(src, dest_path)
             # Increment download count
-            db = await get_db()
+            db = get_db()
             await db.increment_model_downloads(model_id)
             return dest_path
         return src
@@ -198,7 +198,7 @@ class ModelRegistry:
         if meta and meta.status == "production":
             raise ValueError("Cannot delete production model")
         
-        db = await get_db()
+        db = get_db()
         success = await db.delete_model_metadata(model_id)
         if success:
             # Remove file
@@ -213,7 +213,7 @@ class ModelRegistry:
         Return model download sources (mirrors) for resilience.
         Used by edge devices for failover.
         """
-        db = await get_db()
+        db = get_db()
         mirrors = await db.get_config("model_mirrors", default=[])
         primary = os.getenv("MODEL_REGISTRY_URL", "http://localhost:8000")
         return {

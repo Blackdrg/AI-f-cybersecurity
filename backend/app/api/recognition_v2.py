@@ -31,7 +31,7 @@ async def recognize_v2(
 ):
     """Enhanced recognition with scoring engine."""
     start_time = time.time()
-    db = await get_db()
+    db = get_db()
     
     # Policy check
     policy = policy_engine.can_recognize(

@@ -88,7 +88,7 @@ def distribute_model_update(self, model_version: str, target_clients: list = Non
         from app.models.model_calibrator import version_manager
         
         async def distribute():
-            db = await get_db()
+            db = get_db()
             model_path = version_manager.get_model_path(model_version)
             if not model_path:
                 raise FileNotFoundError(f"Model {model_version} not found")

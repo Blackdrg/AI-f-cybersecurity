@@ -1,136 +1,176 @@
 """
-Compliance Tasks
-Data retention, SAR processing, and compliance auditing
+Compliance Tasks - GDPR, Data Retention, DSAR Processing
 """
-from celery import shared_task
 import logging
-import asyncio
+from celery import shared_task
 from datetime import datetime, timedelta
-from ..db.db_client import get_db
 
 logger = logging.getLogger(__name__)
 
-@shared_task(bind=True, max_retries=3)
-def automated_data_retention_purge(self):
-    """
-    Purges data that has exceeded retention periods.
-    Default: 
-    - Audit logs: 7 years
-    - PII/Biometric templates: 3 years (if inactive)
-    - Temporary uploads: 24 hours
-    """
-    try:
-        async def purge():
-            db = await get_db()
-            
-            # Retention settings (could be moved to env/config)
-            LOG_RETENTION_DAYS = 7 * 365
-            PII_RETENTION_DAYS = 3 * 365
-            TEMP_RETENTION_HOURS = 24
-            
-            # 1. Purge Audit Logs
-            cutoff_audit = datetime.utcnow() - timedelta(days=LOG_RETENTION_DAYS)
-            purged_audit = await db.purge_audit_logs(cutoff_audit)
-            logger.info(f"Purged {purged_audit} audit logs older than {cutoff_audit}")
-            
-            # 2. Purge Inactive PII
-            cutoff_pii = datetime.utcnow() - timedelta(days=PII_RETENTION_DAYS)
-            purged_pii = await db.purge_inactive_pii(cutoff_pii)
-            logger.info(f"Purged {purged_pii} inactive PII profiles older than {cutoff_pii}")
-            
-            # 3. Purge Temp Files/Cache
-            cutoff_temp = datetime.utcnow() - timedelta(hours=TEMP_RETENTION_HOURS)
-            purged_temp = await db.purge_temp_data(cutoff_temp)
-            
-            return {
-                "audit_logs_purged": purged_audit,
-                "pii_purged": purged_pii,
-                "temp_purged": purged_temp
-            }
-            
-        return asyncio.run(purge())
-    except Exception as exc:
-        logger.error(f"Data retention purge failed: {exc}")
-        raise self.retry(exc=exc, countdown=3600)
 
-@shared_task(bind=True, max_retries=2)
-def generate_sar_export(self, person_id: str, request_id: str):
-    """
-    Subject Access Request (SAR) Data Export.
-    Collects all data relating to a specific identity and packages it.
-    """
+@shared_task(bind=True, max_retries=2, default_retry_delay=600)
+def enforce_data_retention(self):
+    """Enforce data retention policies per compliance requirements."""
     try:
-        async def export():
-            db = await get_db()
-            
-            # 1. Collect all data
-            profile = await db.get_person_by_id(person_id)
-            if not profile:
-                return {"success": False, "error": "Person not found"}
-                
-            embeddings = await db.get_embeddings_for_person(person_id)
-            audit_events = await db.get_audit_events_for_person(person_id)
-            recognition_events = await db.get_recognition_history_for_person(person_id)
-            
-            # 2. Format as JSON/XML
-            export_data = {
-                "identity": profile,
-                "biometric_templates_count": len(embeddings),
-                "audit_history": audit_events,
-                "recognition_history": recognition_events,
-                "exported_at": datetime.utcnow().isoformat()
-            }
-            
-            # 3. Save to secure storage
-            from ..providers.storage_provider import secure_save_export
-            filename = f"sar_export_{person_id}_{request_id}.json"
-            download_url = await secure_save_export(filename, export_data)
-            
-            # 4. Notify requester (via webhook or email)
-            # await notify_sar_complete(request_id, download_url)
-            
-            return {"success": True, "download_url": download_url}
-            
-        return asyncio.run(export())
+        import asyncio
+        from app.db.db_client import get_db
+
+        async def enforce():
+            db = get_db()
+            policies_result = await db.fetch("""
+                SELECT * FROM compliance.data_retention_policies
+                WHERE is_active = TRUE AND next_execution <= NOW()
+            """)
+
+            total_deleted = 0
+            for policy in policies_result:
+                table = policy['table_name']
+                retention_days = policy['retention_days']
+                action = policy['archival_action']
+                cutoff = datetime.utcnow() - timedelta(days=retention_days)
+
+                if action == 'delete':
+                    result = await db.execute(f"""
+                        DELETE FROM {table}
+                        WHERE created_at < $1::timestamptz
+                    """, cutoff)
+                    total_deleted += int(result.split()[-1]) if result else 0
+                elif action == 'anonymize':
+                    await db.execute(f"""
+                        UPDATE {table}
+                        SET name = 'ANONYMIZED', email = CONCAT('anon_', uuid_generate_v4(), '@deleted.local')
+                        WHERE created_at < $1::timestamptz
+                    """, cutoff)
+
+                await db.execute("""
+                    UPDATE compliance.data_retention_policies
+                    SET last_executed = NOW(),
+                        next_execution = NOW() + make_interval(days => retention_days)
+                    WHERE policy_id = $1
+                """, policy['policy_id'])
+
+            return {'policies_enforced': len(policies_result), 'records_affected': total_deleted}
+
+        return asyncio.run(enforce())
     except Exception as exc:
-        logger.error(f"SAR export failed for {person_id}: {exc}")
+        logger.error(f"Data retention enforcement failed: {exc}", exc_info=True)
+        raise self.retry(exc=exc, countdown=600)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=300)
+def process_dsar_request(self, request_id: str):
+    """Process a Data Subject Access Request."""
+    try:
+        import asyncio
+        from app.db.db_client import get_db
+
+        async def process():
+            db = get_db()
+
+            # Get request details
+            request = await db.fetchrow(
+                "SELECT * FROM compliance.dsar_requests WHERE request_id = $1", request_id
+            )
+            if not request:
+                raise ValueError(f"DSAR request {request_id} not found")
+
+            # Collect user data across all schemas
+            user_id = request['user_id']
+            data_package = {}
+
+            # Users
+            data_package['user_profile'] = await db.fetchrow(
+                "SELECT * FROM users WHERE user_id = $1", user_id
+            )
+
+            # Sessions
+            data_package['sessions'] = await db.fetch(
+                "SELECT * FROM user_sessions WHERE user_id = $1", user_id
+            )
+
+            # Activity
+            data_package['activity_log'] = await db.fetch(
+                "SELECT * FROM user_activity_log WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1000", user_id
+            )
+
+            # Persons (if org context exists)
+            if request.get('data_scope') and 'biometrics' in str(request.get('data_scope', '')):
+                data_package['persons'] = await db.fetch(
+                    "SELECT * FROM persons WHERE person_id IN "
+                    "(SELECT person_id FROM enrollments WHERE org_id = $1)",
+                    request.get('org_id')
+                )
+
+            # Consent records
+            data_package['consent_records'] = await db.fetch(
+                "SELECT * FROM compliance.consent_records WHERE user_id = $1", user_id
+            )
+
+            # Handle deletion request
+            if request['request_type'] == 'deletion':
+                # Anonymize user data
+                await db.execute("""
+                    UPDATE users SET display_name = 'DELETED', email = CONCAT('deleted_', uuid_generate_v4(), '@local')
+                    WHERE user_id = $1
+                """, user_id)
+                data_package['deletion_status'] = 'anonymized'
+
+            # Generate data package URL (in production, upload to S3)
+            data_package['generated_at'] = datetime.utcnow().isoformat()
+            data_package['request_reference'] = request_id
+
+            # Update request status
+            await db.execute("""
+                UPDATE compliance.dsar_requests
+                SET status = 'completed', completed_at = NOW(), data_package_url = $1
+                WHERE request_id = $2
+            """, f"s3://dsar-packages/{request_id}.json", request_id)
+
+            return data_package
+
+        return asyncio.run(process())
+    except Exception as exc:
+        logger.error(f"DSAR processing failed: {exc}", exc_info=True)
         raise self.retry(exc=exc, countdown=300)
 
-@shared_task(bind=True)
-def run_compliance_auto_audit(self):
-    """
-    Automated check of compliance controls.
-    - Verify audit chain
-    - Check encryption status
-    - Check MFA enforcement rates
-    """
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=86400)
+def generate_compliance_report(self, org_id: str = None, period_days: int = 30):
+    """Generate periodic compliance report."""
     try:
-        async def audit():
-            db = await get_db()
-            
-            # 1. Audit Chain Integrity
-            broken_links = await db.verify_audit_chain()
-            
-            # 2. MFA Adoption
-            mfa_stats = await db.get_mfa_adoption_stats()
-            
-            # 3. Encryption verification (mock check)
-            encryption_status = "OK" # In reality, check KMS/Vault health
-            
+        import asyncio
+        from app.db.db_client import get_db
+
+        async def generate():
+            db = get_db()
+            now = datetime.utcnow()
+            cutoff = now - timedelta(days=period_days)
+
             report = {
-                "timestamp": datetime.utcnow().isoformat(),
-                "audit_chain_healthy": len(broken_links) == 0,
-                "broken_links": broken_links,
-                "mfa_adoption": mfa_stats,
-                "encryption_status": encryption_status
+                'period': f"{cutoff.date()} to {now.date()}",
+                'dsar_requests': await db.fetchval(
+                    "SELECT COUNT(*) FROM compliance.dsar_requests WHERE created_at > $1", cutoff
+                ),
+                'consent_changes': await db.fetchval(
+                    "SELECT COUNT(*) FROM audit.log_entries WHERE action = 'consent_update' AND created_at > $1", cutoff
+                ),
+                'data_deletions': await db.fetchval(
+                    "SELECT COUNT(*) FROM audit.log_entries WHERE action = 'gdpr_delete' AND created_at > $1", cutoff
+                ),
+                'retention_enforcements': await db.fetchval(
+                    "SELECT COUNT(*) FROM system_celery_tasks WHERE task_name = 'enforce_data_retention' AND created_at > $1 AND status = 'success'", cutoff
+                ),
+                'audit_chain_verified': await db.fetchval(
+                    "SELECT COUNT(*) FROM audit.integrity_checks WHERE is_valid = TRUE AND created_at > $1", cutoff
+                ),
             }
-            
-            # Log results to compliance table
-            await db.log_compliance_audit(report)
-            
+
+            if org_id:
+                report['org_id'] = org_id
+
             return report
-         
-        return asyncio.run(audit())
+
+        return asyncio.run(generate())
     except Exception as exc:
-        logger.error(f"Compliance audit failed: {exc}")
-        return {"success": False, "error": str(exc)}
+        logger.error(f"Compliance report generation failed: {exc}", exc_info=True)
+        raise self.retry(exc=exc)

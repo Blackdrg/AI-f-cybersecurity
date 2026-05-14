@@ -29,7 +29,7 @@ async def create_subscription(subscription: SubscriptionCreate, current_user=Dep
 async def get_current_subscription(current_user=Depends(get_current_user)):
     """Get current user's active subscription (Stripe + DB sync)."""
 
-    db = await get_db()
+    db = get_db()
     sub = await db.get_subscription(current_user["user_id"])
 
     if not sub:
@@ -54,7 +54,7 @@ async def get_current_subscription(current_user=Depends(get_current_user)):
 @router.put("/subscriptions/me/cancel")
 async def cancel_subscription(current_user=Depends(get_current_user)):
     """Cancel Stripe subscription."""
-    db = await get_db()
+    db = get_db()
     sub = await db.get_subscription(current_user["user_id"])
     if sub:
         stripe.Subscription.modify(
@@ -67,7 +67,7 @@ async def cancel_subscription(current_user=Depends(get_current_user)):
 @router.get("/subscriptions/history", response_model=List[SubscriptionResponse])
 async def get_subscription_history(current_user=Depends(get_current_user)):
     """Get subscription history for current user."""
-    db = await get_db()
+    db = get_db()
     subs = await db.get_subscription_history(current_user["user_id"])
 
     if not subs:

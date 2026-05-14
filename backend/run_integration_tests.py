@@ -24,7 +24,7 @@ def main():
     os.environ.setdefault('DATABASE_URL', 'postgresql://test_user:test_pass@localhost:5432/test_db')
     os.environ.setdefault('REDIS_URL', 'redis://localhost:6379')
     os.environ.setdefault('MODEL_PATH', 'backend/models/onnx_bundle')
-    os.environ.setdefault('JWT_SECRET', 'integration-test-jwt-secret-64byte-long-string')
+    os.environ.setdefault('JWT_SECRET', 'integration-test-jwt-secret-64byte-long-string-for-HS256-algo!!!')
     os.environ.setdefault('ENCRYPTION_KEY', '0XKYdoZg1Q4f1mXPIWwEVRwQcGm0sKomFk4N5ksJ2nA=')
     os.environ['CI'] = 'true'
     

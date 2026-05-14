@@ -7,7 +7,7 @@ logger = logging.getLogger("TenantIsolationTest")
 
 async def test_tenant_isolation():
     logger.info("Starting Customer Isolation Validation...")
-    db = await get_db()
+    db = get_db()
     
     # 1. Simulate Org A inserting an embedding
     org_a_id = "org_A_123"

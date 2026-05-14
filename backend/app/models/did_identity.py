@@ -14,7 +14,7 @@ import base64
 import hashlib
 import uuid
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass, asdict
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -653,7 +653,7 @@ class SecureEnclaveWallet:
         vc_result = self.did_manager.create_verifiable_credential(
             issuer_did=issuer_did,
             subject_id=issuer_did,
-            credential_type=f"Biometric{credentialtype.capitalize()}Credential",
+            credential_type=f"Biometric{biometric_type.capitalize()}Credential",
             claims={
                 "biometricType": biometric_type,
                 "templateHash": hashlib.sha256(

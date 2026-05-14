@@ -88,7 +88,7 @@ def send_request_to_enclave(request_dict):
 @router.post("/identities/merge")
 async def merge_identities(source_id: str, target_id: str, user: dict = Depends(require_auth)):
     """Merge source person into target person, moving all embeddings and events."""
-    db = await get_db()
+    db = get_db()
     
     # 1. Update embeddings
     await db.pool.execute("UPDATE embeddings SET person_id = $1 WHERE person_id = $2", target_id, source_id)
@@ -105,7 +105,7 @@ async def merge_identities(source_id: str, target_id: str, user: dict = Depends(
 @router.post("/identities/split")
 async def split_identity(person_id: str, embedding_ids: List[str], new_name: str, user: dict = Depends(require_auth)):
     """Split specific embeddings into a new identity."""
-    db = await get_db()
+    db = get_db()
     new_person_id = str(uuid.uuid4())
     
     # 1. Create new person
@@ -310,7 +310,7 @@ async def enroll_person(
         if gait_embedding is not None:
             stored_embeddings.append(gait_embedding)
 
-        db = await get_db()
+        db = get_db()
         await db.enroll_person(person_id, name, stored_embeddings, consent_record, camera_id, voice_embeddings, gait_embedding, age, gender)
 
         enroll_count.inc()

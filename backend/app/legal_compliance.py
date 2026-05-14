@@ -369,7 +369,7 @@ class LegalCompliance:
     async def process_deletion(self, user_id: str) -> bool:
         """Actually process the deletion of a user (Right to be Forgotten)."""
         from .db.db_client import get_db
-        db = await get_db()
+        db = get_db()
         
         # 1. Delete embeddings and person record
         success = await db.delete_person(user_id)
@@ -383,7 +383,7 @@ class LegalCompliance:
     async def run_retention_cleanup(self) -> int:
         """Run periodic cleanup of expired data."""
         from .db.db_client import get_db
-        db = await get_db()
+        db = get_db()
         
         now = datetime.utcnow().isoformat()
         expired_consents = [c.user_id for c in self.consent_records.values() if c.expires_at and c.expires_at < now]

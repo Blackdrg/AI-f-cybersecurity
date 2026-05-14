@@ -17,7 +17,7 @@ USE_HTTP_ONLY_COOKIE = os.getenv("USE_HTTP_ONLY_COOKIE", "false").lower() == "tr
 @router.post("/users", response_model=UserResponse)
 async def create_user(user: UserCreate):
     """Create a new user account."""
-    db = await get_db()
+    db = get_db()
     user_id = str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat()
 
@@ -37,7 +37,7 @@ async def create_user(user: UserCreate):
 @router.get("/users/me", response_model=UserResponse)
 async def get_current_user_info(current_user=Depends(get_current_user)):
     """Get current user information."""
-    db = await get_db()
+    db = get_db()
     user = await db.get_user_by_id(current_user["user_id"])
 
     if not user:
@@ -55,7 +55,7 @@ async def get_current_user_info(current_user=Depends(get_current_user)):
 @router.put("/users/me", response_model=UserResponse)
 async def update_user(user_update: UserCreate, current_user=Depends(get_current_user)):
     """Update current user information."""
-    db = await get_db()
+    db = get_db()
     await db.update_user(current_user["user_id"], user_update.email, user_update.name, user_update.subscription_tier)
 
     return UserResponse(
@@ -70,7 +70,7 @@ async def update_user(user_update: UserCreate, current_user=Depends(get_current_
 @router.delete("/users/me")
 async def delete_user(current_user=Depends(get_current_user)):
     """Delete current user account."""
-    db = await get_db()
+    db = get_db()
     await db.delete_user(current_user["user_id"])
     return {"message": "User deleted successfully"}
 
@@ -92,7 +92,7 @@ async def login(response: Response, email: str, password: str = ""):
     Development mode:
         - Returns token in response body for legacy clients
     """
-    db = await get_db()
+    db = get_db()
     user = await db.get_user_by_email(email)
     
     if not user:

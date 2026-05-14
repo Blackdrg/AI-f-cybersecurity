@@ -1,89 +1,636 @@
+# =============================================================================
+# AI-f Production Docker Compose Stack
+# Full production deployment with PostgreSQL 15 + pgvector, Redis Sentinel,
+# Celery workers, monitoring, load balancer, and auto-scaling
+# =============================================================================
 version: '3.8'
 
 services:
+  # ===========================================================================
+  # POSTGRESQL PRIMARY (with pgvector 15, pgcrypto, connection pooling)
+  # ===========================================================================
   postgres:
-    image: postgres:15.5-bullseye
+    image: pgvector/pgvector:pg15
+    restart: unless-stopped
+    stop_grace_period: 60s
     environment:
       POSTGRES_DB: face_recognition
       POSTGRES_USER: ai_f_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      # Connection pool tuning for 10k+ RPS
+      MAX_CONNECTIONS: ${PG_MAX_CONNECTIONS:-500}
+      SHARED_BUFFERS: ${PG_SHARED_BUFFERS:-512MB}
+      EFFECTIVE_CACHE_SIZE: ${PG_EFFECTIVE_CACHE:-2GB}
+      WORK_MEM: ${PG_WORK_MEM:-64MB}
+      MAINTENANCE_WORK_MEM: ${PG_MAINTENANCE_MEM:-256MB}
+      WAL_LEVEL: replica
+      MAX_WAL_SENDERS: 10
+      WAL_LOG_HINTS: 'on'
+      MAX_REPLICATION_SLOTS: 10
+      RANDOM_PAGE_COST: 1.1  # SSD-optimized
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ../init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./init_pgvector.sql:/docker-entrypoint-initdb.d/02-pgvector.sql
+      - pg_wal_archive:/var/lib/postgresql/wal_archive
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ai_f_user"]
+      test: ["CMD-SHELL", "pg_isready -U ai_f_user -d face_recognition && psql -U ai_f_user -d face_recognition -tAc 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    command: >
+      postgres
+      -c max_connections=${PG_MAX_CONNECTIONS:-500}
+      -c shared_buffers=${PG_SHARED_BUFFERS:-512MB}
+      -c effective_cache_size=${PG_EFFECTIVE_CACHE:-2GB}
+      -c work_mem=${PG_WORK_MEM:-64MB}
+      -c maintenance_work_mem=${PG_MAINTENANCE_MEM:-256MB}
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c max_worker_processes=8
+      -c max_parallel_workers_per_gather=4
+      -c max_parallel_workers=8
+      -c wal_level=replica
+      -c max_wal_senders=10
+      -c wal_log_hints=on
+      -c archive_mode=on
+      -c archive_command='cp %p /var/lib/postgresql/wal_archive/%f'
+      -c checkpoint_completion_target=0.9
+      -c checkpoint_timeout=15min
+  # ===========================================================================
+  # POSTGRESQL REPLICA (read replica for load distribution)
+  # ===========================================================================
+  postgres-replica:
+    image: pgvector/pgvector:pg15
+    restart: unless-stopped
+    stop_grace_period: 60s
+    environment:
+      POSTGRES_DB: face_recognition
+      POSTGRES_USER: ai_f_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      MAX_CONNECTIONS: 200
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_f_user -d face_recognition"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c hot_standby=on
+      -c hot_standby_feedback=on
+      -c max_standby_streaming_delay=30s
+
+  # ===========================================================================
+  # POSTGRESQL REPLICA 2 (second read replica)
+  # ===========================================================================
+  postgres-replica2:
+    image: pgvector/pgvector:pg15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: face_recognition
+      POSTGRES_USER: ai_f_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      MAX_CONNECTIONS: 200
+    volumes:
+      - postgres_replica2_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_f_user -d face_recognition"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c hot_standby=on
+      -c hot_standby_feedback=on
+
+  # ===========================================================================
+  # PGPOOL-II CONNECTION POOLER (load balancing + failover)
+  # ===========================================================================
+  pgpool:
+    image: bitnami/pgpool:4
+    restart: unless-stopped
+    environment:
+      PGPOOL_BACKEND_NODES: "0:postgres:5432,1:postgres-replica:5432,2:postgres-replica2:5432"
+      PGPOOL_SR_CHECK_USER: ai_f_user
+      PGPOOL_SR_CHECK_PASSWORD: ${DB_PASSWORD}
+      PGPOOL_ENABLE_LOAD_BALANCING: "on"
+      PGPOOL_BACKEND_WEIGHT: "1:1:1"
+      PGPOOL_NUM_INIT_CHILDREN: 32
+      PGPOOL_MAX_POOL: 8
+      PGPOOL_PORT: 9999
+    ports:
+      - "9999:9999" # Pooled connection port
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-replica:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-p", "9999"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  redis:
+  # ===========================================================================
+  # REDIS MASTER (with AOF persistence + RDB snapshots)
+  # ===========================================================================
+  redis-master:
     image: redis:7.2.3-alpine
-    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfilename "redis-master.aof"
+      --dir /data
+      --requirepass "${REDIS_PASSWORD}"
+      --masterauth "${REDIS_PASSWORD}"
+      --appendfsync everysec
+      --no-appendfsync-on-rewrite no
+      --auto-aof-rewrite-percentage 100
+      --auto-aof-rewrite-min-size 64mb
+      --rdbcompression yes
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --rename-command FLUSHALL ""
+      --rename-command FLUSHDB ""
+      --rename-command CONFIG ""
+      --rename-command DEBUG ""
+      --slowlog-log-slower-than 10000
+      --slowlog-max-len 128
+      --latency-monitor-threshold 100
+      --tcp-backlog 511
+      --timeout 300
     volumes:
-      - redis_data:/data
-      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis_master_data:/data
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
+  # ===========================================================================
+  # REDIS REPLICA 1
+  # ===========================================================================
+  redis-replica1:
+    image: redis:7.2.3-alpine
+    restart: unless-stopped
+    command: >
+      redis-server
+      --replicaof redis-master 6379
+      --requirepass "${REDIS_PASSWORD}"
+      --masterauth "${REDIS_PASSWORD}"
+      --appendonly yes
+      --dir /data
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --rename-command FLUSHALL ""
+      --rename-command FLUSHDB ""
+      --rename-command CONFIG ""
+    volumes:
+      - redis_replica1_data:/data
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ===========================================================================
+  # REDIS REPLICA 2
+  # ===========================================================================
+  redis-replica2:
+    image: redis:7.2.3-alpine
+    restart: unless-stopped
+    command: >
+      redis-server
+      --replicaof redis-master 6379
+      --requirepass "${REDIS_PASSWORD}"
+      --masterauth "${REDIS_PASSWORD}"
+      --appendonly yes
+      --dir /data
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --rename-command FLUSHALL ""
+      --rename-command FLUSHDB ""
+      --rename-command CONFIG ""
+    volumes:
+      - redis_replica2_data:/data
+    ports:
+      - "6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ===========================================================================
+  # REDIS SENTINEL 1 (automatic failover)
+  # ===========================================================================
+  redis-sentinel1:
+    image: redis:7.2.3-alpine
+    restart: unless-stopped
+    command: >
+      redis-sentinel
+      /etc/redis/sentinel.conf
+    volumes:
+      - ./redis-sentinel.conf:/etc/redis/sentinel.conf:ro
+    ports:
+      - "26379:26379"
+    depends_on:
+      - redis-master
+      - redis-replica1
+      - redis-replica2
+
+  # ===========================================================================
+  # REDIS SENTINEL 2
+  # ===========================================================================
+  redis-sentinel2:
+    image: redis:7.2.3-alpine
+    restart: unless-stopped
+    command: >
+      redis-sentinel
+      /etc/redis/sentinel.conf
+    volumes:
+      - ./redis-sentinel.conf:/etc/redis/sentinel.conf:ro
+    ports:
+      - "26380:26379"
+    depends_on:
+      - redis-master
+      - redis-replica1
+      - redis-replica2
+
+  # ===========================================================================
+  # REDIS SENTINEL 3 (quorum)
+  # ===========================================================================
+  redis-sentinel3:
+    image: redis:7.2.3-alpine
+    restart: unless-stopped
+    command: >
+      redis-sentinel
+      /etc/redis/sentinel.conf
+    volumes:
+      - ./redis-sentinel.conf:/etc/redis/sentinel.conf:ro
+    ports:
+      - "26381:26379"
+    depends_on:
+      - redis-master
+      - redis-replica1
+      - redis-replica2
+
+  # ===========================================================================
+  # BACKEND API (FastAPI + Uvicorn with Gunicorn workers)
+  # ===========================================================================
   backend:
-    build: ../backend
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: pgpool
+      DB_PORT: 9999
       DB_USER: ai_f_user
-      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: face_recognition
-      REDIS_URL: redis://redis:6379/0
+      DB_READ_REPLICAS: "postgres-replica:5432,postgres-replica2:5432"
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis-master:6379/0
+      REDIS_SENTINEL_MASTER: "mymaster"
+      REDIS_SENTINEL_HOSTS: "redis-sentinel1:26379,redis-sentinel2:26379,redis-sentinel3:26379"
       JWT_SECRET: ${JWT_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      AWS_REGION: us-east-1
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      ONNX_BUNDLE_PATH: /models/onnx_bundle
+      IN_DOCKER: 'true'
+      # Pool sizing
+      DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-15}
+      DB_POOL_MIN_SIZE: ${DB_POOL_MIN_SIZE:-3}
+      DB_POOL_MAX_QUERIES: 5000
+      DB_POOL_MAX_INACTIVE_LIFETIME: 300
+      DB_SLOW_QUERY_THRESHOLD_MS: 100
+      # Monitoring
+      PROMETHEUS_METRICS_ENABLED: 'true'
+      LOG_LEVEL: INFO
     ports:
       - "8000:8000"
-      - "50051:50051"
+      - "8001:8001"  # Metrics port
     volumes:
-      - ./models:/app/models:ro
+      - ../backend/models/onnx_bundle:/models/onnx_bundle:ro
+      - backend_logs:/app/logs
     depends_on:
-      postgres:
+      pgpool:
         condition: service_healthy
-      redis:
+      redis-master:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  # ===========================================================================
+  # CELERY WORKERS (Main queue - high priority)
+  # ===========================================================================
+  celery-worker-main:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: >
+      celery -A app.celery worker
+      --loglevel=info
+      --concurrency=4
+      --pool=prefork
+      --queues=recognition,celery
+      --hostname=worker-main@%h
+      --max-tasks-per-child=500
+      --time-limit=600
+      --soft-time-limit=540
+      --without-gossip
+      --without-mingle
+      --without-heartbeat
+    environment:
+      DB_HOST: pgpool
+      DB_PORT: 9999
+      DB_USER: ai_f_user
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: face_recognition
+      DB_POOL_MAX_SIZE: 10
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis-master:6379/0
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    volumes:
+      - ../backend/models/onnx_bundle:/models/onnx_bundle:ro
+    depends_on:
+      - redis-master
+      - pgpool
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '4'
+          memory: 6G
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery inspect ping -d celery@$$HOSTNAME"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
 
+  # ===========================================================================
+  # CELERY WORKERS (Background queue - low priority)
+  # ===========================================================================
+  celery-worker-background:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: >
+      celery -A app.celery worker
+      --loglevel=info
+      --concurrency=2
+      --pool=prefork
+      --queues=enrichment,training,federated,maintenance,priority_low
+      --hostname=worker-bg@%h
+      --max-tasks-per-child=200
+      --time-limit=1200
+      --soft-time-limit=1140
+      --without-gossip
+      --without-mingle
+      --without-heartbeat
+    environment:
+      DB_HOST: pgpool
+      DB_PORT: 9999
+      DB_USER: ai_f_user
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: face_recognition
+      DB_POOL_MAX_SIZE: 5
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis-master:6379/0
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    volumes:
+      - ../backend/models/onnx_bundle:/models/onnx_bundle:ro
+    depends_on:
+      - redis-master
+      - pgpool
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery inspect ping -d celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ===========================================================================
+  # CELERY BEAT (Periodic task scheduler)
+  # ===========================================================================
+  celery-beat:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: >
+      celery -A app.celery beat
+      --loglevel=info
+      --scheduler celery.beat:PersistentScheduler
+      --schedule=/data/celerybeat-schedule.db
+    environment:
+      DB_HOST: pgpool
+      DB_PORT: 9999
+      DB_USER: ai_f_user
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: face_recognition
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis-master:6379/0
+    volumes:
+      - celery_beat_data:/data
+    depends_on:
+      - redis-master
+      - pgpool
+
+  # ===========================================================================
+  # CELERY FLOWER (Task monitoring dashboard)
+  # ===========================================================================
+  celery-flower:
+    image: mher/flower:2.0.1
+    restart: unless-stopped
+    command: >
+      celery flower
+      --broker=redis://:${REDIS_PASSWORD}@redis-master:6379/0
+      --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      FLOWER_BASIC_AUTH: ${FLOWER_AUTH:-admin:flower123}
+    depends_on:
+      - redis-master
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:5555/"]
+      interval: 30s
+      timeout: 10s
+
+  # ===========================================================================
+  # FAISS VECTOR SERVER
+  # ===========================================================================
+  faiss:
+    image: faiss/faiss:latest
+    restart: unless-stopped
+    command: faiss_index_server /faiss/index --host 0.0.0.0 --port 50051 --enable-grpc
+    volumes:
+      - faiss_index:/faiss/index
+    ports:
+      - "50051:50051"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+
+  # ===========================================================================
+  # PROMETHEUS (Metrics collection)
+  # ===========================================================================
   prometheus:
-    image: prom/prometheus:v2.45.0
+    image: prom/prometheus:v2.48.0
+    restart: unless-stopped
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
     ports:
       - "9090:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=50GB'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
 
+  # ===========================================================================
+  # GRAFANA (Visualization dashboards)
+  # ===========================================================================
   grafana:
-    image: grafana/grafana:10.0.0
+    image: grafana/grafana:10.2.0
+    restart: unless-stopped
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
     ports:
       - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_INSTALL_PLUGINS=redis-datasource
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-grafana123}
+      - GF_INSTALL_PLUGINS=redis-datasource,pg-datasource
+      - GF_AUTH_ANONYMOUS_ENABLED=false
     depends_on:
       - prometheus
 
+  # ===========================================================================
+  # NGINX (Reverse proxy + SSL termination + rate limiting at L7)
+  # ===========================================================================
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ssl_certs:/etc/ssl/certs
+      - ssl_private:/etc/ssl/private
+      - access_logs:/var/log/nginx
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ===========================================================================
+  # BLACKBOX EXPORTER (Endpoint monitoring for Prometheus)
+  # ===========================================================================
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.24.0
+    restart: unless-stopped
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox.yml:/config/config.yml:ro
+    command: --config.file=/config/config.yml
+
 volumes:
   postgres_data:
-  redis_data:
+    driver: local
+  postgres_replica_data:
+    driver: local
+  postgres_replica2_data:
+    driver: local
+  redis_master_data:
+    driver: local
+  redis_replica1_data:
+    driver: local
+  redis_replica2_data:
+    driver: local
+  pg_wal_archive:
+    driver: local
+  prometheus_data:
+    driver: local
   grafana_data:
+    driver: local
+  celery_beat_data:
+    driver: local
+  faiss_index:
+    driver: local
+  ssl_certs:
+    driver: local
+  ssl_private:
+    driver: local
+  backend_logs:
+    driver: local
+  access_logs:
+    driver: local
+
+networks:
+  default:
+    name: ai-f_production
+    driver: bridge

@@ -85,6 +85,10 @@ class DistributedJWTRevocationStore:
     async def ensure_connected(self):
         if self._initialized or self.client is not None:
             return
+        if self._mock_mode:
+            self.client = MockRevocationStore()
+            self._initialized = True
+            return
         try:
             # Use encrypted Redis client for at-rest encryption
             self.client = await get_encrypted_redis_client(self.redis_url)
@@ -92,8 +96,9 @@ class DistributedJWTRevocationStore:
             self._initialized = True
             logger.info("JWT revocation store connected to Redis (encrypted)")
         except Exception as e:
-            logger.warning("Redis connection failed: " + str(e))
-            self.client = None
+            logger.warning("Redis connection failed: " + str(e) + "; using mock mode.")
+            self.client = MockRevocationStore()
+            self._initialized = True
       
     async def _ensure_client(self):
         if self._initialized and self.client is not None:

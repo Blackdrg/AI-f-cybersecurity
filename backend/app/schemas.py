@@ -1,3 +1,4 @@
+from enum import Enum
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional, Tuple, Union, Callable
 from uuid import UUID
@@ -63,7 +64,6 @@ class DetectedFace(BaseModel):
     decision: str
     risk_level: str
     decision_factors: List[Dict[str, Any]]
-    # New AI reliability fields
     hallucination_risk: Optional[Dict[str, Any]] = None
     confidence_interval: Optional[Tuple[float, float]] = None
 
@@ -413,3 +413,144 @@ class AuditLogsResponse(BaseModel):
 
 class FlagForReviewRequest(BaseModel):
     reason: Optional[str] = None
+
+
+# ===== Threat Intelligence & SOAR Schemas =====
+
+class IOCType(str, Enum):
+    IPV4 = "ipv4"
+    IPV6 = "ipv6"
+    DOMAIN = "domain"
+    URL = "url"
+    MD5 = "md5"
+    SHA1 = "sha1"
+    SHA256 = "sha256"
+    EMAIL = "email"
+
+
+class IOCSeverity(str, Enum):
+    INFO = "info"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class IOCSource(str, Enum):
+    OTX = "otx"
+    MISP = "misp"
+    VIRUSTOTAL = "virustotal"
+    ABUSEIPDB = "abuseipdb"
+    URLHAUS = "urlhaus"
+    EMERGING_THREATS = "emerging_threats"
+    STIX_TAXII = "stix_taxii"
+    INTERNAL = "internal"
+
+
+class IOCEnrichmentRequest(BaseModel):
+    """Request for IOC enrichment."""
+    indicator: str
+    ioc_type: Optional[str] = "auto"
+    force_refresh: bool = False
+
+
+class IOCEnrichmentResult(BaseModel):
+    """Enriched IOC result from multiple sources."""
+    indicator: str
+    ioc_type: str
+    threat_score: int
+    malicious: bool
+    confidence: float
+    sources: List[str]
+    tags: List[str]
+    last_seen: Optional[str]
+    first_seen: Optional[str]
+    seen_count: int = 1
+    details: Dict[str, Any] = {}
+    cached: bool = False
+    enriched_at: str
+
+
+class ThreatFeedResponse(BaseModel):
+    """Response for threat feed endpoint."""
+    feed: List[Dict[str, Any]]
+    provider_status: str
+    last_updated: str
+    total_returned: int
+
+
+class EnrichIndicatorRequest(BaseModel):
+    """Request to enrich a single indicator."""
+    indicator: str
+    type: str = "auto"
+
+
+class CorrelationEvent(BaseModel):
+    """Event correlation data."""
+    correlation_id: str
+    org_id: str
+    event_type: str
+    indicator_type: str
+    indicators: List[str]
+    threat_score: int
+    risk_level: str
+    timestamp: str
+
+
+class EnrichmentSummary(BaseModel):
+    """Summary of enrichment for a recognition event."""
+    sources_checked: int
+    highest_threat_score: int
+    ioc_matches: int
+    risk_level: str
+    cached: bool
+    enrichment_time_ms: float
+
+
+class WorkflowAction(BaseModel):
+    """A single workflow action to execute."""
+    action_type: str
+    parameters: Dict[str, Any] = {}
+    timeout_seconds: int = 300
+    requires_approval: bool = False
+    rollback_action: str = ""
+
+
+class IncidentWorkflow(BaseModel):
+    """Incident workflow definition."""
+    name: str
+    description: str
+    trigger_type: str
+    conditions: Dict[str, Any]
+    actions: List[WorkflowAction]
+    escalation: Optional[Dict[str, Any]] = None
+    priority: int = 5
+    enabled: bool = True
+
+
+class ConnectorStatus(BaseModel):
+    """Status of an integration connector."""
+    name: str
+    type: str
+    status: str
+    last_error: Optional[str]
+    connected_at: Optional[str]
+
+
+class ComplianceCheckRequest(BaseModel):
+    """Request for compliance validation."""
+    regulation: str
+    check_type: str
+    resource_id: str
+
+
+class ComplianceCheckResult(BaseModel):
+    """Result of a compliance check."""
+    check_id: str
+    regulation: str
+    check_type: str
+    passed: bool
+    details: Dict[str, Any]
+    severity: str
+    remediation: Optional[str]
+    timestamp: str

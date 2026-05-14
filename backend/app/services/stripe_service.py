@@ -41,7 +41,7 @@ class StripeBillingService:
 
     async def _db_client(self):
         if self._db is None:
-            self._db = await get_db()
+            self._db = get_db()
         return self._db
 
     async def create_subscription(self, user_id: str, plan_id: str, email: str) -> SubscriptionResponse:

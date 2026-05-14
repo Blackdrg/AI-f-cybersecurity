@@ -113,7 +113,7 @@ def require_auth(user: dict = Depends(verify_token)):
 
 async def require_org_member(org_id: str, user: dict = Depends(verify_token)):
     from .db.db_client import get_db
-    db = await get_db()
+    db = get_db()
     orgs = await db.get_user_orgs(user["user_id"])
     for org in orgs:
         if str(org["org_id"]) == org_id:

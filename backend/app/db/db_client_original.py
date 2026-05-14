@@ -1855,5 +1855,5 @@ async def init_db():
     Initialize the database connection pool.
     This function is called at application startup.
     """
-    await get_db()
+    get_db()
 

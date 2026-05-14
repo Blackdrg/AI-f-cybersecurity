@@ -69,7 +69,7 @@ class FaceRecognitionServicer(FaceRecognitionServiceServicer):
             'signed_token': None
         }
 
-        db = await get_db()
+        db = get_db()
         await db.enroll_person(person_id, request.name, embeddings, consent_record, request.camera_id)
 
         return EnrollResponse(person_id=person_id, num_embeddings=len(embeddings), message="Enrollment successful")
@@ -83,7 +83,7 @@ class FaceRecognitionServicer(FaceRecognitionServiceServicer):
             img, check_spoof=request.enable_spoof_check, reconstruct=True)
         detected_faces = []
 
-        db = await get_db()
+        db = get_db()
 
         for face in faces:
             if request.enable_spoof_check and face['spoof_score'] > 0.5:
@@ -114,7 +114,7 @@ class FaceRecognitionServicer(FaceRecognitionServiceServicer):
 
     @require_auth_grpc
     async def GetPerson(self, request, context):
-        db = await get_db()
+        db = get_db()
         person = await db.get_person(request.person_id)
         if not person:
             context.set_code(grpc.StatusCode.NOT_FOUND)
@@ -139,7 +139,7 @@ class FaceRecognitionServicer(FaceRecognitionServiceServicer):
 
     @require_auth_grpc
     async def DeletePerson(self, request, context):
-        db = await get_db()
+        db = get_db()
         deleted = await db.delete_person(request.person_id)
         if not deleted:
             context.set_code(grpc.StatusCode.NOT_FOUND)
@@ -150,7 +150,7 @@ class FaceRecognitionServicer(FaceRecognitionServiceServicer):
 
     @require_auth_grpc
     async def GetAuditLogs(self, request, context):
-        db = await get_db()
+        db = get_db()
         # Placeholder: implement audit log retrieval
         logs = []  # Fetch from DB
         audit_logs = [AuditLogEntry(id=log['id'], action=log['action'], person_id=log['person_id'],

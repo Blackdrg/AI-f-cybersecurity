@@ -38,7 +38,7 @@ async def recognize_video(
     frame_count = 0
     results = []
 
-    db = await get_db()
+    db = get_db()
 
     while True:
         ret, frame = cap.read()

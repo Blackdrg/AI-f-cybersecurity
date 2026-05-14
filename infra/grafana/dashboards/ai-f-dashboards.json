@@ -1,0 +1,187 @@
+// AI-f Grafana Dashboard Definitions
+// Import via Grafana API or provisioning
+
+// Dashboard 1: Database Overview
+dashboard_db_overview = {
+  title: "AI-f Database Overview",
+  uid: "ai-f-db-overview",
+  tags: ["database", "postgres"],
+  time: { from: "now-1h", to: "now" },
+  panels: [
+    {
+      title: "Active Connections", type: "stat",
+      targets: [{ expr: "pg_stat_activity_count{state='active'}" }]
+    },
+    {
+      title: "Replication Lag (seconds)", type: "timeseries",
+      targets: [{ expr: "pg_replication_lag_seconds" }]
+    },
+    {
+      title: "Queries per Second", type: "timeseries",
+      targets: [{ expr: "rate(pg_stat_statements_calls_total[5m])" }]
+    },
+    {
+      title: "Slow Queries (>{DB_SLOW_QUERY_THRESHOLD_MS}ms)", type: "stat",
+      targets: [{ expr: "rate(db_slow_queries_total[5m])" }]
+    },
+    {
+      title: "Connection Pool Utilization", type: "gauge",
+      targets: [{ expr: "db_pool_utilization_percent" }],
+      fieldConfig: { thresholds: [{ value: 80, color: "warning" }, { value: 95, color: "critical" }] }
+    },
+    {
+      title: "Table Sizes", type: "table",
+      targets: [{ expr: "pg_table_size_bytes" }]
+    }
+  ]
+}
+
+// Dashboard 2: Recognition Performance
+dashboard_recognition = {
+  title: "AI-f Recognition Performance",
+  uid: "ai-f-recognition",
+  tags: ["recognition", "performance"],
+  panels: [
+    {
+      title: "Recognition Latency (p50/p95/p99)", type: "timeseries",
+      targets: [
+        { expr: "histogram_quantile(0.50, rate(db_queries_duration_seconds_bucket{query_type='SELECT'}[5m]))", legend: "p50" },
+        { expr: "histogram_quantile(0.95, rate(db_queries_duration_seconds_bucket{query_type='SELECT'}[5m]))", legend: "p95" },
+        { expr: "histogram_quantile(0.99, rate(db_queries_duration_seconds_bucket{query_type='SELECT'}[5m]))", legend: "p99" }
+      ]
+    },
+    {
+      title: "Recognition Events Rate", type: "timeseries",
+      targets: [{ expr: "rate(recognition_events_count[5m])" }]
+    },
+    {
+      title: "Spoof Detection Rate", type: "stat",
+      targets: [{ expr: "rate(recognition_events_spoof_total[5m])" }]
+    },
+    {
+      title: "Vector Search Latency", type: "histogram",
+      targets: [{ expr: "db_queries_duration_seconds_bucket{query_type='vector_search'}" }]
+    }
+  ]
+}
+
+// Dashboard 3: Celery / Task Queue
+dashboard_celery = {
+  title: "AI-f Celery Workers",
+  uid: "ai-f-celery",
+  tags: ["celery", "workers"],
+  panels: [
+    {
+      title: "Active Workers", type: "stat",
+      targets: [{ expr: "celery_workers_online" }]
+    },
+    {
+      title: "Task Queue Length", type: "timeseries",
+      targets: [{ expr: "celery_queue_length" }]
+    },
+    {
+      title: "Task Success Rate", type: "stat",
+      targets: [{ expr: "rate(celery_tasks_successful_total[5m])" }]
+    },
+    {
+      title: "Task Failure Rate", type: "stat",
+      targets: [{ expr: "rate(celery_tasks_failed_total[5m])" }]
+    },
+    {
+      title: "Task Duration (avg)", type: "timeseries",
+      targets: [{ expr: "rate(celery_task_duration_sum[5m]) / rate(celery_task_duration_count[5m])" }]
+    },
+    {
+      title: "Retry Queue Depth", type: "timeseries",
+      targets: [{ expr: "celery_queue_length{queue='celery_retry'}" }]
+    }
+  ]
+}
+
+// Dashboard 4: Redis & Cache
+dashboard_redis = {
+  title: "AI-f Redis",
+  uid: "ai-f-redis",
+  tags: ["redis", "cache"],
+  panels: [
+    {
+      title: "Redis Memory Usage", type: "timeseries",
+      targets: [{ expr: "redis_memory_used_bytes" }]
+    },
+    {
+      title: "Redis Connections", type: "timeseries",
+      targets: [{ expr: "redis_connected_clients" }]
+    },
+    {
+      title: "Redis Ops/sec", type: "timeseries",
+      targets: [{ expr: "rate(redis_commands_processed_total[1m])" }]
+    },
+    {
+      title: "Cache Hit Rate", type: "stat",
+      targets: [{ expr: "redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) * 100" }]
+    },
+    {
+      title: "Replication Lag", type: "timeseries",
+      targets: [{ expr: "redis_replication_lag_seconds" }]
+    }
+  ]
+}
+
+// Dashboard 5: System Health
+dashboard_system = {
+  title: "AI-f System Health",
+  uid: "ai-f-system",
+  tags: ["system", "infrastructure"],
+  panels: [
+    {
+      title: "HTTP Request Rate", type: "timeseries",
+      targets: [{ expr: "rate(http_requests_total[5m])" }]
+    },
+    {
+      title: "Error Rate", type: "stat",
+      targets: [{ expr: "rate(http_requests_total{status=~'5..'}[5m]) / rate(http_requests_total[5m]) * 100" }]
+    },
+    {
+      title: "CPU Usage", type: "timeseries",
+      targets: [{ expr: "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)" }]
+    },
+    {
+      title: "Memory Usage", type: "timeseries",
+      targets: [{ expr: "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes" }]
+    },
+    {
+      title: "Disk I/O", type: "timeseries",
+      targets: [
+        { expr: "rate(node_disk_reads_completed_total[5m])", legend: "reads" },
+        { expr: "rate(node_disk_writes_completed_total[5m])", legend: "writes" }
+      ]
+    }
+  ]
+}
+
+// Dashboard 6: Billing & Usage
+dashboard_billing = {
+  title: "AI-f Billing & Usage",
+  uid: "ai-f-billing",
+  tags: ["billing", "business"],
+  panels: [
+    {
+      title: "Active Subscriptions", type: "stat",
+      targets: [{ expr: "billing_active_subscriptions" }]
+    },
+    {
+      title: "Monthly Revenue", type: "stat",
+      targets: [{ expr: "sum(billing_invoice_amount_cents{currency='USD',status='paid'}) / 100" }]
+    },
+    {
+      title: "API Calls (recognitions)", type: "timeseries",
+      targets: [{ expr: "rate(billing_usage_records_quantity{metric_name='recognitions'}[1h])" }]
+    },
+    {
+      title: "Enrollments", type: "timeseries",
+      targets: [{ expr: "rate(billing_usage_records_quantity{metric_name='enrollments'}[1h])" }]
+    }
+  ]
+}
+
+print("Dashboard definitions written (6 dashboards)")

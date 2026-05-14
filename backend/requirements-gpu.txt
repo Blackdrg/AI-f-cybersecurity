@@ -1,10 +1,7 @@
 # GPU Production Requirements (T4+ validated)
 onnxruntime-gpu==1.18.0
-torch==2.1.0+cu121
-torchvision==0.16.0+cu121
-torchaudio==2.1.0+cu121
-faiss-gpu==1.7.4
-nvidia-ml-py3==12.535.108
+faiss-cpu==1.8.0
+pynvml
 # insightface==0.7.3  # Requires MSVC on Windows/Python 3.11; use ONNX models (export offline on Linux/Python 3.10)
 speechbrain==0.5.16
 -r requirements.txt

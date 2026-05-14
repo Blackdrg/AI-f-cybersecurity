@@ -1,0 +1,188 @@
+[
+  {
+    "name": "PostgreSQL + pgvector + pgcrypto",
+    "status": "target",
+    "description": "PostgreSQL 15+ with pgvector, pgcrypto, pg_stat_statements extensions",
+    "category": "database"
+  },
+  {
+    "name": "42+ Tables with Schema",
+    "status": "target",
+    "description": "Organized across 12 schemas: core, billing, audit, ml, notifications, compliance",
+    "category": "database"
+  },
+  {
+    "name": "Row Level Security (RLS)",
+    "status": "target",
+    "description": "RLS on all tenant-scoped tables with org/user/role policies",
+    "category": "database"
+  },
+  {
+    "name": "Connection Pooling (PgBouncer)",
+    "status": "target",
+    "description": "PgPool-II with connection pooling, load balancing, failover",
+    "category": "database"
+  },
+  {
+    "name": "Automated Backups (PITR)",
+    "status": "target",
+    "description": "WAL archiving with S3, base backups, point-in-time recovery",
+    "category": "database"
+  },
+  {
+    "name": "Failover Replication",
+    "status": "target",
+    "description": "Primary + 2 read replicas with streaming replication",
+    "category": "database"
+  },
+  {
+    "name": "DB Monitoring (Prometheus/Grafana)",
+    "status": "target",
+    "description": "Connection pool, query latency, replication lag, slow query metrics",
+    "category": "database"
+  },
+  {
+    "name": "Performance Indexes (Alembic Migration)",
+    "status": "target",
+    "description": "HNSW vector indexes, B-tree composite indexes, partial indexes",
+    "category": "database"
+  },
+  {
+    "name": "Redis 7.2+ Production Config",
+    "status": "target",
+    "description": "AOF + RDB persistence, LRU eviction, security hardening",
+    "category": "cache"
+  },
+  {
+    "name": "JWT Revocation Store",
+    "status": "target",
+    "description": "Lua atomic operations for token blacklisting in Redis",
+    "category": "cache"
+  },
+  {
+    "name": "Rate Limiting",
+    "status": "target",
+    "description": "Redis-based rate limit buckets for API endpoints",
+    "category": "cache"
+  },
+  {
+    "name": "Pub/Sub Channels",
+    "status": "target",
+    "description": "Redis PubSub for real-time recognition events, alerts, system health",
+    "category": "cache"
+  },
+  {
+    "name": "Celery Broker",
+    "status": "target",
+    "description": "Redis as Celery broker with result backend",
+    "category": "queues"
+  },
+  {
+    "name": "Redis Sentinel",
+    "status": "target",
+    "description": "3-node Sentinel for automatic failover",
+    "category": "cache"
+  },
+  {
+    "name": "Memory Eviction Policies",
+    "status": "target",
+    "description": "allkeys-lru with 2GB memory limit, rename dangerous commands",
+    "category": "cache"
+  },
+  {
+    "name": "Celery Worker Infrastructure",
+    "status": "target",
+    "description": "Main + Background workers with proper concurrency settings",
+    "category": "queues"
+  },
+  {
+    "name": "Task Queue Configuration",
+    "status": "target",
+    "description": "6 task queues: recognition, training, enrichment, federated, maintenance, anchoring",
+    "category": "queues"
+  },
+  {
+    "name": "Retry Policies",
+    "status": "target",
+    "description": "Per-task retry policies with exponential backoff and jitter",
+    "category": "queues"
+  },
+  {
+    "name": "Dead Letter Queues",
+    "status": "target",
+    "description": "Failed tasks routed to dead_letter queue after max retries",
+    "category": "queues"
+  },
+  {
+    "name": "Task Monitoring (Flower)",
+    "status": "target",
+    "description": "Celery Flower dashboard for task monitoring and administration",
+    "category": "queues"
+  },
+  {
+    "name": "All 6 Task Modules Validated",
+    "status": "target",
+    "description": "recognition, training, enrichment, maintenance, federated, payment tasks",
+    "category": "queues"
+  },
+  {
+    "name": "Autoscaling Configuration",
+    "status": "target",
+    "description": "Worker replica management with deploy replicas config",
+    "category": "queues"
+  },
+  {
+    "name": "Full Docker Compose Production Stack",
+    "status": "target",
+    "description": "Complete docker-compose.prod.yml with all services",
+    "category": "infrastructure"
+  },
+  {
+    "name": "NGINX Reverse Proxy",
+    "status": "target",
+    "description": "SSL termination, rate limiting, health checks, routing",
+    "category": "infrastructure"
+  },
+  {
+    "name": "PGPool-II Load Balancer",
+    "status": "target",
+    "description": "Connection pooling and read/write splitting",
+    "category": "infrastructure"
+  },
+  {
+    "name": "Prometheus + Grafana",
+    "status": "target",
+    "description": "Metrics collection with 6 dashboard categories",
+    "category": "monitoring"
+  },
+  {
+    "name": "Stress-Test Environment",
+    "status": "target",
+    "description": "Locust-based load testing with configurable scenarios",
+    "category": "testing"
+  },
+  {
+    "name": "Distributed Benchmark Runners",
+    "status": "target",
+    "description": "Multi-node benchmark suite for latency and throughput validation",
+    "category": "testing"
+  },
+  {
+    "name": "Latency Claims Validation",
+    "status": "target",
+    "description": "P50 <50ms, P95 <200ms, P99 <500ms benchmarks",
+    "category": "testing"
+  },
+  {
+    "name": "Throughput Claims Validation",
+    "status": "target",
+    "description": "Minimum 500 RPS sustained throughput testing",
+    "category": "testing"
+  },
+  {
+    "name": "Alerting Rules (Prometheus)",
+    "status": "target",
+    "description": "DB pool, replication lag, slow queries, error rates, Celery alerts",
+    "category": "monitoring"
+  }
+]

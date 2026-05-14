@@ -25,7 +25,7 @@ class EdgeDevicePlugin(PluginBase):
         pass
 
     async def get_devices(self) -> List[Dict[str, Any]]:
-        db = await get_db()
+        db = get_db()
         devices = await db.fetch("SELECT device_id, model_version, last_seen, status FROM edge_devices")
         return [dict(d) for d in devices]
 
@@ -46,7 +46,7 @@ class EdgeDevicePlugin(PluginBase):
 
     async def register_device(self, device_id: str, url: str):
         self.devices[device_id] = {'url': url, 'status': 'active'}
-        db = await get_db()
+        db = get_db()
         await db.execute("""
             INSERT INTO edge_devices (device_id, status)
             VALUES ($1, $2)
@@ -54,7 +54,7 @@ class EdgeDevicePlugin(PluginBase):
         """, device_id, 'active')
 
     async def update_device_model(self, device_id: str, model_version: str):
-        db = await get_db()
+        db = get_db()
         await db.execute("""
             UPDATE edge_devices SET model_version = $1, last_seen = NOW()
             WHERE device_id = $2

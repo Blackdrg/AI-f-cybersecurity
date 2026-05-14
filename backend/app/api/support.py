@@ -12,7 +12,7 @@ router = APIRouter()
 @router.post("/support/tickets", response_model=SupportTicketResponse)
 async def create_support_ticket(ticket: SupportTicketCreate, current_user=Depends(get_current_user)):
     """Create a new support ticket."""
-    db = await get_db()
+    db = get_db()
     ticket_id = str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat()
 
@@ -32,7 +32,7 @@ async def create_support_ticket(ticket: SupportTicketCreate, current_user=Depend
 @router.get("/support/tickets", response_model=List[SupportTicketResponse])
 async def get_support_tickets(current_user=Depends(get_current_user)):
     """Get all support tickets for the current user."""
-    db = await get_db()
+    db = get_db()
     tickets = await db.get_tickets(current_user["user_id"])
 
     return [
@@ -52,7 +52,7 @@ async def get_support_tickets(current_user=Depends(get_current_user)):
 @router.get("/support/tickets/{ticket_id}", response_model=SupportTicketResponse)
 async def get_support_ticket(ticket_id: str, current_user=Depends(get_current_user)):
     """Get a specific support ticket."""
-    db = await get_db()
+    db = get_db()
     ticket = await db.get_ticket(ticket_id)
 
     if not ticket or ticket["user_id"] != current_user["user_id"]:
@@ -73,7 +73,7 @@ async def get_support_ticket(ticket_id: str, current_user=Depends(get_current_us
 @router.put("/support/tickets/{ticket_id}", response_model=SupportTicketResponse)
 async def update_support_ticket(ticket_id: str, update: SupportTicketUpdate, current_user=Depends(get_current_user)):
     """Update a support ticket."""
-    db = await get_db()
+    db = get_db()
     
     # Verify ownership
     ticket = await db.get_ticket(ticket_id)
@@ -99,7 +99,7 @@ async def update_support_ticket(ticket_id: str, update: SupportTicketUpdate, cur
 @router.delete("/support/tickets/{ticket_id}")
 async def delete_support_ticket(ticket_id: str, current_user=Depends(get_current_user)):
     """Delete a support ticket."""
-    db = await get_db()
+    db = get_db()
     
     # Verify ownership
     ticket = await db.get_ticket(ticket_id)

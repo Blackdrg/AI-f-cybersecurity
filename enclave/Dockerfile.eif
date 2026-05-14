@@ -1,38 +1,161 @@
-FROM public.ecr.aws/nitrolambdas/python:3.11 AS builder
+# AWS Nitro Enclave EIF (Enclave Image Format) Dockerfile
+# Build with: docker build -f Dockerfile.eif -t face-recognition-enclave .
+# Install: Apply to enclave with: nitro-cli enclave-run --image face-recognition-enclave ...
 
-# Install EIF-specific build deps
-RUN dnf install -y docker make gcc-c++ python3-devel
+# Stage 1: Builder with model compilation
+FROM --platform=linux/amd64 public.ecr.aws/nitrolambdas/nitro-enclaves-cli:latest AS builder
 
-# Install ML packages
-RUN pip install --no-cache-dir numpy==1.24.3 scipy==1.10.1 \
-    onnxruntime==1.15.0 opencv-python-headless==4.8.0.76 \
-    pillow==10.0.1 torch==2.0.1+cpu torchvision==0.15.2+cpu \
+# Install build dependencies
+RUN dnf install -y \
+    gcc-c++ \
+    cmake \
+    make \
+    openssl-devel \
+    python3-devel \
+    libffi-devel \
+    && dnf clean all
+
+# Install Python packages for ML (CPU-optimized)
+RUN pip3 install --no-cache-dir \
+    numpy==1.24.3 \
+    scipy==1.10.1 \
+    onnxruntime==1.15.0 \
+    opencv-python-headless==4.8.0.76 \
+    pillow==10.0.1 \
+    torch==2.0.1+cpu \
+    torchvision==0.15.2+cpu \
     --index-url https://download.pytorch.org/whl/cpu && \
-    pip install speechbrain==0.5.11 librosa==0.10.0
+    pip3 install --no-cache-dir \
+    speechbrain==0.5.11 \
+    librosa==0.10.0 \
+    scikit-learn==1.5.1 \
+    cryptography==42.0.0 \
+    python-jose[cryptography]==3.3.0 \
+    bcrypt==4.1.0 \
+    pyotp==2.9.0 \
+    boto3==1.34.0 \
+    requests==2.31.0 \
+    pydantic==2.8.0 \
+    fastapi==0.111.0 \
+    uvicorn[standard]==0.29.0
 
-# Copy source
-WORKDIR /app
-COPY app.py decision_engine.py ./
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Create non-root user for enclave runtime
+RUN useradd -m -u 1000 -s /bin/bash enclave
 
-# Multi-stage: Runtime EIF image
-FROM public.ecr.aws/nitrolambdas/python:3.11
+# Workdir
+WORKDIR /enclave
 
-# Labels for Nitro Enclaves
+# Copy source code
+COPY app/ app/
+COPY config/ config/
+COPY models/ models/  # Trained ML models (ONNX format)
+
+# Pre-compile models & warmup cache (speed up first inference)
+RUN python3 -c "
+import onnxruntime as ort
+import numpy as np
+from pathlib import Path
+models_path = Path('/enclave/models')
+for model_file in models_path.glob('*.onnx'):
+    print(f'Optimizing {model_file.name}...')
+    opts = ort.SessionOptions()
+    # Optimize for inference
+    sess = ort.InferenceSession(str(model_file), opts)
+    # Warmup with dummy input
+    inputs = sess.get_inputs()
+    if inputs:
+        input_shape = inputs[0].shape
+        dummy = np.random.randn(*[1 if isinstance(s, str) else s for s in input_shape]).astype(np.float32)
+        sess.run(None, {inputs[0].name: dummy})
+    print(f'  OK: {model_file.name}')
+" || true
+
+# Set proper permissions
+RUN chown -R enclave:enclave /enclave && \
+    chmod -R 755 /enclave && \
+    find /enclave -type f -name '*.py' -exec chmod 644 {} \; && \
+    find /enclave -type d -exec chmod 755 {} \;
+
+# Switch to non-root user
+USER enclave
+ENV HOME=/home/enclave
+ENV PATH=/home/enclave/.local/bin:$PATH
+
+# Test imports
+RUN python3 -c "import onnxruntime; print('ONNX Runtime OK')" && \
+    python3 -c "import torch; print('PyTorch OK')" && \
+    python3 -c "import cv2; print('OpenCV OK')" && \
+    python3 -c "import numpy; print('NumPy OK')"
+
+# Stage 2: Final EIF image
+FROM --platform=linux/amd64 public.ecr.aws/nitrolambdas/python:3.11
+
+# Enclave metadata (required by Nitro)
 LABEL com.amazonaws.enclave=true
-LABEL enclave.memory_mib=512
-LABEL enclave.debug-mode=Application
+LABEL enclave.memory_mib=2048              # 2GB RAM (adjust as needed)
+LABEL enclave.cpu_count=2                  # 2 vCPUs
+LABEL enclave.debug-mode=Disabled          # Disable debug in prod
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.authors="Security Team <security@org.com>"
 
-# Copy from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY app.py decision_engine.py ./
+# Copy runtime from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/sepackages
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /enclave /enclave
 
-# Secure embeddings mount (volume at runtime)
-VOLUME ["/secure-data"]
-ENV KNOWN_FACE_EMBEDDINGS_PATH=/secure-data/known_face_embeddings.npy
-ENV KNOWN_VOICE_EMBEDDINGS_PATH=/secure-data/known_voice_embeddings.npy
+# Create enclave user
+RUN useradd -m -u 1000 -s /bin/bash enclave && \
+    mkdir -p /run/enclave && \
+    chown -R enclave:enclave /enclave && \
+    chown -R enclave:enclave /run/enclave
 
-EXPOSE 5000
+# Enclave runtime directories
+VOLUME ["/run/enclave"]          # Runtime socket directory
+VOLUME ["/etc/enclave/config"]   # Configuration (mounted from host)
+VOLUME ["/var/log/enclave"]      # Logs (host-mounted)
 
-CMD ["python", "app.py"]
+# Environment variables
+ENV ENCLAVE_RUNTIME=true
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV ENCLAVE_CONFIG_DIR=/etc/enclave/config
+ENV ENCLAVE_LOG_DIR=/var/log/enclave
+ENV ENCLAVE_MODEL_PATH=/enclave/models
+ENV ENCLAVE_KNOWN_FACES_PATH=/run/enclave/known_faces.npy
+ENV ENCLAVE_KNOWN_VOICES_PATH=/run/enclave/known_voices.npy
+
+# Security: Drop capabilities, enable seccomp
+# Nitro Enclave already has restricted capabilities; this is just metadata
+LABEL enclave.capabilities="NET_BIND_SERVICE,CHOWN"
+
+# Health check (internal)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD python3 -c "
+import socket, sys, time
+try:
+    s = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
+    s.settimeout(2)
+    s.bind((socket.VMADDR_CID_ANY, 5000))
+    s.close()
+    sys.exit(0)
+except:
+    sys.exit(1)
+"
+
+# Entrypoint: Run enclave service
+WORKDIR /enclave
+COPY --chown=enclave:enclave docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["python3", "app.py"]
+
+# Switch to non-root
+USER enclave
+
+# Image info
+ENV ENCLAVE_VERSION="2.2.1"
+ENV ENCLAVE_BUILD_DATE="${BUILD_DATE}"
+LABEL org.opencontainers.image.version="2.2.1"
+LABEL org.opencontainers.image.description="Face & Voice Recognition Enclave - Nitro EIF"
+LABEL org.opencontainers.image.licenses="proprietary"

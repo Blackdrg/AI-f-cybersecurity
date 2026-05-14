@@ -42,7 +42,7 @@ async def create_consent(
     user: dict = Depends(require_auth)
 ):
     """Create consent for public enrichment."""
-    db = await get_db()
+    db = get_db()
 
     # Read consent text
     consent_file = f"docs/consent_texts/{request.consent_text_version}.txt"
@@ -80,7 +80,7 @@ async def public_enrich(
 
     # Validate consent if token provided
     if request.consent_token:
-        db = await get_db()
+        db = get_db()
         consent = await db.validate_consent(request.consent_token)
         if not consent:
             raise HTTPException(
@@ -110,7 +110,7 @@ async def public_enrich(
         results = redactor.redact_results(results)
 
         # Save results to database
-        db = await get_db()
+        db = get_db()
         enrich_id = await db.save_enrichment_result(
             query=query,
             subject=str(request.identifiers),
@@ -144,7 +144,7 @@ async def public_enrich(
 
     except Exception as e:
         # Log error
-        db = await get_db()
+        db = get_db()
         await db.log_audit(
             action="public_enrich_error",
             user_id=request.requested_by,
@@ -160,7 +160,7 @@ async def get_enrichment_result(
     user: dict = Depends(require_auth)
 ):
     """Get enrichment result by ID."""
-    db = await get_db()
+    db = get_db()
     result = await db.get_enrichment_result(enrich_id)
 
     if not result:
@@ -190,7 +190,7 @@ async def get_audit_logs(
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 
-    db = await get_db()
+    db = get_db()
     logs = await db.get_audit_logs(user_id=user_id, limit=limit)
 
     return AuditLogsResponse(
@@ -214,7 +214,7 @@ async def flag_for_review(
     user: dict = Depends(require_auth)
 ):
     """Flag enrichment result for review."""
-    db = await get_db()
+    db = get_db()
 
     # Check if result exists
     result = await db.get_enrichment_result(enrich_id)

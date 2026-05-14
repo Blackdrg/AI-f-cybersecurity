@@ -22,7 +22,7 @@ import pytest
 # Environment configuration (set BEFORE any app imports)
 # =============================================================================
 os.environ.setdefault('ENVIRONMENT', 'test')
-os.environ.setdefault('JWT_SECRET', 'test-jwt-secret-key-64byte-long-string-here-for-HS256!!!')
+os.environ.setdefault('JWT_SECRET', 'test-jwt-secret-key-64byte-long-string-here-for-HS256-algorithm-test!!!')
 os.environ.setdefault('ENCRYPTION_KEY', '0XKYdoZg1Q4f1mXPIWwEVRwQcGm0sKomFk4N5ksJ2nA=')
 os.environ.setdefault('OPENAI_API_KEY', 'sk-test-mock-openai')
 os.environ.setdefault('STRIPE_SECRET_KEY', 'sk_test_mock_stripe')
@@ -391,9 +391,9 @@ get_db_patcher = patch('app.db.db_client.get_db', side_effect=get_mock_db)
 if os.environ.get('ENVIRONMENT') != 'integration':
     get_db_patcher.start()
 
-async def _init_db_mock():
+async def _init_db_mock(self=None):
     pass
-init_db_patcher = patch('app.db.db_client.init_db', side_effect=_init_db_mock)
+init_db_patcher = patch('app.db.db_client.DBClient.init_db', side_effect=_init_db_mock)
 if os.environ.get('ENVIRONMENT') != 'integration':
     init_db_patcher.start()
 

@@ -11,7 +11,7 @@ router = APIRouter()
 @router.post("/{org_id}/cameras", response_model=CameraResponse)
 async def add_camera(org_id: str, camera: CameraCreate, current_user=Depends(require_org_admin)):
     """Add a new camera to the organization."""
-    db = await get_db()
+    db = get_db()
     camera_id = await db.add_camera(org_id, camera.name, camera.rtsp_url, camera.location)
     return CameraResponse(
         camera_id=camera_id,
@@ -44,14 +44,14 @@ async def test_camera_connection(data: Dict[str, str]):
 @router.get("/{org_id}/cameras", response_model=List[CameraResponse])
 async def list_cameras(org_id: str, current_user=Depends(require_org_operator)):
     """List all cameras in the organization."""
-    db = await get_db()
+    db = get_db()
     cameras = await db.get_org_cameras(org_id)
     return [CameraResponse(**c) for c in cameras]
 
 @router.post("/{org_id}/cameras/{camera_id}/start", status_code=204)
 async def start_camera_stream(org_id: str, camera_id: str, current_user=Depends(require_org_admin)):
     """Start RTSP stream for camera."""
-    db = await get_db()
+    db = get_db()
     cameras = await db.get_org_cameras(org_id)
     camera = next((c for c in cameras if c['camera_id'] == camera_id), None)
     if not camera or not camera.get('rtsp_url'):

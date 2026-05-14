@@ -221,7 +221,7 @@ class IncidentActionExecutor:
         """Log action to audit trail."""
         from app.db.db_client import get_db
         try:
-            db = await get_db()
+            db = get_db()
             await db.pool.execute(
                 "INSERT INTO audit_log (action, details, timestamp) VALUES ($1, $2, NOW())",
                 "incident_response",

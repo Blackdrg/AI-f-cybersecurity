@@ -54,7 +54,7 @@ def verify_audit_chain_integrity(self):
         from app.db.db_client import get_db
         
         async def verify():
-            db = await get_db()
+            db = get_db()
             broken = await db.verify_audit_chain()
             if broken:
                 logger.error(f"Audit chain broken at {len(broken)} points")
@@ -77,7 +77,7 @@ def cleanup_stale_sessions(self, max_age_hours: int = 24):
         from datetime import timedelta
         
         async def cleanup():
-            db = await get_db()
+            db = get_db()
             sessions = await db.cleanup_expired_sessions(timedelta(hours=max_age_hours))
             cache = await db.cleanup_redis_cache(pattern="session:*")
             return {"deleted_sessions": sessions, "deleted_cache_keys": cache}

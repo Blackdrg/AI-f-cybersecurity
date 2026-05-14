@@ -1,6 +1,7 @@
 import importlib
 import pkgutil
 import sys
+from pathlib import Path
 from typing import Dict, Any, List
 from .base import PluginBase
 import logging
@@ -12,14 +13,17 @@ class PluginLoader:
     def __init__(self):
         self.plugins: Dict[str, PluginBase] = {}
         self.enabled_plugins: Dict[str, PluginBase] = {}
+        self._plugins_path = Path(__file__).parent
 
     def discover_plugins(self):
         """Discover plugins in the plugins directory"""
-        for importer, modname, ispkg in pkgutil.iter_modules(__path__):
-            if modname != 'base' and modname != 'loader':
+        plugin_files = list(self._plugins_path.glob("*.py"))
+        for plugin_file in plugin_files:
+            modname = plugin_file.stem
+            if modname != 'base' and modname != 'loader' and modname != '__init__':
                 try:
                     module = importlib.import_module(
-                        f".{modname}", package=__name__)
+                        f"app.plugins.{modname}")
                     if hasattr(module, 'Plugin'):
                         plugin_class = getattr(module, 'Plugin')
                         if issubclass(plugin_class, PluginBase):

@@ -10,7 +10,7 @@ router = APIRouter()
 @router.get("/usage/current", response_model=UsageResponse)
 async def get_current_usage(current_user=Depends(get_current_user)):
     """Get current month's usage for the authenticated user."""
-    db = await get_db()
+    db = get_db()
     
     # Special case: Unlimited usage for enterprise
     if current_user.get("subscription_tier") == "enterprise":
@@ -40,7 +40,7 @@ async def get_current_usage(current_user=Depends(get_current_user)):
 @router.get("/usage/limits")
 async def get_usage_limits(current_user=Depends(get_current_user)):
     """Get usage limits for the current user's plan."""
-    db = await get_db()
+    db = get_db()
     usage = await db.get_usage(current_user["user_id"])
     
     return {

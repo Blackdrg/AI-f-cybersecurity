@@ -1,6 +1,5 @@
 """
-Celery Configuration for AI-f Background Tasks
-Task routing, retry policies, and monitoring setup
+Celery Configuration for AI-f - Production with all task modules
 """
 import os
 import logging
@@ -9,10 +8,9 @@ from celery.schedules import crontab
 
 logger = logging.getLogger(__name__)
 
-# Redis broker URL from environment
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")
 
-# Create Celery app
 app = Celery(
     "ai_f_tasks",
     broker=REDIS_URL,
@@ -25,113 +23,118 @@ app = Celery(
         "app.tasks.federated_learning_tasks",
         "app.tasks.payment_tasks",
         "app.tasks.anchoring_tasks",
+        "app.tasks.compliance_tasks",
+        "app.tasks.threat_intel_tasks",
     ]
 )
 
-# Configuration
 app.conf.update(
-    # Task routing strategy
     task_routes={
         "app.tasks.recognition_tasks.*": {"queue": "recognition", "priority": 9},
         "app.tasks.model_training_tasks.*": {"queue": "training", "priority": 5},
         "app.tasks.enrichment_tasks.*": {"queue": "enrichment", "priority": 6},
+        "app.tasks.threat_intel_tasks.*": {"queue": "threat_intel", "priority": 7},
         "app.tasks.maintenance_tasks.*": {"queue": "maintenance", "priority": 1},
         "app.tasks.federated_learning_tasks.*": {"queue": "federated", "priority": 3},
+        "app.tasks.payment_tasks.*": {"queue": "payments", "priority": 7},
+        "app.tasks.anchoring_tasks.*": {"queue": "anchoring", "priority": 4},
+        "app.tasks.compliance_tasks.*": {"queue": "compliance", "priority": 2},
     },
-    # Task acknowledgment and time limits
     task_acks_late=True,
     task_reject_on_worker_lost=True,
-    task_time_limit=300,  # 5 minutes hard limit
-    task_soft_time_limit=270,  # 4.5 minutes soft limit
-    # Worker settings
-    worker_prefetch_multiplier=1,  # One task per worker at a time
-    worker_max_tasks_per_child=1000,  # Restart worker after 1000 tasks
+    task_acks_on_failure_or_timeout=True,
+    task_time_limit=600,
+    task_soft_time_limit=540,
+    task_default_retry_delay=60,
+    task_default_max_retries=3,
+    worker_prefetch_multiplier=1,
+    worker_max_tasks_per_child=1000,
     worker_send_task_events=True,
-    # Result settings
-    result_expires=86400,  # 24 hours
-    result_backend=REDIS_URL,
+    worker_disable_rate_limits=False,
+    worker_max_memory_per_child=512000000,
+    result_expires=86400,
     result_serializer="json",
     accept_content=["json"],
-    # Task default settings
-    task_default_retry_delay=60,  # 1 minute
-    task_default_max_retries=3,
-    task_soft_time_limit_task=None,
-    # Monitoring
-    task_send_sent_event=True,
-    # Beat schedule for periodic tasks
     beat_schedule={
-        "model-health-check-every-hour": {
+        "model-health-check": {
             "task": "app.tasks.maintenance_tasks.check_model_health",
             "schedule": crontab(minute=0, hour="*"),
         },
-        "audit-chain-verification-daily": {
+        "audit-chain-verification": {
             "task": "app.tasks.maintenance_tasks.verify_audit_chain_integrity",
-            "schedule": crontab(minute=0, hour=2),  # 2 AM daily
+            "schedule": crontab(minute=0, hour=2),
         },
-        "federated-learning-round-nightly": {
+        "federated-learning-round": {
             "task": "app.tasks.federated_learning_tasks.trigger_federated_round",
-            "schedule": crontab(minute=0, hour=3),  # 3 AM nightly
+            "schedule": crontab(minute=0, hour=3),
         },
         "stale-session-cleanup": {
             "task": "app.tasks.maintenance_tasks.cleanup_stale_sessions",
-            "schedule": crontab(minute=30, hour="*/6"),  # Every 6 hours
+            "schedule": crontab(minute=30, hour="*/6"),
         },
         "bias-report-generation": {
             "task": "app.tasks.enrichment_tasks.generate_bias_report",
-            "schedule": crontab(minute=0, hour=9),  # Daily at 9 AM
+            "schedule": crontab(minute=0, hour=9),
+        },
+        "usage-audit": {
+            "task": "app.tasks.maintenance_tasks.run_usage_audit",
+            "schedule": crontab(hour=2, minute=0),
+        },
+        "data-retention-enforcement": {
+            "task": "app.tasks.compliance_tasks.enforce_data_retention",
+            "schedule": crontab(hour=4, minute=0),
+        },
+        "cache-invalidation": {
+            "task": "app.tasks.maintenance_tasks.invalidate_expired_cache",
+            "schedule": crontab(minute="*/15"),
+        },
+        "db-vacuum-analyze": {
+            "task": "app.tasks.maintenance_tasks.run_db_maintenance",
+            "schedule": crontab(hour=1, minute=0, day_of_week=0),
+        },
+        "refresh-urlhaus-feed": {
+            "task": "app.tasks.threat_intel_tasks.refresh_urlhaus_feed",
+            "schedule": crontab(minute=0, hour="*/6"),
+        },
+        "refresh-otx-pulses": {
+            "task": "app.tasks.threat_intel_tasks.refresh_otx_pulses",
+            "schedule": crontab(minute=0, hour="*/6"),
+        },
+        "refresh-emerging-threats": {
+            "task": "app.tasks.threat_intel_tasks.refresh_emerging_threats",
+            "schedule": crontab(minute=0, hour="*/6"),
+        },
+        "refresh-stix-taxii-feeds": {
+            "task": "app.tasks.threat_intel_tasks.refresh_stix_taxii_feeds",
+            "schedule": crontab(minute=0, hour="*/12"),
+        },
+        "expire-old-iocs": {
+            "task": "app.tasks.threat_intel_tasks.expire_old_iocs",
+            "schedule": crontab(hour=6, minute=0),
+        },
+        "deduplicate-iocs": {
+            "task": "app.tasks.threat_intel_tasks.deduplicate_iocs",
+            "schedule": crontab(hour=12, minute=0),
+        },
+        "ioc-enrichment-report": {
+            "task": "app.tasks.threat_intel_tasks.ioc_enrichment_report",
+            "schedule": crontab(hour=8, minute=0),
         },
     },
-    beat_schedule_filename="celerybeat-schedule",
-    beat_max_loop_interval=5,
+    task_dead_letter_queue="dead_letter",
+    task_default_delivery_mode=2,
+    broker_transport_options={
+        "visibility_timeout": 3600,
+        "fanout_prefix": True,
+        "fanout_patterns": True,
+    },
+    task_send_sent_event=True,
+    task_send_publish_sent_event=True,
+    task_track_started=True,
+    broker_use_ssl=False,
+    redis_backend_use_ssl=False,
 )
 
-# Add blockchain anchoring schedule if enabled
-_anchor_schedule = os.getenv("ANCHOR_SCHEDULE", "hourly").lower()
-if _anchor_schedule and _anchor_schedule != "disabled":
-    if _anchor_schedule in ("hourly", "*"):
-        _schedule = crontab(minute=0, hour="*")
-    elif _anchor_schedule == "daily":
-        _schedule = crontab(minute=0, hour=2)  # 2 AM daily
-    elif _anchor_schedule == "weekly":
-        _schedule = crontab(minute=0, hour=3, day_of_week=0)  # Sunday 3am
-    else:
-        # Default to hourly if unrecognized
-        _schedule = crontab(minute=0, hour="*")
-    app.conf.beat_schedule["blockchain-anchoring"] = {
-        "task": "app.tasks.anchoring_tasks.anchor_audit_chain_to_blockchain",
-        "schedule": _schedule,
-    }
-    logger.info(f"Blockchain anchoring scheduled: {_anchor_schedule}")
-
-# Add model retraining schedule if enabled
-_model_retrain_schedule = os.getenv("MODEL_RETRAIN_SCHEDULE", "0 2 * * 0")  # Default: weekly Sundays at 2am
-if _model_retrain_schedule and _model_retrain_schedule.lower() != "disabled":
-    try:
-        minute, hour, day, month, day_of_week = _model_retrain_schedule.split()
-        app.conf.beat_schedule["automated-model-retraining"] = {
-            "task": "app.tasks.model_training_tasks.retrain_model_async",
-            "schedule": crontab(minute=minute, hour=hour, day_of_month=day, month_of_year=month, day_of_week=day_of_week),
-            "args": ("face_embedding", "/data/embeddings/latest", 10, 0.001),
-        }
-        logger.info(f"Model retraining scheduled: {_model_retrain_schedule}")
-    except Exception as e:
-        logger.warning(f"Invalid MODEL_RETRAIN_SCHEDULE '{_model_retrain_schedule}': {e}")
-
-# Task default retry policy
-app.conf.task_default_retry_policy = {
-    "max_retries": 3,
-    "interval_start": 0,  # Start retrying immediately
-    "interval_step": 60,  # Wait 1 minute between retries
-    "interval_max": 300,  # Maximum 5 minutes between retries
-}
-
-# Task annotations for specific retry behavior
-app.conf.task_annotations = {
-    "app.tasks.recognition_tasks.*": {"max_retries": 5, "retry_backoff": True},
-    "app.tasks.model_training_tasks.*": {"max_retries": 2, "retry_backoff": True},
-}
-
-# Enable SSL for Redis if needed
 if os.getenv("REDIS_SSL", "false").lower() == "true":
     app.conf.broker_use_ssl = {
         "ssl_cert_reqs": "required",
@@ -139,23 +142,33 @@ if os.getenv("REDIS_SSL", "false").lower() == "true":
     }
     app.conf.redis_backend_use_ssl = app.conf.broker_use_ssl
 
-# Custom task base class with monitoring
-from celery import Task
 
-class MonitoredTask(Task):
-    """Base task class that records metrics."""
-    
+class MonitoredTask(object):
+    """Base task with monitoring."""
+    autoretry_for = (Exception,)
+    retry_kwargs = {'max_retries': 3}
+    retry_backoff = True
+    retry_backoff_max = 600
+    retry_jitter = True
+
     def on_success(self, retval, task_id, args, kwargs):
-        from app.metrics import tasks_successful, tasks_failed
-        tasks_successful.inc()
-        super().on_success(retval, task_id, args, kwargs)
-    
+        logger.info("Task {} completed successfully".format(task_id))
+        try:
+            from app.metrics import tasks_successful
+            tasks_successful.inc()
+        except Exception:
+            pass
+
+    def on_retry(self, exc, task_id, args, kwargs, einfo):
+        logger.warning("Task {} retry: {}".format(task_id, exc))
+
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        from app.metrics import tasks_failed
-        tasks_failed.inc()
-        super().on_failure(exc, task_id, args, kwargs, einfo)
+        logger.error("Task {} failed: {}".format(task_id, exc), exc_info=True)
+        try:
+            from app.metrics import tasks_failed
+            tasks_failed.inc()
+        except Exception:
+            pass
 
-app.Task = MonitoredTask
 
-# Initialize Celery app
 celery_app = app

@@ -35,7 +35,7 @@ async def mpc_match(
     Returns:
         {"matches": [...]}
     """
-    db = await get_db()
+    db = get_db()
     if db.pool is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
