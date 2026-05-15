@@ -38,6 +38,7 @@ def check_model_health(self):
                 for model_name, drift_info in degraded_models.items():
                     logger.warning(f"Model {model_name} degraded: {drift_info}")
                     # Trigger retraining
+                    from app.tasks.model_training_tasks import retrain_model_async
                     retrain_model_async.delay(model_name, f"/data/{model_name}_training", epochs=5)
             return {"degraded": len(degraded_models) > 0, "models": degraded_models}
         
@@ -92,11 +93,11 @@ def rotate_encryption_keys(self):
     """Rotate data encryption keys (scheduled quarterly)"""
     try:
         import asyncio
-        from app.security.key_manager import key_manager
+        from app.security.key_rotation import key_manager
         
         async def rotate():
-            new_key = await key_manager.rotate_keys()
-            return {"rotated": True, "new_key_version": new_key.version}
+            new_key_id = await key_manager.rotate_keys()
+            return {"rotated": True, "new_key_id": new_key_id}
         
         return asyncio.run(rotate())
     except Exception as exc:

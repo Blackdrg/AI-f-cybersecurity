@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
 import numpy as np
+from ..offline.sync import get_offline_sync
 
 try:
     import asyncpg
@@ -246,7 +247,6 @@ class DBClient:
                         raise
 
             # Initialize offline sync
-            from ..offline.sync import get_offline_sync
             await get_offline_sync()
 
             # Initialize schemas and extensions
@@ -574,14 +574,14 @@ class DBClient:
 
     # ==================== HEALTH CHECKING ====================
 
-    async def log_health_check(self, service_name, status, latency_ms=None, error_message=None):
+    async def log_health_check(self, service_name, status, latency_ms=None, error=None):
         if self.pool is None:
             return
         try:
             await self.pool.execute("""
                 INSERT INTO system_health (service_name, status, latency_ms, error_message)
                 VALUES ($1, $2, $3, $4)
-            """, service_name, status, latency_ms, error_message)
+            """, service_name, status, latency_ms, error)
         except Exception as e:
             logger.warning(f"Failed to log health check: {e}")
 

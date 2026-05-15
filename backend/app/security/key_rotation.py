@@ -69,6 +69,7 @@ class KeyRotationManager:
         )
         
         logger.info("KMS key rotation complete with annual auto-rotation.")
+        return new_key_id
 
     async def _migrate_embeddings(self, old_key_str: str, new_key_str: str):
         """Batch re-encrypt embeddings using transactions."""
