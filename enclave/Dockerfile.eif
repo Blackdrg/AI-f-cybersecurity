@@ -92,9 +92,9 @@ FROM --platform=linux/amd64 public.ecr.aws/nitrolambdas/python:3.11
 
 # Enclave metadata (required by Nitro)
 LABEL com.amazonaws.enclave=true
-LABEL enclave.memory_mib=2048              # 2GB RAM (adjust as needed)
-LABEL enclave.cpu_count=2                  # 2 vCPUs
-LABEL enclave.debug-mode=Disabled          # Disable debug in prod
+
+
+
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
 LABEL org.opencontainers.image.authors="Security Team <security@org.com>"
 

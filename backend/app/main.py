@@ -47,6 +47,7 @@ from app.api.mpc import router as mpc_router
 from app.api.plugins import router as plugins_router
 from app.api.ai_assistant import router as ai_assistant_router
 from app.api.alerts import router as alerts_router
+from app.api.scim import router as scim_router
 from app.services.threat_enrichment_pipeline import ThreatEnrichmentPipeline
 
 
@@ -166,6 +167,7 @@ app.include_router(mpc_router, prefix='/api')
 app.include_router(plugins_router, prefix='/api')
 app.include_router(ai_assistant_router, prefix='/api')
 app.include_router(alerts_router, prefix='/api')
+app.include_router(scim_router, prefix='/api')
 
 
 @app.get('/healthz')

@@ -52,6 +52,7 @@ except ImportError:
 try:
     from azure.identity import DefaultAzureCredential
     from azure.keyvault.keys import KeyClient
+    from azure.keyvault.keys.crypto import CryptographyClient, EncryptionAlgorithm
     AZURE_AVAILABLE = True
 except ImportError:
     AZURE_AVAILABLE = False
@@ -403,13 +404,22 @@ class CloudHSMKeystore:
         if not vault_url:
             raise ValueError("AZURE_KEYVAULT_URL required")
         self._client = KeyClient(vault_url=vault_url, credential=credential)
+        # For crypto operations, we also need the CryptographyClient
+        self._crypto_clients = {} # Cache clients per key_id
+        self._credential = credential
         logger.info(f"Azure Key Vault client initialized: {vault_url}")
     
+    def _get_azure_crypto_client(self, key_id: str) -> CryptographyClient:
+        if key_id not in self._crypto_clients:
+            key = self._client.get_key(key_id)
+            self._crypto_clients[key_id] = CryptographyClient(key, self._credential)
+        return self._crypto_clients[key_id]
+
     def is_available(self) -> bool:
         return self._client is not None
     
     def encrypt(self, key_id: str, plaintext: bytes, ad: bytes = None) -> Optional[bytes]:
-        """Encrypt using cloud HSM key (AWS KMS encrypt)."""
+        """Encrypt using cloud HSM key."""
         if not self.is_available():
             raise HSMWithoutError("Cloud HSM unavailable")
         
@@ -420,16 +430,13 @@ class CloudHSMKeystore:
                     Plaintext=plaintext,
                     EncryptionAlgorithm="SYMMETRIC_DEFAULT"
                 )
-                # CiphertextBlob is (encrypted_key + iv + ciphertext) blob
                 return resp['CiphertextBlob']
             elif self.provider == "azure":
-                key = self._client.get_key(key_id)
-                # Azure: encryption via Key Vault crypto client
-                # (Full implementation would use azure.keyvault.keys.crypto)
-                logger.warning("Azure encryption not fully implemented in this stub")
-                return None
-        except ClientError as e:
-            logger.error(f"AWS KMS encrypt error: {e}")
+                client = self._get_azure_crypto_client(key_id)
+                result = client.encrypt(EncryptionAlgorithm.rsa_oaep_256, plaintext)
+                return result.ciphertext
+        except Exception as e:
+            logger.error(f"{self.provider.upper()} HSM encrypt error: {e}")
             return None
     
     def decrypt(self, key_id: str, ciphertext: bytes, ad: bytes = None) -> Optional[bytes]:
@@ -445,8 +452,12 @@ class CloudHSMKeystore:
                     EncryptionAlgorithm="SYMMETRIC_DEFAULT"
                 )
                 return resp['Plaintext']
-        except ClientError as e:
-            logger.error(f"AWS KMS decrypt error: {e}")
+            elif self.provider == "azure":
+                client = self._get_azure_crypto_client(key_id)
+                result = client.decrypt(EncryptionAlgorithm.rsa_oaep_256, ciphertext)
+                return result.plaintext
+        except Exception as e:
+            logger.error(f"{self.provider.upper()} HSM decrypt error: {e}")
             return None
     
     def sign(self, key_id: str, data: bytes, algorithm: str = "ECDSA_P256") -> Optional[bytes]:

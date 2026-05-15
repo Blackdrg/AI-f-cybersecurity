@@ -92,7 +92,7 @@ class FaceDetector:
                     reconstruction_confidence = 1.0
 
                     if check_spoof:
-                        spoof_score = self.spoof_detector.detect_spoof(image, bbox)
+                        spoof_score, _ = self.spoof_detector.detect_spoof(image, bbox, landmarks)
 
                     if reconstruct and spoof_score < 0.5:
                         reconstructed_image, reconstruction_confidence = self.reconstructor.reconstruct_face(
@@ -125,7 +125,7 @@ class FaceDetector:
             reconstruction_confidence = 1.0
 
             if check_spoof:
-                spoof_score = self.spoof_detector.detect_spoof(image, bbox)
+                spoof_score, _ = self.spoof_detector.detect_spoof(image, bbox, landmarks)
 
             if reconstruct and spoof_score < 0.5:
                 reconstructed_image, reconstruction_confidence = self.reconstructor.reconstruct_face(

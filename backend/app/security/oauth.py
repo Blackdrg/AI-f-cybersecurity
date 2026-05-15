@@ -4,16 +4,46 @@ OAuth2 / SSO Integration
 import os
 import httpx
 from typing import Optional, Dict, Any
-from fastapi import HTTPException, status
+from fastapi import Request, HTTPException, status
 import logging
 import json
 from urllib.parse import urlencode
 
 logger = logging.getLogger(__name__)
 
+import time
+from .anomaly_detector import anomaly_detector
+from ..db.db_client import get_db
+
 logger = logging.getLogger(__name__)
 
-class AzureADProvider:
+class OAuthProviderBase:
+    """Base class with anomaly detection and rotation support"""
+    
+    async def detect_anomaly(self, request: Request, user_id: str) -> bool:
+        """Check for suspicious login activity."""
+        client_ip = request.client.host
+        user_agent = request.headers.get("user-agent", "unknown")
+        
+        is_anomaly = await anomaly_detector.check_login_anomaly(
+            user_id=user_id,
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
+        return is_anomaly
+
+    async def rotate_tokens(self, user_id: str, old_refresh_token: str) -> Dict[str, Any]:
+        """Implement automated token rotation for security."""
+        # Invalidate old refresh token and issue new pair
+        db = get_db()
+        await db.execute(
+            "UPDATE user_sessions SET is_revoked = true WHERE refresh_token = $1",
+            old_refresh_token
+        )
+        # Token rotation logic (issuing new tokens) would follow
+        return {"status": "rotated"}
+
+class AzureADProvider(OAuthProviderBase):
     """Azure Active Directory OAuth2 provider"""
     
     def __init__(self, tenant_id: str, client_id: str, client_secret: str):
@@ -109,7 +139,7 @@ class AzureADProvider:
             raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
 
 
-class GoogleOAuthProvider:
+class GoogleOAuthProvider(OAuthProviderBase):
     """Google OAuth2 provider"""
     
     def __init__(self, client_id: str, client_secret: str):

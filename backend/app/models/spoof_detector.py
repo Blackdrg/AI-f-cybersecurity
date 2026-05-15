@@ -84,7 +84,7 @@ class SpoofDetector:
             self.model = SpoofNet().to(self.device)
             self.model.eval()
 
-    def detect_spoof(self, image: np.ndarray, face_bbox: list) -> Tuple[float, dict]:
+    def detect_spoof(self, image: np.ndarray, face_bbox: list, landmarks: list = None) -> Tuple[float, dict]:
         """Detect if face is spoofed. Returns (spoof_score, details)."""
         x1, y1, x2, y2 = face_bbox
         face_roi = image[y1:y2, x1:x2]

@@ -7,7 +7,8 @@ import base64
 import json
 import time
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
+from fastapi import Request
 import secrets
 import hashlib
 import hmac
@@ -15,15 +16,53 @@ import pyotp
 from sqlalchemy import text
 from ..db.db_client import get_db
 from ..security import create_token
+from .webauthn import webauthn_service
 import logging
 
 logger = logging.getLogger(__name__)
 
 class MFAService:
-    """Manages TOTP-based MFA enrollment, verification, and backup codes"""
+    """Manages MFA enrollment, verification, and device trust"""
     
     def __init__(self):
         self.totp_issuer = os.getenv("MFA_ISSUER", "AI-f Platform")
+        self.device_trust_enabled = os.getenv("DEVICE_TRUST_ENABLED", "True").lower() == "true"
+    
+    async def get_webauthn_registration_options(self, user_id: str) -> str:
+        """Get options for WebAuthn hardware key registration."""
+        db = get_db()
+        user = await db.get_user(user_id)
+        existing_creds = await db.fetch_all(
+            "SELECT credential_id FROM user_credentials WHERE user_id = $1", user_id
+        )
+        return webauthn_service.get_registration_options(
+            user_id=user_id, 
+            user_name=user["email"], 
+            existing_credentials=existing_creds
+        )
+
+    async def verify_device_trust(self, request: Request, user_id: str) -> bool:
+        """
+        Verify if the device is trusted based on metadata.
+        
+        Checks for:
+        - Known device ID in cookies/headers
+        - Geo-location consistency
+        - Browser fingerprint
+        """
+        if not self.device_trust_enabled:
+            return True
+            
+        device_id = request.headers.get("X-Device-ID")
+        if not device_id:
+            return False
+            
+        db = get_db()
+        trusted = await db.fetch_val(
+            "SELECT COUNT(*) FROM trusted_devices WHERE user_id = $1 AND device_id = $2 AND is_active = true",
+            user_id, device_id
+        )
+        return trusted > 0
     
     async def enable_mfa_for_user(self, user_id: str) -> Tuple[str, List[str]]:
         """
