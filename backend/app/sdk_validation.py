@@ -11,6 +11,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from unittest.mock import MagicMock, patch, AsyncMock
 import httpx
+import logging
 
 
 class SDKValidationResult:
@@ -23,14 +24,17 @@ class SDKValidationResult:
         self.errors: List[str] = []
         self.warnings: List[str] = []
 
-    def add_test(self, name: str, passed: bool, message: str = "", duration_ms: float = 0):
+    def add_test(self, name: str, passed: bool, message: str = "", duration_ms: float = 0, is_warning: bool = False):
         self.tests.append({
             "name": name,
             "passed": passed,
             "message": message,
             "duration_ms": duration_ms,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
+            "is_warning": is_warning
         })
+        if is_warning:
+            self.add_warning(f"Test {name}: {message}")
 
     def add_error(self, error: str):
         self.errors.append(error)

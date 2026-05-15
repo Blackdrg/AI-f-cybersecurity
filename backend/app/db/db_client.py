@@ -16,7 +16,6 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
 import numpy as np
-from ..offline.sync import get_offline_sync
 
 try:
     import asyncpg

@@ -1,7 +1,10 @@
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
 import time
 import os
+import logging
 from fastapi import Depends, Header, HTTPException, Response
+
+logger = logging.getLogger(__name__)
 
 # Global metric definitions
 recognition_count = Counter(

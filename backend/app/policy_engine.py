@@ -5,8 +5,6 @@ from enum import Enum
 import hashlib
 import json
 import os
-from geoip2.database import Reader as GeoIPReader
-from geoip2.errors import AddressNotFoundError
 from .security.anomaly_detector import anomaly_detector
 
 
@@ -45,8 +43,11 @@ def parse_user_agent(user_agent_string: str) -> str:
     
     return "unknown"
 
+
 # Optional: GeoIP support
 try:
+    from geoip2.database import Reader as GeoIPReader
+    from geoip2.errors import AddressNotFoundError
     GEOIP_ENABLED = True
     GEOIP_PATH = os.getenv("GEOIP_DATABASE_PATH", "/app/data/GeoLite2-City.mmdb")
     geoip_reader = GeoIPReader(GEOIP_PATH) if os.path.exists(GEOIP_PATH) else None

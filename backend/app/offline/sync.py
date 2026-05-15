@@ -7,7 +7,6 @@ from typing import List, Dict, Any
 import sqlite3
 from datetime import datetime
 import numpy as np
-from ..db.db_client import DBClient
 import logging
 logger = logging.getLogger(__name__)
 
@@ -72,7 +71,7 @@ class OfflineSync:
         await self.local_db.commit()
         self.pending_sync.append(('event', event_data['event_id']))
     
-    async def sync_to_cloud(self, online_db: DBClient):
+    async def sync_to_cloud(self, online_db):
         """Sync pending data when online."""
         async with self.sync_lock:
             if not self.pending_sync:
