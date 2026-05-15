@@ -4,6 +4,8 @@ import jwt
 import os
 import logging
 import datetime
+import hashlib
+from passlib.context import CryptContext
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,9 @@ except ImportError:
     ETHICAL_GOVERNOR_AVAILABLE = False
     EthicalGovernor = None
 
+# Password hashing context
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+
 security = HTTPBearer()
 ethical_governor = EthicalGovernor() if ETHICAL_GOVERNOR_AVAILABLE else None
 
@@ -35,7 +40,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import base64
 
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security), request: Request = None) -> dict:
     """Verify JWT token from Authorization header.
     
     Production mode (USE_HTTP_ONLY_COOKIE=true):
@@ -43,9 +48,35 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
         - Falls back to Authorization header for API clients
     """
     token = credentials.credentials
+    return await _verify_payload(token, request)
+
+
+async def _check_token_revocation(jti: str) -> bool:
+    """Check if token is revoked in Redis."""
+    from app.services.redis_client import get_redis
+    redis = get_redis()
+    if not redis:
+        return False
+    return await redis.get(f"revoked_token:{jti}") is not None
+
+
+async def _verify_payload(token: str, request: Request = None) -> dict:
     try:
         payload = jwt.decode(token, secrets_manager.get_secret(
             'JWT_SECRET', 'dev-secret-change-me'), algorithms=['HS256'])
+        
+        # Check revocation
+        jti = payload.get("jti")
+        if jti and await _check_token_revocation(jti):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked")
+
+        # Session Fingerprinting
+        if request:
+            fingerprint = _get_session_fingerprint(request)
+            if payload.get("fp") and payload.get("fp") != fingerprint:
+                logger.warning(f"Session fingerprint mismatch for user {payload.get('user_id')}")
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session mismatch")
+
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(
@@ -74,16 +105,7 @@ async def verify_token_from_cookie(request: Request) -> dict:
             detail="Authentication cookie not found"
         )
     
-    try:
-        payload = jwt.decode(token, secrets_manager.get_secret(
-            'JWT_SECRET', 'dev-secret-change-me'), algorithms=['HS256'])
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    return await _verify_payload(token, request)
 
 
 def require_admin(user: dict = Depends(verify_token)):
@@ -151,20 +173,61 @@ def check_ethical(request_data: dict, user: dict = Depends(verify_token)):
     return user
 
 
-def create_token(user_id: str, role: str = 'viewer', org_id: str = None, subscription_tier: str = 'free') -> str:
+def create_token(user_id: str, role: str = 'viewer', org_id: str = None, 
+                 subscription_tier: str = 'free', expires_delta: datetime.timedelta = None,
+                 fingerprint: str = None) -> str:
     if role not in ['super_admin', 'admin', 'operator', 'auditor', 'analyst', 'viewer']:
         raise ValueError(f"Invalid role: {role}")
     if FIPS_MODE:
         logger.warning("FIPS_MODE enabled: Token generation using software-only fallback.")
+    
+    if expires_delta:
+        expire = datetime.datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=15) # Shorter default expiry
     
     payload = {
         'user_id': user_id,
         'role': role,
         'org_id': org_id,
         'subscription_tier': subscription_tier,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        'exp': expire,
+        'iat': datetime.datetime.utcnow(),
+        'jti': str(os.urandom(8).hex())
+    }
+    
+    if fingerprint:
+        payload['fp'] = fingerprint
+        
+    return jwt.encode(payload, secrets_manager.get_secret('JWT_SECRET'), algorithm='HS256')
+
+
+def create_refresh_token(user_id: str) -> str:
+    """Create a long-lived refresh token."""
+    expire = datetime.datetime.utcnow() + datetime.timedelta(days=7)
+    payload = {
+        'user_id': user_id,
+        'exp': expire,
+        'iat': datetime.datetime.utcnow(),
+        'sub': 'refresh',
+        'jti': str(os.urandom(8).hex())
     }
     return jwt.encode(payload, secrets_manager.get_secret('JWT_SECRET'), algorithm='HS256')
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def _get_session_fingerprint(request: Request) -> str:
+    """Generate a simple fingerprint for the session."""
+    user_agent = request.headers.get("user-agent", "")
+    ip = request.client.host if request.client else "unknown"
+    return hashlib.sha256(f"{user_agent}|{ip}".encode()).hexdigest()
 
 
 def set_auth_cookie(response: Response, token: str, max_age: int = 3600):

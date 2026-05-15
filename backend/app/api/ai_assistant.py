@@ -7,6 +7,7 @@ from app.middleware.auth import get_current_user
 from app.db.db_client import get_db
 from app.services.redis_client import get_redis
 from datetime import datetime
+from app.security.ai_firewall import ai_firewall
 
 router = APIRouter(tags=["ai_assistant"])
 logger = logging.getLogger(__name__)
@@ -45,6 +46,16 @@ async def chat_completion(
     if int(daily_usage) > 10000:  # 10k token daily free tier
         raise HTTPException(429, "Daily AI token quota exceeded")
 
+    # AI Firewall: Validate Input
+    is_safe, error_msg = ai_firewall.validate_input(request.messages)
+    if not is_safe:
+        await db.log_audit_event(
+            action="ai_firewall_block",
+            person_id=user['user_id'],
+            details={"reason": error_msg, "messages": request.messages[:1]}
+        )
+        raise HTTPException(400, error_msg)
+
     try:
         # Call LLM
         response = await llm.chat_completion(
@@ -53,6 +64,9 @@ async def chat_completion(
             max_tokens=request.max_tokens,
             temperature=request.temperature
         )
+        
+        # AI Firewall: Sanitize Output
+        response = ai_firewall.sanitize_output(response)
         
         # Track usage
         usage = {"tokens": request.max_tokens}  # Approximate

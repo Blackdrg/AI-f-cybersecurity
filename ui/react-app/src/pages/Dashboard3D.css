@@ -1,0 +1,18 @@
+/* src/pages/Dashboard3D.css */
+
+/* Basic styling for the 3D dashboard overlay */
+
+/* We can add some global styles if needed */
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevent scrolling when canvas is full screen */
+}
+
+/* Ensure the canvas takes full screen */
+canvas {
+  display: block;
+}
+
+/* Overlay styles - already handled in component via sx props */
+/* But we can add some global overrides if needed */

@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.benchmarks/
+htmlcov/
+dist/
+build/
+*.egg-info/
+venv/
+.env
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# App data
+data/
+logs/
+certs/
+tmp/
+
+# Models (except the bundle needed for the build)
+models/*
+!models/download_models.py
+!models/onnx_bundle/

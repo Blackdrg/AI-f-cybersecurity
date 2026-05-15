@@ -3,18 +3,17 @@ import asyncio
 import sys
 sys.path.append('.')
 
-
 async def test_db():
     try:
         db = get_db()
-        print("✓ DB initialized successfully")
+        print("OK - DB initialized successfully")
 
         # Test basic operations
         # This will use in-memory fallback if PostgreSQL is not available
-        print("✓ DB operations test completed")
+        print("OK - DB operations test completed")
         return True
     except Exception as e:
-        print(f"✗ DB initialization failed: {e}")
+        print(f"FAIL - DB initialization failed: {e}")
         return False
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ import os
 import asyncio
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -48,6 +48,10 @@ from app.api.plugins import router as plugins_router
 from app.api.ai_assistant import router as ai_assistant_router
 from app.api.alerts import router as alerts_router
 from app.api.scim import router as scim_router
+from app.middleware.security import SecurityHeadersMiddleware, RequestLimitsMiddleware, SanitizationMiddleware
+from app.middleware.brute_force import BruteForceMiddleware
+from starlette_context import middleware as context_middleware
+import time
 from app.services.threat_enrichment_pipeline import ThreatEnrichmentPipeline
 
 
@@ -129,6 +133,22 @@ app = FastAPI(
 )
 
 # Middleware
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestLimitsMiddleware, max_request_size=10 * 1024 * 1024)  # 10MB limit
+app.add_middleware(BruteForceMiddleware, max_attempts=5)
+app.add_middleware(SanitizationMiddleware)
+
+@app.middleware("http")
+async def timeout_middleware(request: Request, call_next):
+    try:
+        return await asyncio.wait_for(call_next(request), timeout=30.0)
+    except asyncio.TimeoutError:
+        from starlette.responses import JSONResponse
+        return JSONResponse(
+            status_code=504,
+            content={"success": False, "error": "Request timed out"}
+        )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv('CORS_ORIGINS', '*').split(','),

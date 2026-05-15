@@ -8,7 +8,7 @@ import {
 import {
   Security, Timeline, Refresh, Settings, Warning,
   AccountCircle, Notifications, Error as ErrorIcon, CheckCircle, Flag, Menu as MenuIcon,
-  ExpandMore
+  ExpandMore, View3d
 } from '@mui/icons-material';
 import Sidebar from '../components/Sidebar';
 import DashboardHome from './DashboardHome';
@@ -234,12 +234,33 @@ const handlePageChange = (newPage: string) => {
           }}
         >
           <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <OrgSwitcher />
-              {organization && (
-                <RoleBadge role={currentUser?.role || 'viewer'} />
-              )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <OrgSwitcher />
+          {organization && (
+            <RoleBadge role={currentUser?.role || 'viewer'} />
+          )}
+        </Box>
+        
+        {/* 3D View Toggle Button */}
+        <Tooltip title="Switch to 3D Command Center">
+          <IconButton
+            color="inherit"
+            size="small"
+            onClick={() => {
+              // In a real app, we would navigate to the 3D dashboard
+              // For now, we'll just show an alert or log
+              console.log('Switching to 3D view');
+              alert('3D view would be implemented here - navigating to /dashboard-3d');
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CubeIcon />
+              <Typography variant="caption" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                3D View
+              </Typography>
             </Box>
+          </IconButton>
+        </Tooltip>
             
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {/* System Health Indicator */}

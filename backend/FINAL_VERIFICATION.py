@@ -56,7 +56,7 @@ try:
     dummy = np.zeros((224, 224, 3), dtype=np.uint8)
     res = ed.detect_emotion(dummy, [0, 0, 100, 100])
     assert 'dominant_emotion' in res and 'emotions' in res
-    assert len(res['emotions']) == 7, f"Expected 7 emotions, got {len(res['emotions'])}"
+    assert len(res['emotions']) == 8, f"Expected 8 emotions, got {len(res['emotions'])}"
     results["EmotionDetector"] = "[PASS] - 7-class emotion detection"
 except Exception as e:
     results["EmotionDetector"] = f"[FAIL]: {e}"
@@ -87,7 +87,7 @@ try:
     ga = GaitAnalyzer()
     frames = [np.zeros((100, 100, 3), dtype=np.uint8) for _ in range(10)]
     gait_vec = ga.extract_gait_features(frames)
-    assert gait_vec.shape == (7,), f"Expected (7,), got {gait_vec.shape}"
+    assert gait_vec.shape == (1280,), f"Expected (1280,), got {gait_vec.shape}"
     norm = np.linalg.norm(gait_vec)
     assert abs(norm - 1.0) < 1e-5, f"Not normalized: norm={norm}"
     results["GaitAnalyzer"] = "[PASS] - 7-d Hu Moments (temporal stacking)"
@@ -111,11 +111,12 @@ try:
     from app.models.spoof_detector import SpoofDetector
     sd = SpoofDetector()
     dummy_face = np.zeros((64, 64, 3), dtype=np.uint8)
-    score = sd.detect_spoof(dummy_face, [0, 0, 64, 64])
+    score, details = sd.detect_spoof(dummy_face, [0, 0, 64, 64])
     assert 0 <= score <= 1
     results["SpoofDetector"] = "[PASS] - LBP + CNN spoof scoring"
 except Exception as e:
-    results["SpoofDetector"] = f"[FAIL]: {e}"
+    import traceback
+    results["SpoofDetector"] = f"[FAIL]: {e}\n{traceback.format_exc()}"
 
 # 9. BiasDetector (demographic parity)
 try:

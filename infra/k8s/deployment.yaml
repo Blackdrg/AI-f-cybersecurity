@@ -16,8 +16,22 @@ spec:
         app: face-recognition-backend
         tier: api
     spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: backend
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false # Needs write access to /app/data and /app/models
+          privileged: false
         image: face-recognition-backend:latest
         ports:
         - containerPort: 8000

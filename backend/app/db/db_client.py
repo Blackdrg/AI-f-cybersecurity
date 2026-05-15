@@ -14,6 +14,7 @@ import asyncio
 import time
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
+from contextlib import asynccontextmanager
 
 import numpy as np
 
@@ -26,10 +27,12 @@ except ImportError:
 
 try:
     from cryptography.fernet import Fernet
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     CRYPTO_AVAILABLE = True
 except ImportError:
     CRYPTO_AVAILABLE = False
     Fernet = None
+    AESGCM = None
 
 try:
     import boto3
@@ -178,21 +181,45 @@ class DBClient:
         key_bytes = key.encode()[:32].ljust(32, b'\0')
         return base64.urlsafe_b64encode(key_bytes)
 
-    def _encrypt_embedding(self, embedding: np.ndarray) -> bytes:
-        if CRYPTO_AVAILABLE:
-            fernet = Fernet(self.encryption_key)
-            data = embedding.tobytes()
-            return fernet.encrypt(data)
-        else:
-            return embedding.tobytes()
+    def _encrypt_pii(self, plaintext: str) -> bytes:
+        """Encrypt PII using AES-256-GCM."""
+        if not plaintext or not CRYPTO_AVAILABLE:
+            return plaintext.encode() if plaintext else b""
+        
+        aesgcm = AESGCM(self.encryption_key[:32]) # Ensure 32 bytes
+        nonce = os.urandom(12)
+        ciphertext = aesgcm.encrypt(nonce, plaintext.encode(), None)
+        return nonce + ciphertext
 
-    def _decrypt_embedding(self, encrypted_data: bytes) -> np.ndarray:
-        if CRYPTO_AVAILABLE:
-            fernet = Fernet(self.encryption_key)
-            data = fernet.decrypt(encrypted_data)
-            return np.frombuffer(data, dtype=np.float32)
-        else:
-            return np.frombuffer(encrypted_data, dtype=np.float32)
+    def _decrypt_pii(self, ciphertext: bytes) -> str:
+        """Decrypt PII using AES-256-GCM."""
+        if not ciphertext or not CRYPTO_AVAILABLE:
+            return ciphertext.decode() if ciphertext else ""
+        
+        try:
+            aesgcm = AESGCM(self.encryption_key[:32])
+            nonce = ciphertext[:12]
+            actual_ciphertext = ciphertext[12:]
+            decrypted = aesgcm.decrypt(nonce, actual_ciphertext, None)
+            return decrypted.decode()
+        except Exception as e:
+            logger.warning(f"PII decryption failed: {e}")
+            return str(ciphertext)
+
+    def _hash_pii(self, plaintext: str) -> str:
+        """Deterministic hash for indexing/lookups."""
+        if not plaintext:
+            return ""
+        # Salt with encryption key to prevent rainbow tables
+        return hashlib.sha256(f"{plaintext}{self.encryption_key.decode()}".encode()).hexdigest()
+
+    @asynccontextmanager
+    async def org_session(self, org_id: str):
+        """Context manager to set the current organization for RLS."""
+        async with self.pool.acquire() as conn:
+            await conn.execute(f"SET LOCAL app.current_org_id = '{org_id}'")
+            yield conn
+            await conn.execute("RESET app.current_org_id")
 
     async def init_db(self):
         """Initialize database connection pools with retry logic."""
@@ -225,14 +252,16 @@ class DBClient:
                         min_size=pool_min_size, max_size=pool_max_size,
                         max_queries=max_queries,
                         max_inactive_connection_lifetime=max_inactive,
-                        health_check_interval=health_check_interval,
                         timeout=conn_timeout,
                         command_timeout=conn_timeout,
+                        ssl='require' if os.getenv('DB_SSL', 'true').lower() == 'true' else None,
                         server_settings={
                             'application_name': 'ai-f-production',
-                            'tcp_keepalives_idle': 30,
-                            'tcp_keepalives_interval': 5,
-                            'tcp_keepalives_count': 5,
+                            'statement_timeout': os.getenv('DB_STATEMENT_TIMEOUT', '30000'), # 30s
+                            'idle_in_transaction_session_timeout': '60000', # 60s
+                            'tcp_keepalives_idle': '30',
+                            'tcp_keepalives_interval': '5',
+                            'tcp_keepalives_count': '5',
                         }
                     )
                     logger.info("Primary database pool created successfully")
@@ -246,6 +275,7 @@ class DBClient:
                         raise
 
             # Initialize offline sync
+            from ..offline.sync import get_offline_sync
             await get_offline_sync()
 
             # Initialize schemas and extensions
@@ -270,7 +300,26 @@ class DBClient:
             await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
             await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_stat_statements;")
             await conn.execute("CREATE EXTENSION IF NOT EXISTS btree_gist;")
-            logger.info("Schema extensions initialized")
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS pgaudit;")
+            logger.info("Schema extensions initialized (pgcrypto, vector, pg_stat_statements, pgaudit, btree_gist)")
+            
+            # Enable RLS on core tables
+            await conn.execute("ALTER TABLE IF EXISTS organizations ENABLE ROW LEVEL SECURITY;")
+            await conn.execute("ALTER TABLE IF EXISTS org_members ENABLE ROW LEVEL SECURITY;")
+            await conn.execute("ALTER TABLE IF EXISTS recognition_events ENABLE ROW LEVEL SECURITY;")
+            await conn.execute("ALTER TABLE IF EXISTS cameras ENABLE ROW LEVEL SECURITY;")
+            
+            # Basic RLS policies for multi-tenancy
+            # Note: In a real app, these would use current_setting('app.current_org_id') 
+            # set by the app before each query.
+            await conn.execute("""
+                DO $$ BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM pg_policy WHERE polname = 'org_isolation_policy') THEN
+                        CREATE POLICY org_isolation_policy ON recognition_events
+                        USING (org_id = current_setting('app.current_org_id')::uuid);
+                    END IF;
+                END $$;
+            """)
 
     async def _init_read_replicas(self, db_user: str, db_password: str, db_name: str):
         """Initialize read replica connection pools with health checking."""
@@ -285,7 +334,6 @@ class DBClient:
                         replica_url,
                         min_size=int(os.getenv('DB_REPLICA_POOL_MIN', '2')),
                         max_size=int(os.getenv('DB_REPLICA_POOL_MAX', '5')),
-                        health_check_interval=30.0,
                         max_inactive_connection_lifetime=300.0,
                         timeout=15.0,
                         max_queries=5000,
@@ -739,15 +787,82 @@ class DBClient:
         return True
 
     async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
-        if self.pool is None: return self._in_memory_db['users'].get(user_id)
+        if self.pool is None: 
+            user = self._in_memory_db['users'].get(user_id)
+            if user:
+                user = user.copy()
+                user['email'] = self._decrypt_pii(user.get('email')) if isinstance(user.get('email'), bytes) else user.get('email')
+                user['name'] = self._decrypt_pii(user.get('name')) if isinstance(user.get('name'), bytes) else user.get('name')
+            return user
+
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM users WHERE user_id = $1", user_id)
-            return dict(row) if row else None
+            if row:
+                data = dict(row)
+                data['email'] = self._decrypt_pii(data['email']) if isinstance(data['email'], bytes) else data['email']
+                data['name'] = self._decrypt_pii(data['name']) if isinstance(data['name'], bytes) else data['name']
+                return data
+            return None
 
     async def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        email_hash = self._hash_pii(email)
+        if self.pool is None:
+            for u in self._in_memory_db['users'].values():
+                if self._hash_pii(self._decrypt_pii(u['email']) if isinstance(u['email'], bytes) else u['email']) == email_hash:
+                    return u
+            return None
+
         async with self.pool.acquire() as conn:
-            row = await conn.fetchrow("SELECT * FROM users WHERE email = $1", email)
-            return dict(row) if row else None
+            # We search by email_hash which is deterministic and indexed
+            row = await conn.fetchrow("SELECT * FROM users WHERE email_hash = $1", email_hash)
+            if row:
+                data = dict(row)
+                data['email'] = self._decrypt_pii(data['email']) if isinstance(data['email'], bytes) else data['email']
+                data['name'] = self._decrypt_pii(data['name']) if isinstance(data['name'], bytes) else data['name']
+                return data
+            return None
+
+    async def create_user(self, user_id: str, email: str, name: str, hashed_password: str = None, subscription_tier: str = "free") -> bool:
+        encrypted_email = self._encrypt_pii(email)
+        encrypted_name = self._encrypt_pii(name)
+        email_hash = self._hash_pii(email)
+
+        if self.pool is None:
+            self._in_memory_db['users'][user_id] = {
+                'user_id': user_id, 'email': encrypted_email, 'name': encrypted_name,
+                'email_hash': email_hash,
+                'hashed_password': hashed_password, 'subscription_tier': subscription_tier,
+                'created_at': datetime.utcnow()
+            }
+            return True
+        async with self.pool.acquire() as conn:
+            # Check if column exists, if not, we might need a migration, but for now we assume it does or we'll error
+            await conn.execute("""
+                INSERT INTO users (user_id, email, email_hash, name, hashed_password, subscription_tier, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW())
+            """, user_id, encrypted_email, email_hash, encrypted_name, hashed_password, subscription_tier)
+        return True
+
+    async def update_user(self, user_id: str, email: str, name: str, subscription_tier: str = None) -> bool:
+        if self.pool is None:
+            if user_id in self._in_memory_db['users']:
+                self._in_memory_db['users'][user_id].update({'email': email, 'name': name, 'subscription_tier': subscription_tier})
+                return True
+            return False
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                UPDATE users SET email = $1, name = $2, subscription_tier = COALESCE($3, subscription_tier)
+                WHERE user_id = $4
+            """, email, name, subscription_tier, user_id)
+        return True
+
+    async def delete_user(self, user_id: str) -> bool:
+        if self.pool is None:
+            self._in_memory_db['users'].pop(user_id, None)
+            return True
+        async with self.pool.acquire() as conn:
+            await conn.execute("DELETE FROM users WHERE user_id = $1", user_id)
+        return True
 
     async def create_organization(self, name: str, billing_email: str) -> str:
         async with self.pool.acquire() as conn:

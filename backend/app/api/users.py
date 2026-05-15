@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, HTTPException, Depends, Response, Request
 from fastapi.responses import JSONResponse
 from typing import List
 from ..schemas import UserCreate, UserResponse
 from ..db.db_client import get_db
-from ..security import get_current_user, create_token, set_auth_cookie, clear_auth_cookie
+from ..security import get_current_user, create_token, set_auth_cookie, clear_auth_cookie, verify_password, get_password_hash, _get_session_fingerprint, create_refresh_token
 import uuid
 import os
 from datetime import datetime
@@ -21,9 +21,13 @@ async def create_user(user: UserCreate):
     user_id = str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat()
 
-    subscription_tier = user.subscription_tier
+    subscription_tier = user.subscription_tier or "free"
+    
+    hashed_password = None
+    if user.password:
+        hashed_password = get_password_hash(user.password)
 
-    await db.create_user(user_id, user.email, user.name, subscription_tier)
+    await db.create_user(user_id, user.email, user.name, hashed_password, subscription_tier)
 
     return UserResponse(
         user_id=user_id,
@@ -83,7 +87,7 @@ async def logout(response: Response):
 
 
 @router.post("/auth/login")
-async def login(response: Response, email: str, password: str = ""):
+async def login(request: Request, response: Response, email: str, password: str = ""):
     """Login and get JWT token.
     
     Production mode (USE_HTTP_ONLY_COOKIE=true):
@@ -95,11 +99,22 @@ async def login(response: Response, email: str, password: str = ""):
     db = get_db()
     user = await db.get_user_by_email(email)
     
-    if not user:
+    if not user or not verify_password(password, user.get("hashed_password", "")):
+        # TODO: Add brute-force protection logic here (increment failures in Redis)
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    # Create JWT token
-    token = create_token(user["user_id"], user.get("role", "viewer"))
+    # Session Fingerprinting
+    fingerprint = _get_session_fingerprint(request)
+    
+    # Create JWT token (short-lived)
+    token = create_token(
+        user["user_id"], 
+        user.get("role", "viewer"),
+        fingerprint=fingerprint
+    )
+    
+    # Create Refresh Token
+    refresh_token = create_refresh_token(user["user_id"])
     
     user_data = {
         "user_id": user["user_id"],
@@ -111,10 +126,18 @@ async def login(response: Response, email: str, password: str = ""):
     
     if USE_HTTP_ONLY_COOKIE:
         # Production: Set httpOnly cookie for true XSS protection
-        # Cookie is HttpOnly (not accessible to JavaScript), Secure (HTTPS only), SameSite=strict
-        set_auth_cookie(response, token, max_age=3600)
+        set_auth_cookie(response, token, max_age=15*60) # 15 mins
         
-        # Return info that httpOnly cookie is being used
+        # Set refresh token in another secure cookie
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=os.getenv('ENVIRONMENT', 'development') in ('production', 'prod'),
+            samesite='strict',
+            max_age=7*24*3600 # 7 days
+        )
+        
         return {
             "access_token": "",
             "token_type": "bearer",
@@ -122,9 +145,9 @@ async def login(response: Response, email: str, password: str = ""):
             "user": UserResponse(**user_data)
         }
     else:
-        # Development/legacy: Return token in response body
         return {
             "access_token": token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
             "use_http_only_cookie": False,
             "user": UserResponse(**user_data)
