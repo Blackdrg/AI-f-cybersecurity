@@ -20,18 +20,18 @@ logger = logging.getLogger(__name__)
 
 # Check optional dependencies
 try:
-    from insightface.app import FaceAnalysis  # type: ignore
+    from insightface.app import FaceAnalysis  
     INSIGHTFACE_AVAILABLE = True
 except ImportError:
     INSIGHTFACE_AVAILABLE = False
-    FaceAnalysis = None  # type: ignore
+    FaceAnalysis = None  
 
 try:
     from speechbrain.inference import EncoderClassifier
     SPEECHBRAIN_AVAILABLE = True
 except ImportError:
     SPEECHBRAIN_AVAILABLE = False
-    EncoderClassifier = None  # type: ignore
+    EncoderClassifier = None   
 
 # For TYPE_CHECKING, we can still import the types
 if TYPE_CHECKING:

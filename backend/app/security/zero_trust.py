@@ -1,4 +1,4 @@
-import jwt
+import jwt  # pyrefly: ignore
 import time
 import os
 from typing import Optional
