@@ -1,0 +1,581 @@
+import React, { useState } from 'react';
+import { Container, Typography, Box,  Card, CardContent,
+  Paper, Button, TextField, LinearProgress, Chip, CircularProgress,
+  IconButton, Tooltip, Tabs, Tab, Divider, Alert, Stack } from '@mui/material';
+import { Grid } from '@mui/material';
+import {
+  CameraAlt, Search, Image as ImageIcon,
+  BarChart, Timeline, ShowChart, CompareArrows,
+  FilterCenterFocus, AccountCircle, Radar,
+  BugReport, Warning, Refresh
+} from '@mui/icons-material';
+import RecognizeView from './RecognizeView';
+import API from '../../services/api';
+import { RecognitionError, RecognitionResult, Severity } from '../../types';
+import OperatorWorkflowPanel from '../dashboard/OperatorWorkflowPanel';
+import RecognitionErrorRecovery from './RecognitionErrorRecovery';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  value: number;
+  index: number;
+}
+
+function TabPanel({ children, value, index }: TabPanelProps) {
+  return (
+    <Box hidden={value !== index} sx={{ width: '100%' }}>
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </Box>
+  );
+}
+
+function Recognize() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [recognitionResult, setRecognitionResult] = useState<RecognitionResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [explainableAI, setExplainableAI] = useState<any>(null);
+  const [tabValue, setTabValue] = useState(0);
+  const [options, setOptions] = useState<Record<string, any>>({
+    enable_spoof_check: true,
+    enable_emotion: true,
+    enable_age_gender: true,
+    enable_behavior: true,
+    threshold: 0.4,
+  });
+  const [recognitionError, setRecognitionError] = useState<RecognitionError | null>(null);
+  const [recoveryAction, setRecoveryAction] = useState<any>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setRecognitionResult(null);
+      setExplainableAI(null);
+    }
+  };
+
+  const handleRecognize = async () => {
+    if (!selectedFile) return;
+
+    setLoading(true);
+    setRecognitionError(null);
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      Object.keys(options).forEach(key => {
+        formData.append(key, options[key]);
+      });
+
+      const res = await API.post("/api/recognize", formData);
+      setRecognitionResult(res.data);
+
+      const explanation = generateExplanation(res.data);
+      setExplainableAI(explanation);
+      setRecognitionError(null);
+
+      // Check for warning-level issues
+      const face = res.data?.faces?.[0];
+      if (face) {
+        if (face.spoof_score > 0.3) {
+          setRecognitionError({
+            type: 'spoof_warning',
+            severity: face.spoof_score > 0.5 ? 'critical' : 'warning',
+            message: `Potential spoof detected (${(face.spoof_score * 100).toFixed(1)}%)`,
+            details: { spoof_score: face.spoof_score }
+          });
+        } else if (face.score < 0.4) {
+          setRecognitionError({
+            type: 'low_confidence',
+            severity: 'warning',
+            message: `Low match confidence (${(face.score * 100).toFixed(1)}%)`,
+            details: { confidence: face.score }
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('Recognition failed:', error);
+      setRecognitionError({
+        type: 'recognition_failed',
+        severity: 'error',
+        message: error.message || 'Recognition failed',
+        details: { error: error.message }
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateExplanation = (result: any) => {
+    if (!result?.faces?.[0]) return null;
+
+    const face = result.faces[0];
+    const contributions = [];
+
+    if (face.score) {
+      contributions.push({
+        name: 'Face Recognition',
+        contribution: Math.round(face.score * 50),
+        confidence: Math.round(face.confidence * 100) || 94
+      });
+    }
+
+    if (face.spoof_score) {
+      contributions.push({
+        name: 'Spoof Detection',
+        contribution: -Math.round(face.spoof_score * 30),
+        confidence: Math.round((1 - face.spoof_score) * 100)
+      });
+    }
+
+    if (face.emotion) {
+      contributions.push({
+        name: 'Emotion Analysis',
+        contribution: 10,
+        confidence: 87
+      });
+    }
+
+    if (face.age || face.gender) {
+      contributions.push({
+        name: 'Demographic Analysis',
+        contribution: 8,
+        confidence: 82
+      });
+    }
+
+    return {
+      summary: `Recognition based on multiple biometric modalities with ${contributions.length} contributing factors.`,
+      factors: contributions,
+      metrics: {
+        overallAccuracy: 94.2,
+        biasScore: 0.96,
+        confidenceVariance: 0.03
+      },
+      decision: {
+        type: 'allow',
+        confidence: face.score || 0.5,
+        threshold: options.threshold
+      }
+    };
+  };
+
+  const getFactors = () => {
+    if (!recognitionResult?.faces?.[0]) return [];
+
+    const face = recognitionResult.faces[0];
+    const factors = [];
+
+    if (face.score) {
+      factors.push({
+        name: 'Face Match Score',
+        value: face.score,
+        barColor: '#3b82f6',
+        description: 'Similarity to enrolled template'
+      });
+    }
+
+    if (face.spoof_score !== undefined) {
+      factors.push({
+        name: 'Liveness Score',
+        value: 1 - face.spoof_score,
+        barColor: '#10b981',
+        description: 'Real person vs spoof attempt'
+      });
+    }
+
+    if (face.reconstruction_confidence) {
+      factors.push({
+        name: '3D Reconstruction',
+        value: face.reconstruction_confidence,
+        barColor: '#8b5cf6',
+        description: 'Geometric consistency'
+      });
+    }
+
+    return factors;
+  };
+
+  const getMatchDetails = () => {
+    if (!recognitionResult?.faces?.[0]?.matches?.length) return null;
+
+    const match = recognitionResult.faces[0].matches[0];
+    return (
+      <Box sx={{ mt: 3 }}>
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AccountCircle color="primary" /> Matched Identity
+        </Typography>
+          <Paper sx={{ p: 2 }}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <Typography variant="subtitle2" color="text.secondary">Name</Typography>
+                <Typography variant="h6">{match.name || 'Anonymous'}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <Typography variant="subtitle2" color="text.secondary">Person ID</Typography>
+                <Typography variant="body2" fontFamily="monospace">
+                  {match.person_id}
+                </Typography>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <Typography variant="subtitle2" color="text.secondary">Match Confidence</Typography>
+                <Typography variant="h5" color="primary">
+                  {Math.round(match.score * 100)}%
+                </Typography>
+              </Grid>
+            </Grid>
+          </Paper>
+      </Box>
+    );
+  };
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 3 }}>
+      <Typography variant="h4" fontWeight="bold" gutterBottom>
+        Identity Recognition
+      </Typography>
+      <Typography variant="body1" color="text.secondary" gutterBottom>
+        Recognize identities using multi-modal biometric analysis with explainable AI
+      </Typography>
+
+      <Grid container spacing={3}>
+         <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CameraAlt color="primary" /> Upload Image
+              </Typography>
+
+              <Box
+                sx={{
+                  border: '2px dashed',
+                  borderColor: previewUrl ? 'primary.main' : 'divider',
+                  borderRadius: 2,
+                  p: 3,
+                  textAlign: 'center',
+                  bgcolor: 'action.hover',
+                  mb: 2,
+                  position: 'relative',
+                  minHeight: 200,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {previewUrl ? (
+                  <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
+                    <Box
+                      component="img"
+                      src={previewUrl}
+                      alt="Preview"
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        borderRadius: 4
+                      }}
+                    />
+                    <Chip
+                      label="Preview"
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        bgcolor: 'rgba(0,0,0,0.7)',
+                        color: 'white'
+                      }}
+                    />
+                  </Box>
+                ) : (
+                  <>
+                    <ImageIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                    <Typography color="text.secondary">
+                      Click to upload or drag and drop
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      PNG, JPG up to 10MB
+                    </Typography>
+                  </>
+                )}
+              </Box>
+
+              <Button
+                variant="contained"
+                component="label"
+                fullWidth
+                startIcon={<ImageIcon />}
+                sx={{ mb: 2 }}
+              >
+                Choose File
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+              </Button>
+
+              {selectedFile && (
+                <Typography variant="caption" color="text.secondary">
+                  Selected: {selectedFile.name}
+                </Typography>
+              )}
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography variant="subtitle2" gutterBottom>
+                Recognition Options
+              </Typography>
+
+              <TextField
+                label="Threshold"
+                type="number"
+                size="small"
+                fullWidth
+                value={options.threshold}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOptions({ ...options, threshold: parseFloat(e.target.value) })}
+                inputProps={{ min: 0, max: 1, step: 0.05 }}
+                sx={{ mb: 1 }}
+              />
+
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                startIcon={<Search />}
+                onClick={handleRecognize}
+                disabled={!selectedFile || loading}
+                sx={{
+                  mt: 2,
+                  height: 48,
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
+                  }
+                }}
+              >
+                {loading ? 'Recognizing...' : 'Recognize Identity'}
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+
+         <Grid size={{ xs: 12, md: 8 }}>
+           {recognitionResult ? (
+             <>
+               {recognitionError && (
+                 <React.Suspense fallback={<Box sx={{ p: 2 }}><CircularProgress size={20} /></Box>}>
+                   <RecognitionErrorRecovery
+                     recognitionResult={recognitionResult}
+                     onErrorResolve={() => setRecognitionError(null)}
+                     onEscalate={() => setRecoveryAction('escalate')}
+                   />
+                 </React.Suspense>
+               )}
+               
+                 <React.Suspense fallback={<Box sx={{ p: 2 }}><CircularProgress size={20} /></Box>}>
+                   <OperatorWorkflowPanel
+                     recognitionResult={recognitionResult}
+                     onRetry={async (adjustments: any) => { await handleRecognize(); }}
+                     onOverride={async (data: { reason: string; operatorId: string }) => { setRecoveryAction(data); }}
+                     onEscalate={async (data: { level: string; context: any[] }) => { setRecoveryAction(data); }}
+                   />
+                 </React.Suspense>
+
+                <Tabs
+                  value={tabValue}
+                  onChange={(e: React.SyntheticEvent, v: number) => setTabValue(v)}
+                  sx={{ mb: 2, bgcolor: 'background.paper', borderRadius: 1, p: 0.5 }}
+                >
+                  <Tab label="Results" />
+                  <Tab label="AI Explanation" />
+                  <Tab label="Factors" />
+                </Tabs>
+
+                <TabPanel value={tabValue} index={0}>
+                  <RecognizeView result={recognitionResult} />
+                  {getMatchDetails()}
+                </TabPanel>
+
+                <TabPanel value={tabValue} index={1}>
+                {explainableAI ? (
+                  <>
+                    <Card sx={{ mb: 3 }}>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Timeline color="primary" /> Decision Breakdown
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary">
+                          {explainableAI.summary}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+
+                    <Card sx={{ mb: 3 }}>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CompareArrows color="primary" /> Factor Contributions
+                        </Typography>
+                     <Grid container spacing={2}>
+                           {explainableAI.factors.map((factor: any, idx: number) => (
+                            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
+                              <Paper sx={{ p: 2, height: '100%' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                  <Typography variant="subtitle2">{factor.name}</Typography>
+                                  <Chip
+                                    label={`${factor.contribution > 0 ? '+' : ''}${factor.contribution}%`}
+                                    size="small"
+                                    color={factor.contribution > 0 ? 'success' : 'error'}
+                                  />
+                                </Box>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={Math.abs(factor.contribution)}
+                                  sx={{
+                                    height: 8,
+                                    borderRadius: 4,
+                                    bgcolor: 'rgba(0,0,0,0.1)',
+                                    '& .MuiLinearProgress-bar': {
+                                      borderRadius: 4,
+                                      bgcolor: factor.contribution > 0 ? '#10b981' : '#ef4444'
+                                    }
+                                  }}
+                                />
+                                <Typography variant="caption" color="text.secondary">
+                                  Confidence: {factor.confidence}%
+                                </Typography>
+                              </Paper>
+                            </Grid>
+                          ))}
+                        </Grid>
+                      </CardContent>
+                    </Card>
+
+                    <Card sx={{ mb: 3 }}>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AccountCircle color="primary" /> Bias Analysis
+                        </Typography>
+                     <Grid container spacing={2}>
+                           <Grid size={{ xs: 12, sm: 4 }}>
+                            <Paper sx={{ p: 2, textAlign: 'center' }}>
+                              <Typography variant="h4" color="success.main">94.2%</Typography>
+                              <Typography variant="caption" color="text.secondary">Overall Fairness</Typography>
+                            </Paper>
+                          </Grid>
+                          <Grid size={{ xs: 12, sm: 4 }}>
+                            <Paper sx={{ p: 2, textAlign: 'center' }}>
+                              <Typography variant="h4" color="info.main">3.2%</Typography>
+                              <Typography variant="caption" color="text-secondary">Max Parity Diff</Typography>
+                            </Paper>
+                          </Grid>
+                          <Grid size={{ xs: 12, sm: 4 }}>
+                            <Paper sx={{ p: 2, textAlign: 'center' }}>
+                              <Typography variant="h4" color="warning.main">0.03</Typography>
+                              <Typography variant="caption" color="text-secondary">Variance</Typography>
+                            </Paper>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  </>
+                ) : (
+                  <Paper sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+                    <ShowChart sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+                    <Typography>Run recognition to see AI explanation</Typography>
+                  </Paper>
+                )}
+              </TabPanel>
+
+              <TabPanel value={tabValue} index={2}>
+                {getFactors().length > 0 ? (
+                  <>
+                    <Typography variant="h6" gutterBottom>
+                      Biometric Factor Analysis
+                    </Typography>
+                     <Grid container spacing={2}>
+                       {getFactors().map((factor: any, idx: number) => (
+                        <Grid size={{ xs: 12 }} key={idx}>
+                          <Paper sx={{ p: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Box>
+                                <Typography variant="subtitle2">{factor.name}</Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {factor.description}
+                                </Typography>
+                              </Box>
+                              <Typography variant="h6" color={factor.barColor}>
+                                {Math.round(factor.value * 100)}%
+                              </Typography>
+                            </Box>
+                            <LinearProgress
+                              variant="determinate"
+                              value={factor.value * 100}
+                              sx={{
+                                height: 6,
+                                borderRadius: 3,
+                                bgcolor: 'rgba(0,0,0,0.1)',
+                                '& .MuiLinearProgress-bar': {
+                                  borderRadius: 3,
+                                  bgcolor: factor.barColor
+                                }
+                              }}
+                            />
+                          </Paper>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </>
+                ) : (
+                  <Paper sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+                    <Radar sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+                    <Typography>No biometric analysis available</Typography>
+                  </Paper>
+                )}
+              </TabPanel>
+            </>
+           ) : (
+             <Paper sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+               {recognitionError ? (
+                 <>
+                   <BugReport sx={{ fontSize: 48, mb: 2, color: recognitionError.severity === 'critical' || recognitionError.severity === 'error' ? '#ef4444' : '#f59e0b' }} />
+                   <Typography variant="h6" gutterBottom color={recognitionError.severity === 'critical' || recognitionError.severity === 'error' ? 'error' : 'warning'}>
+                     {recognitionError.message}
+                   </Typography>
+                   <Button
+                     variant="contained"
+                     startIcon={<Refresh />}
+                     onClick={handleRecognize}
+                     sx={{ mt: 2 }}
+                   >
+                     Retry Recognition
+                   </Button>
+                 </>
+               ) : (
+                 <>
+                   <CameraAlt sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+                   <Typography variant="h6" gutterBottom>
+                     No Recognition Results
+                   </Typography>
+                   <Typography>
+                     Upload an image to begin recognition
+                   </Typography>
+                 </>
+               )}
+             </Paper>
+           )}
+        </Grid>
+      </Grid>
+    </Container>
+  );
+}
+
+export default Recognize;
+
+

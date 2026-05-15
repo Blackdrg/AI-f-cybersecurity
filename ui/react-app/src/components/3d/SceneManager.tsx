@@ -12,18 +12,18 @@ const SceneManager = ({ children }: PropsWithChildren<{ children: React.ReactNod
       // Configure the canvas
       camera={{ position: [0, 5, 10], fov: 60 }}
       // Enable shadows
-      shadowMap
+      shadows
       // Adjust the rendering performance
       gl={{ antialias: true, preserveDrawingBuffer: true }}
     >
       {/* Lights */}
       <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 20, 10]} intensity={1} castShadow>
-        {/* Configure shadow map for the directional light */}
-        <directionalLight.shadow
-          mapSize={new THREE.Vector2(2048, 2048)}
-        />
-      </directionalLight>
+      <directionalLight 
+        position={[10, 20, 10]} 
+        intensity={1} 
+        castShadow 
+        shadow-mapSize={[2048, 2048]}
+      />
 
       {/* Particle System */}
       <ParticleSystem count={8000} size={0.15} color={0x00ffff} opacity={0.6} rotationSpeed={[0, 0.05, 0]} />
@@ -38,3 +38,4 @@ const SceneManager = ({ children }: PropsWithChildren<{ children: React.ReactNod
 };
 
 export default SceneManager;
+

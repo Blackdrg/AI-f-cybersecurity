@@ -43,3 +43,5 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Suppress console.error in tests (optional)
 // console.error = jest.fn();
+
+

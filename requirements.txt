@@ -31,3 +31,4 @@ torchvision>=0.17.0
 facenet-pytorch>=2.5.3
 # # insightface>=0.7.3  # Requires MSVC on Windows/Python 3.11; use ONNX models (export offline on Linux/Python 3.10)  # Requires MSVC on Windows/Python 3.11; use ONNX models (export offline on Linux/Python 3.10)
 onnxruntime-gpu>=1.17.0
+python-owasp-zap-v2.4>=0.0.14

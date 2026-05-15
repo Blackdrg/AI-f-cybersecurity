@@ -1,7 +1,7 @@
 // src/components/3d/ParticleSystem.tsx
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 
 interface ParticleSystemProps {
   count?: number;
@@ -29,7 +29,8 @@ const ParticleSystem = ({
   const pointsRef = useRef<THREE.Points>(null);
   
   // Generate particle positions once
-  const positions = useRef<Float32Array>(() => {
+  // Generate particle positions once
+  const positions = useMemo(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
       // Distribute points in a sphere
@@ -41,7 +42,7 @@ const ParticleSystem = ({
       pos[i * 3 + 2] = radius * Math.cos(phi);
     }
     return pos;
-  })();
+  }, [count]);
   
   // Animation: slow rotation and twinkling
   useFrame((state, delta) => {
@@ -54,8 +55,9 @@ const ParticleSystem = ({
     
     // Twinkling effect: animate size and opacity
     const time = state.clock.getElapsedTime();
-    pointsRef.current.material.size = size * (1 + Math.sin(time * 2) * 0.5);
-    pointsRef.current.material.opacity = opacity * (0.5 + Math.sin(time * 1.7) * 0.5);
+    const material = pointsRef.current.material as THREE.PointsMaterial;
+    material.size = size * (1 + Math.sin(time * 2) * 0.5);
+    material.opacity = opacity * (0.5 + Math.sin(time * 1.7) * 0.5);
   });
 
   return (
@@ -67,7 +69,7 @@ const ParticleSystem = ({
           attach="position"
           count={count}
           itemSize={3}
-          array={positions.current}
+          array={positions}
         />
       </bufferGeometry>
       <pointsMaterial
@@ -84,3 +86,4 @@ const ParticleSystem = ({
 };
 
 export default ParticleSystem;
+

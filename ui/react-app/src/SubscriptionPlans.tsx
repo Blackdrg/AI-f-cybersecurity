@@ -135,3 +135,4 @@ const SubscriptionPlans = () => {
 };
 
 export default SubscriptionPlans;
+

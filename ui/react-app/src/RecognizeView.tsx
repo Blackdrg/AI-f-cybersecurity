@@ -783,3 +783,5 @@ const RecognizeView = () => {
 };
 
 export default RecognizeView;
+
+

@@ -377,10 +377,29 @@ def get_redis() -> RedisClient:
     """Get global Redis client instance."""
     global _redis_client
     if _redis_client is None:
-        _redis_client = RedisClient(
-            url=os.getenv('REDIS_URL', 'redis://localhost:6379'),
-            password=os.getenv('REDIS_PASSWORD')
-        )
+        use_fake = os.getenv('USE_FAKE_REDIS', 'false').lower() == 'true'
+        if use_fake:
+            try:
+                import fakeredis.aioredis
+                logger.info("Initializing Fake Redis for desktop/offline mode")
+                _redis_client = RedisClient(url="redis://localhost:6379")
+                # Monkey patch the client creation
+                async def mock_connect():
+                    _redis_client._client = fakeredis.aioredis.FakeRedis(decode_responses=True)
+                    _redis_client._is_connected = True
+                    return True
+                _redis_client.connect = mock_connect
+            except ImportError:
+                logger.warning("fakeredis not installed, falling back to standard Redis")
+                _redis_client = RedisClient(
+                    url=os.getenv('REDIS_URL', 'redis://localhost:6379'),
+                    password=os.getenv('REDIS_PASSWORD')
+                )
+        else:
+            _redis_client = RedisClient(
+                url=os.getenv('REDIS_URL', 'redis://localhost:6379'),
+                password=os.getenv('REDIS_PASSWORD')
+            )
     return _redis_client
 
 

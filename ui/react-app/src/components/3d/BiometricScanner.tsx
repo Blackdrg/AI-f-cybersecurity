@@ -104,3 +104,4 @@ const BiometricScanner = ({
 };
 
 export default BiometricScanner;
+

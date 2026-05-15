@@ -229,3 +229,5 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
 };
 
 export default ConsentModal;
+
+

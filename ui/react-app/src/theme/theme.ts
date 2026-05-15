@@ -1,121 +1,278 @@
-// src/theme/theme.ts
-import { createTheme, ThemeOptions } from '@mui/material/styles';
+/**
+ * Enhanced MUI Theme — Enterprise AI Platform
+ *
+ * Token-driven theme configuration with glassmorphism,
+ * custom color scales, and component-level overrides.
+ */
+import { createTheme, type ThemeOptions } from '@mui/material/styles';
+import { colors, typography, glass, radii, spacing } from './tokens';
 
-// Define the color palette based on the recommendations
-const palette = {
-  mode: 'dark',
-  primary: {
-    main: '#00bcd4', // electric blue
-    light: '#33cfff',
-    dark: '#008a9e',
-    contrastText: '#ffffff',
-  },
-  secondary: {
-    main: '#ff00ff', // neon violet (approximation, true neon violet might be #8f00ff)
-    light: '#ff33ff',
-    dark: '#cc00cc',
-    contrastText: '#ffffff',
-  },
-  background: {
-    default: '#0a0a0a', // deep obsidian
-    paper: '#1a1a1a',
-  },
-  // Custom colors for AI glow, success, warning, danger, glass
-  aiGlow: {
-    main: '#00ffff', // cyan
-    light: '#33ffff',
-    dark: '#00cccc',
-    contrastText: '#000000',
-  },
-  success: {
-    main: '#00ff00', // emerald (approximation, true emerald might be #50c878)
-    light: '#33ff33',
-    dark: '#00cc00',
-    contrastText: '#000000',
-  },
-  warning: {
-    main: '#ffbf00', // amber
-    light: '#ffff33',
-    dark: '#cc9900',
-    contrastText: '#000000',
-  },
-  danger: {
-    main: '#ff0000', // crimson
-    light: '#ff3333',
-    dark: '#cc0000',
-    contrastText: '#ffffff',
-  },
-  glass: {
-    // Glass effect will be achieved via backdrop-filter and background-color with opacity
-    // We define a translucent white for glass-like elements
-    main: 'rgba(255, 255, 255, 0.1)',
-    light: 'rgba(255, 255, 255, 0.15)',
-    dark: 'rgba(255, 255, 255, 0.05)',
-  },
-};
+declare module '@mui/material/styles' {
+  interface Palette {
+    glass: { main: string; light: string; dark: string };
+    glow: typeof colors.glow;
+    tier: typeof colors.tier;
+  }
+  interface PaletteOptions {
+    glass?: { main: string; light: string; dark: string };
+    glow?: typeof colors.glow;
+    tier?: typeof colors.tier;
+  }
+}
 
-// Define the theme options
 const themeOptions: ThemeOptions = {
-  palette,
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    // We can add more typography settings if needed
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: colors.brand.primary,
+      light: colors.brand.primaryLight,
+      dark: colors.brand.primaryDark,
+      contrastText: '#ffffff',
+    },
+    secondary: {
+      main: colors.brand.secondary,
+      light: colors.brand.secondaryLight,
+      dark: colors.brand.secondaryDark,
+      contrastText: '#ffffff',
+    },
+    background: {
+      default: colors.surface.base,
+      paper: colors.surface.raised,
+    },
+    success: {
+      main: colors.semantic.success,
+      light: colors.semantic.successLight,
+      dark: colors.semantic.successDark,
+    },
+    warning: {
+      main: colors.semantic.warning,
+      light: colors.semantic.warningLight,
+      dark: colors.semantic.warningDark,
+    },
+    error: {
+      main: colors.semantic.error,
+      light: colors.semantic.errorLight,
+      dark: colors.semantic.errorDark,
+    },
+    info: {
+      main: colors.semantic.info,
+      light: colors.semantic.infoLight,
+      dark: colors.semantic.infoDark,
+    },
+    text: {
+      primary: colors.text.primary,
+      secondary: colors.text.secondary,
+      disabled: colors.text.disabled,
+    },
+    divider: colors.surface.border,
+    glass: {
+      main: glass.light.background,
+      light: glass.medium.background,
+      dark: glass.thin.background,
+    },
+    glow: colors.glow,
+    tier: colors.tier,
   },
+
+  typography: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 14,
+    h1: {
+      fontSize: typography.fontSize['4xl'],
+      fontWeight: typography.fontWeight.bold,
+      lineHeight: typography.lineHeight.tight,
+      letterSpacing: '-0.02em',
+    },
+    h2: {
+      fontSize: typography.fontSize['3xl'],
+      fontWeight: typography.fontWeight.bold,
+      lineHeight: typography.lineHeight.tight,
+      letterSpacing: '-0.01em',
+    },
+    h3: {
+      fontSize: typography.fontSize['2xl'],
+      fontWeight: typography.fontWeight.semibold,
+      lineHeight: typography.lineHeight.tight,
+    },
+    h4: {
+      fontSize: typography.fontSize.xl,
+      fontWeight: typography.fontWeight.semibold,
+      lineHeight: typography.lineHeight.normal,
+    },
+    h5: {
+      fontSize: typography.fontSize.lg,
+      fontWeight: typography.fontWeight.semibold,
+      lineHeight: typography.lineHeight.normal,
+    },
+    h6: {
+      fontSize: typography.fontSize.md,
+      fontWeight: typography.fontWeight.semibold,
+      lineHeight: typography.lineHeight.normal,
+    },
+    body1: {
+      fontSize: typography.fontSize.md,
+      lineHeight: typography.lineHeight.normal,
+    },
+    body2: {
+      fontSize: typography.fontSize.base,
+      lineHeight: typography.lineHeight.normal,
+    },
+    caption: {
+      fontSize: typography.fontSize.sm,
+      color: colors.text.tertiary,
+    },
+    overline: {
+      fontSize: typography.fontSize.xs,
+      fontWeight: typography.fontWeight.semibold,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase' as const,
+    },
+  },
+
+  shape: {
+    borderRadius: radii.md,
+  },
+
+  spacing: spacing.xs, // 4px base unit
+
   components: {
-    // Global component overrides
-    MuiButton: {
+    MuiCssBaseline: {
       styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: 'none',
-          fontWeight: 600,
-          // Add glass effect to buttons by default
-          '&:not(.Mui-disabled)': {
-            backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0))',
-            backdropFilter: 'blur(10px)',
+        body: {
+          scrollbarWidth: 'thin',
+          scrollbarColor: `${colors.surface.elevated} transparent`,
+          '&::-webkit-scrollbar': { width: 6 },
+          '&::-webkit-scrollbar-track': { background: 'transparent' },
+          '&::-webkit-scrollbar-thumb': {
+            background: colors.surface.elevated,
+            borderRadius: 3,
           },
         },
       },
     },
-    MuiPaper: {
+
+    MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
-          // Glass effect for papers
-          backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0))',
-          backdropFilter: 'blur(10px)',
-          // Add a subtle border for depth
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: radii.md,
+          textTransform: 'none' as const,
+          fontWeight: typography.fontWeight.semibold,
+          fontSize: typography.fontSize.base,
+          padding: `${spacing.sm}px ${spacing.md}px`,
+          transition: 'all 0.2s ease',
+        },
+        contained: {
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+            transform: 'translateY(-1px)',
+          },
+        },
+        outlined: {
+          borderColor: colors.surface.borderLight,
+          '&:hover': {
+            borderColor: colors.brand.primary,
+            background: 'rgba(59, 130, 246, 0.08)',
+          },
         },
       },
     },
+
+    MuiPaper: {
+      defaultProps: { elevation: 0 },
+      styleOverrides: {
+        root: {
+          borderRadius: radii.lg,
+          ...glass.light,
+          backgroundImage: 'none',
+        },
+      },
+    },
+
+    MuiCard: {
+      defaultProps: { elevation: 0 },
+      styleOverrides: {
+        root: {
+          borderRadius: radii.lg,
+          ...glass.light,
+          backgroundImage: 'none',
+          transition: 'all 0.2s ease',
+        },
+      },
+    },
+
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          // Glass effect for drawer
-          backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0))',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: `linear-gradient(180deg, ${colors.surface.raised} 0%, ${colors.surface.overlay} 100%)`,
+          borderRight: `1px solid ${colors.surface.border}`,
+          backgroundImage: 'none',
         },
       },
     },
+
     MuiAppBar: {
+      defaultProps: { elevation: 0 },
       styleOverrides: {
         root: {
-          // Glass effect for app bar
-          backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0))',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          ...glass.dark,
+          backgroundImage: 'none',
+          borderBottom: `1px solid ${colors.surface.border}`,
+        },
+      },
+    },
+
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontWeight: typography.fontWeight.medium,
+          fontSize: typography.fontSize.sm,
+        },
+      },
+    },
+
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          ...glass.heavy,
+          fontSize: typography.fontSize.sm,
+          borderRadius: radii.sm,
+        },
+      },
+    },
+
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none' as const,
+          fontWeight: typography.fontWeight.medium,
+          fontSize: typography.fontSize.base,
+          minHeight: 40,
+        },
+      },
+    },
+
+    MuiLinearProgress: {
+      styleOverrides: {
+        root: {
+          borderRadius: radii.full,
+          height: 4,
+          backgroundColor: colors.surface.border,
+        },
+      },
+    },
+
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          borderRadius: radii.md,
+          ...glass.light,
         },
       },
     },
   },
-  // Add custom properties for motion, depth, etc. (these are CSS variables or can be used in styles)
-  // We'll define them as CSS variables in the theme's components or via createGlobalStyle if needed.
-  // For now, we'll just define the theme and let the components use these values.
 };
 
-// Create the theme
 const theme = createTheme(themeOptions);
 
 export default theme;

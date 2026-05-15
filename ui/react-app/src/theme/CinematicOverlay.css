@@ -1,0 +1,91 @@
+/* Cinematic Overlay for AI-f Enterprise */
+
+:root {
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --accent-glow: rgba(56, 189, 248, 0.5);
+  --premium-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+body {
+  background: var(--premium-gradient);
+  color: #f8fafc;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Glassmorphism containers */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+/* Cinematic Animations */
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-cinematic {
+  animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Glowing text for AI status */
+.text-glow {
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* Custom Window Controls (Tauri) */
+.titlebar {
+  height: 30px;
+  background: rgba(0, 0, 0, 0.2);
+  user-select: none;
+  display: flex;
+  justify-content: flex-end;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+}
+
+.titlebar-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 45px;
+  height: 30px;
+  transition: background 0.2s;
+}
+
+.titlebar-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

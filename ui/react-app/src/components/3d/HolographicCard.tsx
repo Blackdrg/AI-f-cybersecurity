@@ -14,6 +14,7 @@ interface HolographicCardProps {
   height?: number;
   depth?: number;
   content?: React.ReactNode; // For future use with CSS2DRenderer or similar
+  children?: React.ReactNode;
   onClick?: () => void;
 }
 
@@ -64,7 +65,8 @@ const HolographicCard = ({
       rotation={rotation}
       scale={scale}
       onClick={onClick}
-      cursor="pointer"
+      onPointerOver={() => (document.body.style.cursor = 'pointer')}
+      onPointerOut={() => (document.body.style.cursor = 'auto')}
     >
       {/* Card base - using a thin box */}
       <boxGeometry args={[width, height, depth]} />
@@ -97,3 +99,4 @@ const HolographicCard = ({
 };
 
 export default HolographicCard;
+

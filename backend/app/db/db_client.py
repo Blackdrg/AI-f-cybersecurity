@@ -122,7 +122,7 @@ class DBClient:
 
     def __init__(self, read_replicas: list = None):
         self.pool = None
-        self.read_replica_pools: List[asyncpg.Pool] = []
+        self.read_replica_pools: List[Any] = []
         self.read_replica_urls: List[str] = []
         self.kms_client = self._init_kms()
         self.encryption_key = self._load_encryption_key()
@@ -364,7 +364,7 @@ class DBClient:
                 logger.warning(f"Failed to connect to read replica {replica_url}: {e}")
                 self.health_checker.record_failure(replica_url)
 
-    def _get_read_pool(self) -> Optional[asyncpg.Pool]:
+    def _get_read_pool(self) -> Optional[Any]:
         """Get healthy read replica pool using round-robin.
         Falls back to primary if no healthy replicas."""
         healthy_pools = [

@@ -7,7 +7,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
-import ErrorBoundary from '../components/ErrorBoundary';
+import ErrorBoundary from '../components/feedback/ErrorBoundary';
 
 // Mock components for testing
 const Login = () => (
@@ -169,3 +169,4 @@ describe('Error Handling', () => {
     consoleSpy.mockRestore();
   });
 });
+

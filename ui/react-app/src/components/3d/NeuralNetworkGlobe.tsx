@@ -130,9 +130,8 @@ const NeuralNetworkGlobe = ({
             array={connections}
           />
         </bufferGeometry>
-        <lineMaterial
+        <lineBasicMaterial
           color={connectionColor}
-          linewidth={1}
           transparent
           opacity={0.5}
         />
@@ -142,3 +141,4 @@ const NeuralNetworkGlobe = ({
 };
 
 export default NeuralNetworkGlobe;
+
