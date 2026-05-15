@@ -6,7 +6,7 @@ Enhanced Redis Client for AI-f Production
 - Session management
 - Circuit breaker pattern
 """
-import redis.asyncio as redis
+import redis.asyncio as aioredis
 import json
 import time
 import uuid
@@ -14,7 +14,7 @@ import logging
 import hashlib
 import asyncio
 import os
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, cast
 from datetime import datetime, timedelta
 
 try:
@@ -32,8 +32,8 @@ class RedisClient:
     def __init__(self, url: str = None, password: str = None):
         self.url = url or "redis://localhost:6379"
         self.password = password
-        self._client: Optional[redis.Redis] = None
-        self._pubsub_client: Optional[redis.Redis] = None
+        self._client: Optional[aioredis.Redis] = None
+        self._pubsub_client: Optional[aioredis.Redis] = None
         self._pubsub = None
         self._is_connected = False
 
@@ -42,7 +42,7 @@ class RedisClient:
         max_retries = 5
         for attempt in range(max_retries):
             try:
-                self._client = redis.from_url(
+                self._client = aioredis.from_url(
                     self.url,
                     password=self.password,
                     decode_responses=True,
@@ -59,7 +59,7 @@ class RedisClient:
                 self._is_connected = True
 
                 # Start Pub/Sub listener
-                self._pubsub_client = redis.from_url(
+                self._pubsub_client = aioredis.from_url(
                     self.url, password=self.password, decode_responses=True
                 )
                 self._pubsub = self._pubsub_client.pubsub()
@@ -110,7 +110,7 @@ class RedisClient:
         try:
             key = f"jwt:revoked:{jti[:8]}"
             ttl = max(1, int((expires_at - datetime.utcnow()).total_seconds()))
-            await self._client.eval(lua_script, 1, key, jti, ttl)
+            await cast(Any, self._client.eval(lua_script, 1, key, jti, ttl))
             return True
         except Exception as e:
             logger.error(f"JWT revocation failed: {e}")
@@ -123,7 +123,7 @@ class RedisClient:
 
         try:
             key = f"jwt:revoked:{jti[:8]}"
-            return await self._client.sismember(key, jti)
+            return await cast(Any, self._client.sismember(key, jti))
         except Exception as e:
             logger.error(f"JWT revocation check failed: {e}")
             return False  # Fail-open for availability
@@ -183,10 +183,10 @@ class RedisClient:
             end
             """
 
-            result = await self._client.eval(
+            result = await cast(Any, self._client.eval(
                 lua_script, 1, key, now, window_start,
                 max_requests, window_seconds
-            )
+            ))
 
             return {
                 'allowed': bool(result[0]),
