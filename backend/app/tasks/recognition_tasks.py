@@ -131,7 +131,7 @@ def cleanup_stale_sessions(self, max_age_hours=24):
                 "deleted_cache": await db.cleanup_redis_cache()
             }
         
-        return asyncio.run(process())
+        return asyncio.run(cleanup())
     except Exception as exc:
         raise self.retry(exc=exc)
 

@@ -498,18 +498,23 @@ class ModelVersionManager:
     def register_version(
         self,
         version: str,
-        metrics: ModelMetrics,
-        environment: str,
-        changelog: List[str]
+        metrics: Any,
+        changelog: Any = "",
+        model_name: str = "default",
+        model_path: str = "",
+        status: str = "staging",
+        environment: str = "production"
     ) -> None:
         """Register a new model version."""
         self.versions[version] = {
             "version": version,
-            "metrics": vars(metrics),
+            "metrics": metrics if isinstance(metrics, dict) else vars(metrics),
+            "model_name": model_name,
+            "model_path": model_path,
             "environment": environment,
             "changelog": changelog,
             "registered_at": datetime.utcnow().isoformat(),
-            "status": "staging"
+            "status": status
         }
     
     def promote_to_production(self, version: str) -> bool:
