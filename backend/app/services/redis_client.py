@@ -37,6 +37,12 @@ class RedisClient:
         self._pubsub = None
         self._is_connected = False
 
+    def __getattr__(self, name):
+        """Proxy missing methods to the underlying aioredis client."""
+        if self._client:
+            return getattr(self._client, name)
+        raise AttributeError(f"'RedisClient' object has no attribute '{name}' (and underlying client is not initialized)")
+
     async def connect(self):
         """Establish Redis connection with retry logic."""
         max_retries = 5
@@ -376,6 +382,10 @@ def get_redis() -> RedisClient:
             password=os.getenv('REDIS_PASSWORD')
         )
     return _redis_client
+
+
+# Global instance for easy import
+redis_client = get_redis()
 
 
 async def async_init_redis() -> RedisClient:

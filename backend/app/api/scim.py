@@ -7,7 +7,7 @@ from fastapi import APIRouter, Request, HTTPException, Depends, status
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 from ..db.db_client import get_db
-from ..security import get_current_active_user
+from ..security import get_current_user
 import logging
 
 logger = logging.getLogger(__name__)

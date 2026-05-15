@@ -16,7 +16,7 @@ from webauthn import (
     base64url_to_bytes,
 )
 from webauthn.helpers.structs import (
-    AttestationPreference,
+    AttestationConveyancePreference,
     AuthenticatorSelectionCriteria,
     AuthenticatorAttachment,
     UserVerificationRequirement,
@@ -51,7 +51,7 @@ class WebAuthnService:
             rp_name=self.rp_name,
             user_id=user_id,
             user_name=user_name,
-            attestation=AttestationPreference.DIRECT,
+            attestation=AttestationConveyancePreference.DIRECT,
             authenticator_selection=AuthenticatorSelectionCriteria(
                 authenticator_attachment=AuthenticatorAttachment.CROSS_PLATFORM,
                 user_verification=UserVerificationRequirement.PREFERRED,
