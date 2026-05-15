@@ -15,16 +15,12 @@ import torch.onnx
 import logging
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from insightface.app import FaceAnalysis
-    from speechbrain.inference import EncoderClassifier
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Check optional dependencies
 try:
-    from insightface.app import FaceAnalysis
+    from insightface.app import FaceAnalysis  # type: ignore
     INSIGHTFACE_AVAILABLE = True
 except ImportError:
     INSIGHTFACE_AVAILABLE = False
@@ -36,6 +32,11 @@ try:
 except ImportError:
     SPEECHBRAIN_AVAILABLE = False
     EncoderClassifier = None  # type: ignore
+
+# For TYPE_CHECKING, we can still import the types
+if TYPE_CHECKING:
+    from insightface.app import FaceAnalysis
+    from speechbrain.inference import EncoderClassifier
 
 BUNDLE_DIR = Path(__file__).parent.parent / "models" / "onnx_bundle"
 BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
