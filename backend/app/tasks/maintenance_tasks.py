@@ -60,7 +60,7 @@ def verify_audit_chain_integrity(self):
                 logger.error(f"Audit chain broken at {len(broken)} points")
                 # Send alert
                 from app.middleware.alerting import send_critical_alert as alerting_send_critical
-        alerting_send_critical("AUDIT_CHAIN_BROKEN", {"broken_links": broken})
+                await alerting_send_critical("AUDIT_CHAIN_BROKEN", {"broken_links": broken})
             return {"valid": len(broken) == 0, "broken_count": len(broken)}
         
         return asyncio.run(verify())

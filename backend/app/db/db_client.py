@@ -178,6 +178,22 @@ class DBClient:
         key_bytes = key.encode()[:32].ljust(32, b'\0')
         return base64.urlsafe_b64encode(key_bytes)
 
+    def _encrypt_embedding(self, embedding: np.ndarray) -> bytes:
+        if CRYPTO_AVAILABLE:
+            fernet = Fernet(self.encryption_key)
+            data = embedding.tobytes()
+            return fernet.encrypt(data)
+        else:
+            return embedding.tobytes()
+
+    def _decrypt_embedding(self, encrypted_data: bytes) -> np.ndarray:
+        if CRYPTO_AVAILABLE:
+            fernet = Fernet(self.encryption_key)
+            data = fernet.decrypt(encrypted_data)
+            return np.frombuffer(data, dtype=np.float32)
+        else:
+            return np.frombuffer(encrypted_data, dtype=np.float32)
+
     async def init_db(self):
         """Initialize database connection pools with retry logic."""
         try:
@@ -228,6 +244,10 @@ class DBClient:
                         await asyncio.sleep(2 ** retry_count)
                     else:
                         raise
+
+            # Initialize offline sync
+            from ..offline.sync import get_offline_sync
+            await get_offline_sync()
 
             # Initialize schemas and extensions
             await self._init_schemas()
@@ -666,6 +686,115 @@ class DBClient:
                 logger.info(f"Key rotation progress: {total} embeddings processed")
 
         logger.info(f"Key rotation complete: {total} embeddings re-encrypted")
+
+    async def get_person(self, person_id: str) -> Dict[str, Any]:
+        async with self.pool.acquire() as conn:
+            person = await conn.fetchrow("SELECT * FROM persons WHERE person_id = $1", person_id)
+            if not person:
+                return None
+            embeddings = await conn.fetch("SELECT embedding_id FROM embeddings WHERE person_id = $1", person_id)
+            consent = await conn.fetchrow("SELECT * FROM consent_logs WHERE person_id = $1", person_id)
+            return {
+                'person_id': person['person_id'],
+                'name': person['name'],
+                'age': person['age'],
+                'gender': person['gender'],
+                'embeddings': [e['embedding_id'] for e in embeddings],
+                'consent_record': dict(consent) if consent else None
+            }
+
+    async def delete_person(self, person_id: str) -> bool:
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                await conn.execute("DELETE FROM embeddings WHERE person_id = $1", person_id)
+                await conn.execute("DELETE FROM consent_logs WHERE person_id = $1", person_id)
+                await conn.execute("DELETE FROM feedback WHERE person_id = $1", person_id)
+                await conn.execute("DELETE FROM persons WHERE person_id = $1", person_id)
+                await conn.execute("DELETE FROM audit_log WHERE person_id = $1", person_id)
+                await conn.execute("INSERT INTO audit_log (action, details) VALUES ('gdpr_delete', $1)", {'deleted_person_id': person_id})
+        return True
+
+    async def get_person_full_data(self, person_id: str) -> Optional[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            person = await conn.fetchrow("SELECT * FROM persons WHERE person_id = $1", person_id)
+            if not person: return None
+            embeddings = await conn.fetch("SELECT * FROM embeddings WHERE person_id = $1", person_id)
+            consent = await conn.fetchrow("SELECT * FROM consent_logs WHERE person_id = $1", person_id)
+            audit = await conn.fetch("SELECT * FROM audit_log WHERE person_id = $1", person_id)
+            feedback = await conn.fetch("SELECT * FROM feedback WHERE person_id = $1", person_id)
+            return {
+                "identity": dict(person) if person else None,
+                "biometrics": [dict(e) for e in embeddings],
+                "consent": dict(consent) if consent else None,
+                "activity_history": [dict(a) for a in audit],
+                "feedback": [dict(f) for f in feedback]
+            }
+
+    async def submit_feedback(self, person_id: str, recognition_id: str, correct_person_id: str, confidence_score: float, feedback_type: str) -> bool:
+        async with self.pool.acquire() as conn:
+            feedback_id = str(uuid.uuid4())
+            await conn.execute("""
+                INSERT INTO feedback (feedback_id, person_id, recognition_id, correct_person_id, confidence_score, feedback_type)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            """, feedback_id, person_id, recognition_id, correct_person_id, confidence_score, feedback_type)
+        return True
+
+    async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+        if self.pool is None: return self._in_memory_db['users'].get(user_id)
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT * FROM users WHERE user_id = $1", user_id)
+            return dict(row) if row else None
+
+    async def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT * FROM users WHERE email = $1", email)
+            return dict(row) if row else None
+
+    async def create_organization(self, name: str, billing_email: str) -> str:
+        async with self.pool.acquire() as conn:
+            org_id = str(uuid.uuid4())
+            await conn.execute("""
+                INSERT INTO organizations (org_id, name, billing_email)
+                VALUES ($1, $2, $3)
+            """, org_id, name, billing_email)
+            return org_id
+
+    async def get_user_orgs(self, user_id: str) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT o.*, m.role FROM organizations o
+                JOIN org_members m ON o.org_id = m.org_id
+                WHERE m.user_id = $1
+            """, user_id)
+            return [dict(row) for row in rows]
+
+    async def get_person_timeline(self, person_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT e.*, c.name as camera_name, c.location as camera_location
+                FROM recognition_events e
+                LEFT JOIN cameras c ON e.camera_id = c.camera_id
+                WHERE e.person_id = $1
+                ORDER BY e.timestamp DESC
+                LIMIT $2
+            """, person_id, limit)
+            return [dict(row) for row in rows]
+
+    async def log_recognition_event(self, org_id: str, person_id: Optional[str], camera_id: Optional[str], confidence: float, metadata: Dict[str, Any] = None) -> str:
+        event_id = str(uuid.uuid4())
+        if self.pool is None:
+            offline_sync = await get_offline_sync()
+            await offline_sync.cache_event({
+                'event_id': event_id, 'org_id': org_id, 'person_id': person_id,
+                'camera_id': camera_id, 'confidence': confidence, 'metadata': metadata
+            })
+        else:
+            async with self.pool.acquire() as conn:
+                await conn.execute("""
+                    INSERT INTO recognition_events (event_id, org_id, person_id, camera_id, confidence_score, metadata)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                """, event_id, org_id, person_id, camera_id, confidence, metadata)
+        return event_id
 
 
 # Global instance
